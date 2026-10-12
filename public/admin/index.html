@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Learning Hub Admin | LwLAT</title><link rel="stylesheet" href="/assets/site.css"></head>
+<body class="admin-page">
+<div id="login-view" class="login-shell"><form id="login-form" class="login-card">
+<img src="/assets/lwlat-logo.png" alt="Learning Without Limits Academy Trust"><h1>Learning Hub administration</h1>
+<p class="muted">Manage EduHub 2027, professional learning opportunities and bookings.</p>
+<div id="login-message"></div><div class="field"><label for="password">Admin password</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
+<button type="submit" class="full-width">Sign in</button></form></div>
+
+<div id="admin-view" class="admin-wrap hidden">
+<aside class="sidebar"><img src="/assets/lwlat-logo.png" alt=""><div class="side-nav">
+<button class="active" data-view="overview">Overview</button><button data-view="courses">Professional Learning</button><button data-view="eduhub">EduHub 2027</button><button data-view="programme">EduHub sessions</button><button data-view="bookings">Bookings</button><button id="logout">Sign out</button>
+</div></aside>
+<main class="admin-main">
+<div class="admin-top"><div><div class="eyebrow teal">Learning Hub administration</div><h1 id="view-title">Overview</h1></div><a class="button secondary" href="/" target="_blank" rel="noopener">View live public site</a></div>
+<div id="admin-message" aria-live="polite"></div>
+
+<section id="overview-view" class="admin-section">
+<div class="stat-grid"><div class="stat"><span>Published courses</span><strong id="stat-published">0</strong></div><div class="stat"><span>Draft courses</span><strong id="stat-drafts">0</strong></div><div class="stat"><span>PL bookings</span><strong id="stat-course-bookings">0</strong></div><div class="stat"><span>EduHub bookings</span><strong id="stat-eduhub-bookings">0</strong></div></div>
+<div class="panel"><h2>EduHub 2027 booking status</h2><p id="overview-eduhub-status"></p></div>
+<div class="panel"><h2>Welcome to the Learning Hub</h2><p>Create and publish professional learning opportunities, manage EduHub separately, monitor bookings and export delegate information from one place.</p></div>
+</section>
+
+<section id="courses-view" class="admin-section hidden">
+<div class="panel"><div class="section-head"><div><h2>Professional Learning</h2><p class="muted">Create, edit, publish and archive your own opportunities.</p></div><button id="add-course">Add opportunity</button></div>
+<div class="table-wrap"><table><thead><tr><th>Title</th><th>Next date</th><th>Status</th><th>Booking</th><th>Places</th><th>Actions</th></tr></thead><tbody id="courses-table"></tbody></table></div></div>
+</section>
+
+<section id="eduhub-view" class="admin-section hidden">
+<form id="eduhub-form" class="form-grid" novalidate>
+<div class="panel field full">
+  <h2>Booking status</h2>
+  <p class="muted">This controls what members of staff can do on the EduHub page. The server enforces it, so bookings cannot be made while the status is Coming soon or Closed.</p>
+  <div class="status-options" role="radiogroup" aria-label="Booking status">
+    <label class="status-option"><input type="radio" name="bookingStatus" value="coming-soon"><span><strong>Coming soon</strong><br><span class="muted">Shows "Bookings Open Soon". No bookings accepted.</span></span></label>
+    <label class="status-option"><input type="radio" name="bookingStatus" value="open"><span><strong>Open</strong><br><span class="muted">Members of staff can book on the EduHub page.</span></span></label>
+    <label class="status-option"><input type="radio" name="bookingStatus" value="closed"><span><strong>Closed</strong><br><span class="muted">Shows "Bookings closed". No bookings accepted.</span></span></label>
+  </div>
+  <p id="eduhub-live-status" class="notice"></p>
+  <div class="admin-form-actions">
+    <button type="button" class="button secondary" id="preview-eduhub">Preview the staff booking page</button>
+    <a class="button secondary" href="/eduhub/" target="_blank" rel="noopener">Open the live EduHub page</a>
+  </div>
+</div>
+
+<div class="panel field full form-grid">
+  <div class="field full"><h2>Event details</h2><p class="notice warn">This event is separate from Professional Learning and bookings require an @lwlat.org.uk email address.</p></div>
+  <div class="field full"><label for="eh-title">Event title</label><input id="eh-title" name="title" required maxlength="150"></div>
+  <div class="field"><label for="eh-date">Date</label><input id="eh-date" name="date" type="date"></div>
+  <div class="field"><label for="eh-time">Time</label><input id="eh-time" name="time" placeholder="e.g. 08:30 to 15:30" maxlength="60"></div>
+  <div class="field full"><label for="eh-venue">Venue</label><input id="eh-venue" name="venue" maxlength="150"></div>
+  <div class="field full"><label for="eh-description">Description</label><textarea id="eh-description" name="description" maxlength="2000"></textarea></div>
+  <div class="field"><label for="eh-capacity">Capacity</label><input id="eh-capacity" name="capacity" type="number" min="0"><span class="field-help">0 means no limit. Once full, new bookings join the waiting list.</span></div>
+  <div class="field"><label for="eh-deadline">Booking deadline <span class="optional">(optional)</span></label><input id="eh-deadline" name="bookingDeadline" type="date"><span class="field-help">Bookings close automatically after this date.</span></div>
+  <div class="field"><label for="eh-contact">Organiser contact email <span class="optional">(optional)</span></label><input id="eh-contact" name="contactEmail" type="email" maxlength="120"><span class="field-help">Shown to staff for questions and changes.</span></div>
+  <div class="field"><label for="eh-privacy">Privacy notice link <span class="optional">(optional)</span></label><input id="eh-privacy" name="privacyNoticeUrl" type="url" placeholder="https://" maxlength="300"><span class="field-help">Shown beside the consent box on the booking form.</span></div>
+  <div class="field full"><label class="check-label"><input type="checkbox" name="askDietary"> Ask for dietary requirements or allergies</label>
+  <label class="check-label"><input type="checkbox" name="askAccessibility"> Ask for accessibility requirements</label>
+  <label class="check-label"><input type="checkbox" name="allowNoFood"> Offer an "I do not need food" option</label></div>
+</div>
+
+<div class="panel field full">
+  <div class="section-head"><div><h2>Food choices and allergens</h2><p class="muted">Each option appears on the booking form with its allergens listed underneath. The allergen matrix PDF is linked directly below the food choices.</p></div></div>
+  <div id="food-choice-builder" class="food-builder"></div>
+  <div class="admin-form-actions">
+    <button type="button" class="button secondary" id="add-food-choice">Add food choice</button>
+    <button type="button" class="button secondary" id="load-matrix-menu">Fill in from the allergen matrix</button>
+    <a class="button secondary" href="/documents/EduHub-2027-Allergen-Matrix.pdf" target="_blank" rel="noopener">Open the allergen matrix (PDF)</a>
+  </div>
+  <p class="muted">Changing a food choice's name or allergens does not alter bookings already made. Each booking keeps a copy of what the person chose at the time.</p>
+</div>
+
+<div class="panel field full admin-form-actions sticky-actions">
+  <button type="submit">Save EduHub settings</button>
+  <span class="muted" id="eduhub-dirty"></span>
+</div>
+</form>
+
+<div class="panel">
+  <div class="section-head"><div><h2>Catering summary</h2><p class="muted">Confirmed EduHub places only. Waiting-list and cancelled bookings are not counted.</p></div>
+  <a class="button" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div>
+  <div id="catering-summary"></div>
+</div>
+</section>
+
+<section id="programme-view" class="admin-section hidden">
+<form id="programme-form" class="form-grid" novalidate>
+<div class="panel field full">
+  <h2>Schools and teams</h2>
+  <p class="muted">Staff choose their school or team when they book. Its phase decides which sessions they are offered. If this list is empty, staff type their school instead and see every session.</p>
+  <div id="school-builder" class="school-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-school">Add school or team</button></div>
+  <details class="bulk-add">
+    <summary>Add several at once</summary>
+    <div class="form-grid">
+      <div class="field full"><label for="bulk-schools">One name per line</label><textarea id="bulk-schools" rows="5" placeholder="e.g. Example Primary School"></textarea></div>
+      <div class="field"><label for="bulk-phase">Phase for all of these</label><select id="bulk-phase"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="central">Central Trust</option></select></div>
+      <div class="field"><label>&nbsp;</label><button type="button" class="button secondary" id="bulk-add-schools">Add to list</button></div>
+    </div>
+  </details>
+</div>
+
+<div class="panel field full">
+  <h2>Sessions</h2>
+  <p class="muted">Sessions that share the same start and finish time form one time slot. Staff choose one session in each slot from those aimed at their phase.</p>
+  <label class="check-label"><input type="checkbox" name="requireSessionChoice"> Staff must choose a session in every time slot</label>
+  <div id="session-list-builder" class="food-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-programme-session">Add session</button></div>
+</div>
+
+<div class="panel field full admin-form-actions sticky-actions">
+  <button type="submit">Save schools and sessions</button>
+  <button type="button" class="button secondary" id="preview-programme">Preview the staff booking page</button>
+  <span class="muted" id="programme-dirty"></span>
+</div>
+</form>
+
+<div class="panel">
+  <h2>Session numbers</h2>
+  <p class="muted">Confirmed EduHub places only. Download a register to print for each room.</p>
+  <div id="session-summary"></div>
+</div>
+</section>
+
+<section id="bookings-view" class="admin-section hidden"><div class="panel">
+<div class="section-head"><div><h2>Bookings</h2><p class="muted">Search, filter, manage and export bookings.</p></div><a class="button" id="export-link" href="/api/export-bookings">Export CSV</a></div>
+<div class="filter-row">
+  <div class="field"><label for="booking-search">Search</label><input id="booking-search" type="search" placeholder="Name, email, school, reference"></div>
+  <div class="field"><label for="booking-item">Event or course</label><select id="booking-item"></select></div>
+  <div class="field"><label for="booking-status">Status</label><select id="booking-status"><option value="">All</option><option value="booked">Booked</option><option value="waiting">Waiting list</option><option value="cancelled">Cancelled</option></select></div>
+</div>
+<p class="muted" id="booking-count"></p>
+<div class="table-wrap"><table><thead><tr><th>Booked</th><th>Person</th><th>Event or course</th><th>Food and needs</th><th>Status</th><th>Actions</th></tr></thead><tbody id="bookings-table"></tbody></table></div></div></section>
+</main></div>
+
+<div class="modal" id="course-modal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><div class="eyebrow teal">Professional Learning</div><h2 id="course-modal-title">Add opportunity</h2></div><button class="close" type="button" data-close-course>Close</button></div>
+<form id="course-form" class="form-grid"><input type="hidden" name="id">
+<div class="field full"><label for="c-title">Title</label><input id="c-title" name="title" required maxlength="150"></div><div class="field full"><label for="c-summary">Short summary</label><textarea id="c-summary" name="summary" required maxlength="600"></textarea></div>
+<div class="field full"><label for="c-description">Full description</label><textarea id="c-description" name="description" maxlength="5000"></textarea></div><div class="field"><label for="c-audience">Audience</label><input id="c-audience" name="audience" maxlength="150"></div><div class="field"><label for="c-facilitator">Facilitator</label><input id="c-facilitator" name="facilitator" maxlength="150"></div>
+<div class="field full"><label>Training sessions</label>
+<div id="session-builder" class="session-builder"></div>
+<button type="button" class="button secondary" id="add-session">Add another session</button>
+<p class="muted">Use one row for a single-date course, or add further rows for programmes delivered over several dates.</p></div>
+<div class="field full"><label for="c-venue">Venue or online details</label><input id="c-venue" name="venue" maxlength="200"></div>
+<div class="field"><label for="c-cost">Cost</label><input id="c-cost" name="cost" placeholder="Free or £" maxlength="60"></div><div class="field"><label for="c-capacity">Capacity</label><input id="c-capacity" name="capacity" type="number" min="0"></div>
+<div class="field"><label for="c-deadline">Booking deadline</label><input id="c-deadline" name="bookingDeadline" type="date"></div>
+<div class="field"><label for="c-catering">Catering</label><select id="c-catering" name="cateringType"><option value="none">No food or refreshments</option><option value="refreshments">Refreshments provided</option><option value="lunch">Lunch provided</option><option value="other">Other catering arrangements</option></select></div>
+<div class="field"><label for="c-catering-details">Catering details</label><input id="c-catering-details" name="cateringDetails" placeholder="Optional details" maxlength="200"></div>
+<div class="field full"><label class="check-label"><input type="checkbox" name="askDietary" value="true"> Ask delegates for dietary requirements when booking</label></div>
+<div class="field"><label for="c-status">Status</label><select id="c-status" name="status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div>
+<div class="field"><label for="c-booking">Bookings</label><select id="c-booking" name="bookingOpen"><option value="true">Open</option><option value="false">Closed</option></select></div>
+<div class="field full"><button type="submit">Save opportunity</button></div></form></div></div>
+
+<div class="modal" id="booking-modal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><div class="eyebrow teal" id="booking-modal-ref">Booking</div><h2>Edit booking</h2></div><button class="close" type="button" data-close-booking>Close</button></div>
+<form id="booking-edit-form" class="form-grid"><input type="hidden" name="id">
+<div class="field"><label for="b-first">First name</label><input id="b-first" name="firstName" maxlength="80"></div>
+<div class="field"><label for="b-last">Surname</label><input id="b-last" name="lastName" maxlength="80"></div>
+<div class="field" id="b-org-field"><label for="b-org">School or organisation</label><input id="b-org" name="organisation" maxlength="150"></div>
+<div class="field hidden" id="b-school-field"><label for="b-school">School or team</label><select id="b-school" name="schoolId"></select></div>
+<div class="field"><label for="b-job">Job title</label><input id="b-job" name="jobTitle" maxlength="120"></div>
+<div class="field"><label for="b-tel">Telephone</label><input id="b-tel" name="telephone" maxlength="40"></div>
+<div class="field" id="b-food-field"><label for="b-food">Food choice</label><select id="b-food" name="foodChoiceId"></select></div>
+<div class="field full hidden" id="b-sessions-field"><label>Sessions</label><div id="b-sessions" class="form-grid"></div><span class="field-help">Administrators can place someone in any session, even if it is full or meant for a different phase.</span></div>
+<div class="field full"><label for="b-dietary">Dietary requirements or allergies</label><textarea id="b-dietary" name="dietary" maxlength="600" rows="2"></textarea></div>
+<div class="field full"><label for="b-access">Accessibility requirements</label><textarea id="b-access" name="accessibility" maxlength="600" rows="2"></textarea></div>
+<div class="field full"><label for="b-notes">Notes from the person booking</label><textarea id="b-notes" name="notes" maxlength="1000" rows="2"></textarea></div>
+<div class="field full"><label for="b-admin-notes">Admin notes <span class="optional">(only visible to administrators)</span></label><textarea id="b-admin-notes" name="adminNotes" maxlength="1000" rows="2"></textarea></div>
+<div class="field full"><p class="muted">The email address cannot be changed. If it is wrong, cancel this booking and ask the person to book again.</p><button type="submit">Save changes</button></div>
+</form></div></div>
+
+<script src="/assets/admin.js" type="module"></script></body></html>

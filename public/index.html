@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Learning Without Limits Learning Hub</title>
+<meta name="description" content="The Learning Without Limits Learning Hub: professional learning, conferences and Trust events.">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<header class="site-header"><div class="container nav">
+<a class="brand brand-lockup" href="/"><img src="/assets/lwlat-logo.png" alt="Learning Without Limits Academy Trust"><span>Learning Hub</span></a>
+<nav class="nav-links"><a href="#professional-learning">Professional Learning</a><a href="#eduhub">Events</a><a class="button" href="/admin/">Admin</a></nav>
+</div></header>
+<main>
+<section class="hero"><div class="container">
+<div class="eyebrow">Learning Without Limits Academy Trust</div>
+<h1>Learning Hub</h1>
+<p>One place to discover, book and manage professional learning, conferences and events from across Learning Without Limits.</p>
+<div class="hero-actions"><a class="button dark" href="#professional-learning">Explore professional learning</a><a class="button secondary" href="#eduhub">View Trust events</a></div>
+</div></section>
+
+<section class="section"><div class="container feature-grid">
+<article class="feature" id="eduhub">
+<div class="feature-media"><img src="/assets/eduhub-logo.png" alt="EduHub 2027"></div>
+<div class="feature-body"><span class="tag internal">Trust event · LwLAT staff only</span><h3>EduHub 2027: Better Together</h3>
+<p>Our Trust-wide event at Babington Academy in January 2027. Registration is restricted to Learning Without Limits Academy Trust staff.</p>
+<div id="eduhub-summary" class="meta"></div>
+<div class="hero-actions compact-actions"><button class="button" id="eduhub-book" type="button">Bookings Open Soon</button><a class="button secondary" href="/eduhub/">Event details</a></div>
+</div></article>
+<article class="feature">
+<div class="feature-media"><img src="/assets/lwlat-logo.png" alt=""></div>
+<div class="feature-body"><span class="tag">Learning Hub</span><h3>Professional Learning</h3>
+<p>Training opportunities for schools, trusts and education professionals. Courses shown here are created and published by the Trust.</p>
+<a class="button secondary" href="#professional-learning">View opportunities</a>
+</div></article>
+</div></section>
+
+<section class="section" id="professional-learning"><div class="container">
+<div class="section-head"><div><div class="eyebrow" style="color:#009189">Current opportunities</div><h2>Professional Learning</h2></div><p class="muted">Opportunities are shown in date order, with the nearest first.</p></div>
+<div class="course-search">
+<label for="course-search"><strong>Search professional learning</strong></label>
+<input id="course-search" type="search" placeholder="Search by title, audience, facilitator or venue">
+<div id="course-count" class="muted"></div>
+</div>
+<div id="course-grid" class="course-grid"><div class="empty">Loading opportunities</div></div>
+</div></section>
+</main>
+
+
+<div class="modal" id="eduhub-modal" aria-hidden="true"><div class="modal-card small-modal">
+<div class="modal-head"><div><div class="eyebrow" style="color:#009189">EduHub 2027</div><h2 id="eduhub-modal-title">Bookings Open Soon</h2></div><button class="close" type="button" data-eduhub-close>Close</button></div>
+<p id="eduhub-modal-text">Bookings for EduHub 2027 have not opened yet. Please check back soon for further information.</p>
+<div class="modal-actions"><button class="button" type="button" data-eduhub-close>Close</button></div>
+</div></div>
+
+<div class="modal" id="booking-modal" aria-hidden="true"><div class="modal-card">
+<div class="modal-head"><div><div class="eyebrow" style="color:#009189">Booking</div><h2 id="booking-title">Book your place</h2></div><button class="close" type="button" data-close>Close</button></div>
+<div id="booking-message"></div>
+<form id="booking-form" class="form-grid">
+<input type="hidden" name="itemId"><input type="hidden" name="itemType" value="course">
+<div class="hp-field" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+<div class="field"><label for="firstName">First name</label><input id="firstName" name="firstName" required autocomplete="given-name" maxlength="80"></div>
+<div class="field"><label for="lastName">Surname</label><input id="lastName" name="lastName" required autocomplete="family-name" maxlength="80"></div>
+<div class="field full"><label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" maxlength="160"></div>
+<div class="field"><label for="organisation">School or organisation</label><input id="organisation" name="organisation" required autocomplete="organization" maxlength="150"></div>
+<div class="field"><label for="jobTitle">Job title <span class="optional">(optional)</span></label><input id="jobTitle" name="jobTitle" autocomplete="organization-title" maxlength="120"></div>
+<div class="field"><label for="telephone">Telephone <span class="optional">(optional)</span></label><input id="telephone" name="telephone" type="tel" autocomplete="tel" maxlength="40"></div>
+<div class="field full" id="dietary-field"><label for="dietary">Dietary requirements or allergies <span class="optional">(optional)</span></label><textarea id="dietary" name="dietary" maxlength="600" rows="2"></textarea></div>
+<div class="field full"><label for="accessibility">Accessibility requirements <span class="optional">(optional)</span></label><textarea id="accessibility" name="accessibility" maxlength="600" rows="2"></textarea></div>
+<div class="field full"><label for="notes">Additional notes <span class="optional">(optional)</span></label><textarea id="notes" name="notes" maxlength="1000" rows="3"></textarea></div>
+<div class="field full"><button type="submit">Submit booking</button></div>
+</form>
+</div></div>
+
+<footer class="footer"><div class="container footer-row"><img src="/assets/lwlat-logo.png" alt="Learning Without Limits Academy Trust"><div>Winning hearts and inspiring minds to learn without limits.</div></div></footer>
+<script src="/assets/public.js" type="module"></script>
+</body></html>
