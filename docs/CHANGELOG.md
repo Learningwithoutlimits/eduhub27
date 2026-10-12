@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 5.1: EduHub sessions
+
+### New
+- **EduHub sessions** screen in admin. Each session has a title, start and finish time, room or area, speaker name and role, speaker photo, brief description, optional number of places, and who it is aimed at (primary, secondary and/or central Trust staff).
+- **Schools and teams** list in admin, each marked primary, secondary or central. Names can be pasted in several at a time.
+- On the booking form, staff choose their school from a list. They are then offered only the sessions aimed at their phase, grouped by time slot, and choose one in each slot. Full sessions are shown as full.
+- The server checks every session choice, so nobody can book a session outside their phase or over its limit by tampering with the form.
+- A public programme of all sessions, with speaker photos, appears on the EduHub page.
+- Session numbers in admin, with a printable register (CSV) for each session.
+- Administrators can change a person's school or sessions, including placing them in a full session or one outside their phase.
+- Photos are shrunk in the browser before upload, so pages stay quick.
+
 ## Version 5.0: EduHub staff booking
 
 ### Fixed

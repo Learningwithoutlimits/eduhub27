@@ -1,4 +1,4 @@
-import { json, readJSON, normaliseEduhub, eduhubEffectiveStatus, courseBookingClosedReason, placesTaken, EDUHUB_ID } from "./_utils.mjs";
+import { json, readJSON, normaliseEduhub, eduhubEffectiveStatus, courseBookingClosedReason, placesTaken, sessionPlacesTaken, EDUHUB_ID } from "./_utils.mjs";
 
 // Only the fields the public site needs. Booking records never leave the server.
 const COURSE_FIELDS=["id","title","summary","description","audience","facilitator","venue","cost","capacity","bookingDeadline","cateringType","cateringDetails","askDietary","sessions","date","time","category","status","bookingOpen"];
@@ -13,5 +13,6 @@ export default async () => {
    return {...out,bookable:!closed,closedReason:closed,placesLeft:placesLeft(c.id,c.capacity)};
  });
  const {updatedAt,...publicEduhub}=eduhub;
+ publicEduhub.sessions=eduhub.sessions.map(x=>({...x,placesLeft:x.capacity>0?Math.max(0,x.capacity-sessionPlacesTaken(bookings,x.id)):null}));
  return json({courses:published,eduhub:{...publicEduhub,effectiveStatus:eduhubEffectiveStatus(eduhub),placesLeft:placesLeft(EDUHUB_ID,eduhub.capacity)}});
 };

@@ -11,7 +11,7 @@
 
 <div id="admin-view" class="admin-wrap hidden">
 <aside class="sidebar"><img src="/assets/lwlat-logo.png" alt=""><div class="side-nav">
-<button class="active" data-view="overview">Overview</button><button data-view="courses">Professional Learning</button><button data-view="eduhub">EduHub 2027</button><button data-view="bookings">Bookings</button><button id="logout">Sign out</button>
+<button class="active" data-view="overview">Overview</button><button data-view="courses">Professional Learning</button><button data-view="eduhub">EduHub 2027</button><button data-view="programme">EduHub sessions</button><button data-view="bookings">Bookings</button><button id="logout">Sign out</button>
 </div></aside>
 <main class="admin-main">
 <div class="admin-top"><div><div class="eyebrow teal">Learning Hub administration</div><h1 id="view-title">Overview</h1></div><a class="button secondary" href="/" target="_blank" rel="noopener">View live public site</a></div>
@@ -85,6 +85,45 @@
 </div>
 </section>
 
+<section id="programme-view" class="admin-section hidden">
+<form id="programme-form" class="form-grid" novalidate>
+<div class="panel field full">
+  <h2>Schools and teams</h2>
+  <p class="muted">Staff choose their school or team when they book. Its phase decides which sessions they are offered. If this list is empty, staff type their school instead and see every session.</p>
+  <div id="school-builder" class="school-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-school">Add school or team</button></div>
+  <details class="bulk-add">
+    <summary>Add several at once</summary>
+    <div class="form-grid">
+      <div class="field full"><label for="bulk-schools">One name per line</label><textarea id="bulk-schools" rows="5" placeholder="e.g. Example Primary School"></textarea></div>
+      <div class="field"><label for="bulk-phase">Phase for all of these</label><select id="bulk-phase"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="central">Central Trust</option></select></div>
+      <div class="field"><label>&nbsp;</label><button type="button" class="button secondary" id="bulk-add-schools">Add to list</button></div>
+    </div>
+  </details>
+</div>
+
+<div class="panel field full">
+  <h2>Sessions</h2>
+  <p class="muted">Sessions that share the same start and finish time form one time slot. Staff choose one session in each slot from those aimed at their phase.</p>
+  <label class="check-label"><input type="checkbox" name="requireSessionChoice"> Staff must choose a session in every time slot</label>
+  <div id="session-list-builder" class="food-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-programme-session">Add session</button></div>
+</div>
+
+<div class="panel field full admin-form-actions sticky-actions">
+  <button type="submit">Save schools and sessions</button>
+  <button type="button" class="button secondary" id="preview-programme">Preview the staff booking page</button>
+  <span class="muted" id="programme-dirty"></span>
+</div>
+</form>
+
+<div class="panel">
+  <h2>Session numbers</h2>
+  <p class="muted">Confirmed EduHub places only. Download a register to print for each room.</p>
+  <div id="session-summary"></div>
+</div>
+</section>
+
 <section id="bookings-view" class="admin-section hidden"><div class="panel">
 <div class="section-head"><div><h2>Bookings</h2><p class="muted">Search, filter, manage and export bookings.</p></div><a class="button" id="export-link" href="/api/export-bookings">Export CSV</a></div>
 <div class="filter-row">
@@ -118,10 +157,12 @@
 <form id="booking-edit-form" class="form-grid"><input type="hidden" name="id">
 <div class="field"><label for="b-first">First name</label><input id="b-first" name="firstName" maxlength="80"></div>
 <div class="field"><label for="b-last">Surname</label><input id="b-last" name="lastName" maxlength="80"></div>
-<div class="field"><label for="b-org">School or organisation</label><input id="b-org" name="organisation" maxlength="150"></div>
+<div class="field" id="b-org-field"><label for="b-org">School or organisation</label><input id="b-org" name="organisation" maxlength="150"></div>
+<div class="field hidden" id="b-school-field"><label for="b-school">School or team</label><select id="b-school" name="schoolId"></select></div>
 <div class="field"><label for="b-job">Job title</label><input id="b-job" name="jobTitle" maxlength="120"></div>
 <div class="field"><label for="b-tel">Telephone</label><input id="b-tel" name="telephone" maxlength="40"></div>
 <div class="field" id="b-food-field"><label for="b-food">Food choice</label><select id="b-food" name="foodChoiceId"></select></div>
+<div class="field full hidden" id="b-sessions-field"><label>Sessions</label><div id="b-sessions" class="form-grid"></div><span class="field-help">Administrators can place someone in any session, even if it is full or meant for a different phase.</span></div>
 <div class="field full"><label for="b-dietary">Dietary requirements or allergies</label><textarea id="b-dietary" name="dietary" maxlength="600" rows="2"></textarea></div>
 <div class="field full"><label for="b-access">Accessibility requirements</label><textarea id="b-access" name="accessibility" maxlength="600" rows="2"></textarea></div>
 <div class="field full"><label for="b-notes">Notes from the person booking</label><textarea id="b-notes" name="notes" maxlength="1000" rows="2"></textarea></div>

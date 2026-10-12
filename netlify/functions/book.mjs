@@ -1,6 +1,7 @@
 import { allergenSummary } from "../../public/assets/allergens.js";
 import { json, readJSON, updateJSON, clean, isEmail, STAFF_DOMAIN, normaliseEduhub, eduhubEffectiveStatus,
-  courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID } from "./_utils.mjs";
+  courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID,
+  slotKey, slotLabel, sessionPlacesTaken, PHASE_NAMES } from "./_utils.mjs";
 
 const NO_FOOD = "no-food";
 
@@ -25,12 +26,21 @@ export default async request => {
    accessibility: clean(raw.accessibility,600),
    notes: clean(raw.notes,1000)
  };
+ let eduhub=null;
+ if(b.itemType==="eduhub"){
+   eduhub=normaliseEduhub(await readJSON("eduhub",null));
+   // With a school list, the school decides which sessions someone can book.
+   if(eduhub.schools.length){
+     const school=eduhub.schools.find(x=>x.id===clean(raw.schoolId,60));
+     if(!school) return json({error:"Please choose your school or team from the list."},400);
+     Object.assign(b,{schoolId:school.id,organisation:school.name,phase:school.phase});
+   }
+ }
  if(!b.firstName||!b.lastName||!b.email||!b.organisation) return json({error:"Please complete all required fields."},400);
  if(!isEmail(b.email)) return json({error:"Please enter a valid email address."},400);
 
  let item, extra={};
  if(b.itemType==="eduhub"){
-   const eduhub=normaliseEduhub(await readJSON("eduhub",null));
    const status=eduhubEffectiveStatus(eduhub);
    if(status==="coming-soon") return json({error:"EduHub bookings have not opened yet."},403);
    if(status!=="open") return json({error:"EduHub bookings are now closed."},403);
@@ -50,6 +60,27 @@ export default async request => {
        extra={foodChoiceId:choice.id,foodChoice:choice.name,foodAllergens:allergenSummary(choice)};
      }
    }
+   // Sessions: one per time slot, only those aimed at the person's phase.
+   const wanted=[...new Set((Array.isArray(raw.sessionIds)?raw.sessionIds:[]).map(x=>clean(x,60)))];
+   const eligible=eduhub.sessions.filter(x=>!b.phase||x.audiences.includes(b.phase));
+   const chosen=[];
+   for(const id of wanted){
+     const session=eligible.find(x=>x.id===id);
+     if(!session) return json({error:"One of the sessions you chose is not available to you. Please check your choices."},400);
+     if(chosen.some(x=>slotKey(x)===slotKey(session))) return json({error:`Please choose only one session for ${slotLabel(session)}.`},400);
+     chosen.push(session);
+   }
+   if(eduhub.requireSessionChoice){
+     const slots=[...new Set(eligible.map(slotKey))];
+     const missing=slots.filter(k=>!chosen.some(x=>slotKey(x)===k));
+     if(missing.length){
+       const first=eligible.find(x=>slotKey(x)===missing[0]);
+       return json({error:`Please choose a session for ${slotLabel(first)}.`},400);
+     }
+   }
+   extra.sessionIds=chosen.map(x=>x.id);
+   extra.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room}));
+   if(b.phase) extra.phaseName=PHASE_NAMES[b.phase];
  } else {
    const courses=await readJSON("courses",[]);
    item=courses.find(c=>c.id===b.itemId&&c.status==="published");
@@ -67,12 +98,18 @@ export default async request => {
      }
      const capacity=Number(item.capacity)||0;
      const waitingList=capacity>0 && placesTaken(bookings,b.itemId)>=capacity;
+     // A full session is refused outright, so the person can pick another.
+     if(!waitingList && b.itemType==="eduhub"){
+       const full=eduhub.sessions.find(x=>x.capacity>0 && extra.sessionIds.includes(x.id) && sessionPlacesTaken(bookings,x.id)>=x.capacity);
+       if(full) return {result:{fullSession:full.title}};
+     }
      const now=new Date().toISOString();
      const record={...b,...extra,id:crypto.randomUUID(),reference:makeReference(b.itemType==="eduhub"?"EH27":"PL"),
        itemTitle:item.title,waitingList,cancelled:false,createdAt:now,updatedAt:now};
      bookings.unshift(record);
      return {value:bookings,result:{waitingList,reference:record.reference}};
    });
+   if(result.fullSession) return json({error:`Sorry, "${result.fullSession}" has just become full. Please choose a different session.`,fullSession:true},409);
    if(result.duplicate) return json({error:"There is already a booking for this email address. If you need to change it, please contact the organiser."},409);
    return json({ok:true,...result});
  }catch(err){

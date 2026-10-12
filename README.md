@@ -14,7 +14,7 @@ The Trust's site for Professional Learning bookings and the EduHub 2027 staff co
 | `/` | Learning Hub homepage, Professional Learning list and EduHub card |
 | `/eduhub/` | EduHub 2027 page. Shows the booking form only when an administrator sets bookings to Open |
 | `/eduhub/?preview=1` | The finished EduHub booking form for checking. It never sends anything |
-| `/admin/` | Password-protected administration |
+| `/admin/` | Password-protected administration, including EduHub sessions and schools |
 | `/preview.html?type=course&id=…` | Admin-only preview of a Professional Learning opportunity |
 
 ## Running it on your own computer

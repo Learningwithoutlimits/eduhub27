@@ -1,6 +1,6 @@
 // Administrator actions on a single booking.
 import { allergenSummary } from "../../public/assets/allergens.js";
-import { json, readJSON, updateJSON, requireAdmin, clean, normaliseEduhub, EDUHUB_ID } from "./_utils.mjs";
+import { json, readJSON, updateJSON, requireAdmin, clean, normaliseEduhub, EDUHUB_ID, slotKey, slotLabel, PHASE_NAMES } from "./_utils.mjs";
 
 export default async request => {
  if(!requireAdmin(request)) return json({error:"Not signed in"},401);
@@ -40,6 +40,24 @@ export default async request => {
            if(!c) return {result:{error:"That food choice no longer exists.",status:400}};
            Object.assign(b,{foodChoiceId:c.id,foodChoice:c.name,foodAllergens:allergenSummary(c)});
          }
+       }
+       if(b.itemId===EDUHUB_ID && "schoolId" in f && eduhub.schools.length){
+         const school=eduhub.schools.find(x=>x.id===f.schoolId);
+         if(!school) return {result:{error:"Please choose a school from the list.",status:400}};
+         Object.assign(b,{schoolId:school.id,organisation:school.name,phase:school.phase,phaseName:PHASE_NAMES[school.phase]});
+       }
+       // Administrators may place someone in any session, including one outside
+       // their phase or over capacity, but still only one per time slot.
+       if(b.itemId===EDUHUB_ID && Array.isArray(f.sessionIds)){
+         const chosen=[];
+         for(const sid of new Set(f.sessionIds.map(x=>clean(x,60)).filter(Boolean))){
+           const s=eduhub.sessions.find(x=>x.id===sid);
+           if(!s) return {result:{error:"One of those sessions no longer exists.",status:400}};
+           if(chosen.some(x=>slotKey(x)===slotKey(s))) return {result:{error:`Only one session can be chosen for ${slotLabel(s)}.`,status:400}};
+           chosen.push(s);
+         }
+         b.sessionIds=chosen.map(x=>x.id);
+         b.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room}));
        }
        break;
      }

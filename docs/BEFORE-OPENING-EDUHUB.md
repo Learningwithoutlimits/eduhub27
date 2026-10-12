@@ -9,6 +9,7 @@ The booking form collects the following:
 | Information | Required? | Who sees it |
 | --- | --- | --- |
 | First name, surname, @lwlat.org.uk email, school or team | Yes | Event administrators |
+| Session choices | Yes, when sessions exist | Administrators, and session leads through the register |
 | Job title, telephone | Optional | Event administrators |
 | Food choice | Yes, when food choices exist | Administrators and caterer |
 | Dietary requirements or allergies | Optional (admin can switch the question off) | Administrators and caterer |
@@ -55,7 +56,14 @@ Points in the matrix to raise with the caterer:
 
 When the menu is confirmed, ask for an updated PDF if anything changes, and replace `public/documents/EduHub-2027-Allergen-Matrix.pdf` with it.
 
-## 3. Event details
+## 3. Schools and sessions
+
+- [ ] Every school and central team is in the list with the right phase (an all-through school may need two entries, one for each phase)
+- [ ] Every session has a time, room, description and the right phases ticked
+- [ ] Speakers have agreed to their photo being shown on the public EduHub page
+- [ ] Places set for rooms with a limited capacity
+
+## 4. Event details
 
 - [ ] Start and finish times entered
 - [ ] Capacity entered (0 means no limit)

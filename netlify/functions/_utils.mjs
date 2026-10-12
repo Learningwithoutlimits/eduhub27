@@ -67,9 +67,47 @@ export const todayUK = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/L
 
 // ---------- EduHub settings ----------
 export const BOOKING_STATUSES = ["coming-soon","open","closed"];
+export const PHASES = ["primary","secondary","central"];
+export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Central Trust"};
+const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:""}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",schools:[],sessions:[],requireSessionChoice:true}
 };
+// Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
+// only its own fields, so the two screens cannot overwrite each other.
+export const PROGRAMME_FIELDS = ["schools","sessions","requireSessionChoice"];
+
+function uniqueIds(items){
+  const seen=new Set();
+  return items.map(c=>{ let id=c.id, n=2; while(seen.has(id)) id=`${c.id}-${n++}`; seen.add(id); return {...c,id}; });
+}
+export function normaliseSchool(s, i=0){
+  if(!s || typeof s!=="object") return null;
+  const name=clean(s.name,120); if(!name) return null;
+  return { id: clean(s.id,60) || `${slug(name)}-${i+1}`, name, phase: PHASES.includes(s.phase) ? s.phase : "primary" };
+}
+export function normaliseSession(s, i=0){
+  if(!s || typeof s!=="object") return null;
+  const title=clean(s.title,150); if(!title) return null;
+  const audiences=Array.isArray(s.audiences)?PHASES.filter(p=>s.audiences.includes(p)):[];
+  return {
+    id: clean(s.id,60) || `${slug(title)}-${i+1}`,
+    title,
+    startTime: isTime(s.startTime) ? s.startTime : "",
+    endTime: isTime(s.endTime) ? s.endTime : "",
+    room: clean(s.room,100),
+    speakerName: clean(s.speakerName,120),
+    speakerRole: clean(s.speakerRole,150),
+    photoId: /^[a-f0-9-]{36}$/.test(String(s.photoId||"")) ? s.photoId : "",
+    description: clean(s.description,1200),
+    audiences: audiences.length ? audiences : [...PHASES],
+    capacity: Math.max(0, Math.floor(Number(s.capacity) || 0))
+  };
+}
+export const slotKey = s => `${s.startTime||""}-${s.endTime||""}`;
+export const slotLabel = s => s.startTime ? `${s.startTime}${s.endTime?` to ${s.endTime}`:""}` : "Time to be confirmed";
+export const sessionPlacesTaken = (bookings, sessionId) =>
+  bookings.filter(b => b.itemId === EDUHUB_ID && confirmedBooking(b) && Array.isArray(b.sessionIds) && b.sessionIds.includes(sessionId)).length;
 
 export function normaliseFoodChoice(choice, index=0){
   if(typeof choice === "string") choice = { name: choice };
@@ -97,10 +135,7 @@ export function normaliseFoodChoice(choice, index=0){
 // bookings only open when an administrator chooses "Open" in the dashboard.
 export function normaliseEduhub(raw){
   const e = { ...defaults.eduhub, ...(raw && typeof raw === "object" ? raw : {}) };
-  const seen = new Set();
-  const foodChoices = (Array.isArray(e.foodChoices) ? e.foodChoices : [])
-    .map(normaliseFoodChoice).filter(Boolean)
-    .map(c => { let id=c.id, n=2; while(seen.has(id)) id=`${c.id}-${n++}`; seen.add(id); return {...c,id}; });
+  const foodChoices = uniqueIds((Array.isArray(e.foodChoices) ? e.foodChoices : []).map(normaliseFoodChoice).filter(Boolean));
   return {
     title: clean(e.title, 150) || defaults.eduhub.title,
     date: isDate(e.date) ? e.date : defaults.eduhub.date,
@@ -116,6 +151,10 @@ export function normaliseEduhub(raw){
     allowNoFood: Boolean(e.allowNoFood),
     privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
     contactEmail: isEmail(e.contactEmail) ? clean(e.contactEmail, 120).toLowerCase() : "",
+    schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
+    sessions: uniqueIds((Array.isArray(e.sessions)?e.sessions:[]).map(normaliseSession).filter(Boolean))
+      .sort((a,b)=>(a.startTime||"99").localeCompare(b.startTime||"99")),
+    requireSessionChoice: e.requireSessionChoice !== false,
     updatedAt: e.updatedAt || ""
   };
 }

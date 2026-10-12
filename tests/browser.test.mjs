@@ -24,6 +24,15 @@ page.on("pageerror", e => errors.push(e.message));
 page.on("console", m => m.type() === "error" && !m.text().includes("fonts.g") && errors.push(m.text()));
 process.on("exit", () => errors.length && console.log("  browser console:", [...new Set(errors)].join(" | ")));
 page.on("dialog", d => d.accept());
+// Picks the school and the first open session in every time slot.
+async function fillStaff(p, first, last, email, school){
+  await p.fill("#firstName", first); await p.fill("#lastName", last); await p.fill("#email", email);
+  await p.selectOption("#schoolId", { label: school });
+  await p.waitForSelector(".session-slot");
+  for (const slot of await p.locator(".session-slot").all()) await slot.locator("input:not([disabled])").first().check();
+}
+const PNG_FILE = "/tmp/lwlat-test-speaker.png";
+fs.writeFileSync(PNG_FILE, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
 const snap = async (name, p = page) => shots && p.screenshot({ path: `${shots}/${name}.png`, fullPage: true });
 
 let passed = 0, failed = 0;
@@ -96,6 +105,42 @@ await step("admin preview shows the menu with allergens and never submits", asyn
   await preview.close();
 });
 
+await step("admin adds schools and sessions with a speaker photo", async () => {
+  await page.click("[data-view=programme]");
+  await page.click(".bulk-add summary");
+  await page.fill("#bulk-schools", "Example Primary School\nAnother Primary School");
+  await page.click("#bulk-add-schools");
+  await page.click("#add-school");
+  await page.locator(".school-row").last().locator("[data-school-name]").fill("Example Secondary Academy");
+  await page.locator(".school-row").last().locator("[data-school-phase]").selectOption("secondary");
+  await page.click("#add-school");
+  await page.locator(".school-row").last().locator("[data-school-name]").fill("Central Trust Team");
+  await page.locator(".school-row").last().locator("[data-school-phase]").selectOption("central");
+  const addSession = async (title, start, end, room, phases, extra = {}) => {
+    await page.click("#add-programme-session");
+    const row = page.locator(".programme-row").last();
+    await row.locator("[data-p=title]").fill(title);
+    await row.locator("[data-p=startTime]").fill(start); await row.locator("[data-p=endTime]").fill(end);
+    await row.locator("[data-p=room]").fill(room);
+    for (const ph of ["primary", "secondary", "central"]) await row.locator(`[data-aud=${ph}]`)[phases.includes(ph) ? "check" : "uncheck"]();
+    if (extra.capacity) await row.locator("[data-p=capacity]").fill(String(extra.capacity));
+    if (extra.speaker) await row.locator("[data-p=speakerName]").fill(extra.speaker);
+    if (extra.description) await row.locator("[data-p=description]").fill(extra.description);
+    if (extra.photo) { await row.locator("[data-photo-file]").setInputFiles(PNG_FILE); await row.locator("[data-photo-box] img").waitFor(); }
+  };
+  await addSession("Keynote: Better Together", "09:15", "10:00", "Main Hall", ["primary", "secondary", "central"], { speaker: "Guest Speaker", description: "Opening keynote for all colleagues.", photo: true });
+  await addSession("Early reading", "10:15", "11:15", "Room P1", ["primary"], { capacity: 1 });
+  await addSession("Maths in the early years", "10:15", "11:15", "Room P2", ["primary"]);
+  await addSession("Adaptive teaching at KS4", "10:15", "11:15", "Room S12", ["secondary"]);
+  await addSession("Finance and HR update", "10:15", "11:15", "Library", ["central"]);
+  await page.click("#programme-form button[type=submit]");
+  await page.waitForFunction(() => document.querySelector("#admin-message").textContent.includes("Schools and sessions saved"));
+  assert.equal(await page.locator(".school-row").count(), 4);
+  assert.equal(await page.locator(".programme-row").count(), 5);
+  await snap("02b-admin-sessions");
+  await page.click("[data-view=eduhub]");
+});
+
 await step("admin opens bookings", async () => {
   await page.check("input[name=bookingStatus][value=open]");
   await page.click("#eduhub-form button[type=submit]");
@@ -123,8 +168,11 @@ await step("form explains every problem before sending", async () => {
 });
 
 await step("member of staff books a place with a food choice", async () => {
-  await staffPage.fill("#firstName", "Alex"); await staffPage.fill("#lastName", "Taylor");
-  await staffPage.fill("#email", "Alex.Taylor@lwlat.org.uk"); await staffPage.fill("#organisation", "Test Academy");
+  await fillStaff(staffPage, "Alex", "Taylor", "Alex.Taylor@lwlat.org.uk", "Example Primary School");
+  // Primary staff are offered primary sessions only.
+  const offered = await staffPage.textContent("#session-options");
+  assert.match(offered, /Early reading/); assert.doesNotMatch(offered, /KS4|Finance/);
+  await snap("05a-eduhub-sessions", staffPage);
   await staffPage.locator(".food-option", { hasText: "Tuna Mayo Sandwich" }).locator("input").check();
   await staffPage.fill("#dietary", "Mild lactose intolerance");
   await staffPage.check("#consent");
@@ -133,6 +181,7 @@ await step("member of staff books a place with a food choice", async () => {
   const text = await staffPage.textContent(".confirmation");
   assert.match(text, /EH27-[A-Z2-9]{6}/);
   assert.match(text, /Tuna Mayo Sandwich/);
+  assert.match(text, /Early reading, Room P1/);
   assert.ok(await staffPage.isVisible("a[download='EduHub-2027.ics']"));
   await snap("05-eduhub-confirmation", staffPage);
 });
@@ -140,21 +189,20 @@ await step("member of staff books a place with a food choice", async () => {
 await step("booking the same email again is refused", async () => {
   await staffPage.goto(BASE + "/eduhub/");
   await staffPage.waitForSelector(".food-option");
-  await staffPage.fill("#firstName", "Alex"); await staffPage.fill("#lastName", "Taylor");
-  await staffPage.fill("#email", "alex.taylor@lwlat.org.uk"); await staffPage.fill("#organisation", "Test Academy");
-  await staffPage.check(".food-option >> nth=0"); await staffPage.check("#consent");
+  await fillStaff(staffPage, "Alex", "Taylor", "alex.taylor@lwlat.org.uk", "Example Primary School");
+  await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
   await staffPage.click("#submit-button");
   await staffPage.waitForSelector("#form-message .notice.error");
   assert.match(await staffPage.textContent("#form-message"), /already a booking/);
 });
 
 await step("second and third bookings fill the event, then the waiting list", async () => {
-  for (const [n, first] of [[2, "Sam"], [3, "Jo"]]) {
+  for (const [n, first, school] of [[2, "Sam", "Another Primary School"], [3, "Jo", "Central Trust Team"]]) {
     await staffPage.goto(BASE + "/eduhub/");
     await staffPage.waitForSelector(".food-option");
-    await staffPage.fill("#firstName", first); await staffPage.fill("#lastName", "Smith");
-    await staffPage.fill("#email", `${first.toLowerCase()}.smith@lwlat.org.uk`); await staffPage.fill("#organisation", "Another Academy");
-    await staffPage.check(`.food-option >> nth=${n}`); await staffPage.check("#consent");
+    await fillStaff(staffPage, first, "Smith", `${first.toLowerCase()}.smith@lwlat.org.uk`, school);
+    if (first === "Sam") assert.ok(await staffPage.locator(".session-option.is-full", { hasText: "Early reading" }).count() === 1, "Early reading should show as full");
+    await staffPage.locator("#food-options .food-option").nth(n).locator("input").check(); await staffPage.check("#consent");
     await staffPage.click("#submit-button");
     await staffPage.waitForSelector(".confirmation");
   }

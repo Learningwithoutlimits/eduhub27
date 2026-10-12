@@ -13,6 +13,23 @@ const preview = new URLSearchParams(location.search).get('preview') === '1';
 const form = $('#eduhub-form');
 let eduhub = {};
 
+const PHASE_NAMES = { primary:'Primary', secondary:'Secondary', central:'Central Trust' };
+const slotLabel = x => x.startTime ? `${x.startTime}${x.endTime ? ` to ${x.endTime}` : ''}` : 'Time to be confirmed';
+function slotsOf(sessions){
+  const slots = [];
+  for(const x of sessions){
+    const key = `${x.startTime}-${x.endTime}`;
+    let slot = slots.find(s => s.key === key);
+    if(!slot) slots.push(slot = { key, label: slotLabel(x), items: [] });
+    slot.items.push(x);
+  }
+  return slots;
+}
+const photoHtml = x => x.photoId
+  ? `<img class="speaker-img" src="/api/photo?id=${esc(x.photoId)}" alt="${esc(x.speakerName ? `Photo of ${x.speakerName}` : '')}" loading="lazy">`
+  : '';
+const sessionMeta = x => [x.speakerName ? `<span><strong>${esc(x.speakerName)}</strong>${x.speakerRole ? `, ${esc(x.speakerRole)}` : ''}</span>` : '', x.room ? `<span>Room: ${esc(x.room)}</span>` : ''].filter(Boolean).join('');
+
 const STATUS_COPY = {
   'coming-soon': { cta:'Bookings Open Soon', heading:'Bookings open soon', text:'Bookings for EduHub 2027 have not opened yet. Please check back soon.' },
   'open': { cta:'Book your place', heading:'Bookings are open', text:'Book your place using the form below. It only takes a few minutes.' },
@@ -59,6 +76,70 @@ function renderFood(){
   $('#food-options').innerHTML = html;
 }
 
+function currentPhase(){
+  const schools = eduhub.schools || [];
+  if(!schools.length) return '';
+  return schools.find(x => x.id === form.schoolId.value)?.phase || null;
+}
+
+function renderSessionChoices(){
+  const sessions = eduhub.sessions || [];
+  const field = $('#sessions-field');
+  field.classList.toggle('hidden', !sessions.length);
+  if(!sessions.length) return;
+  const picked = new Set([...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value));
+  const phase = currentPhase();
+  if(phase === null){
+    $('#sessions-help').textContent = '';
+    $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see the sessions available to you.</p>';
+    return;
+  }
+  const eligible = sessions.filter(x => !phase || x.audiences.includes(phase));
+  $('#sessions-help').textContent = eduhub.requireSessionChoice
+    ? `Choose one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`
+    : `You can choose up to one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`;
+  if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no sessions to choose from for your school yet.</p>'; return; }
+  $('#session-options').innerHTML = slotsOf(eligible).map((slot, i) => `
+    <div class="session-slot" role="radiogroup" aria-labelledby="slot-${i}">
+      <p class="food-group" id="slot-${i}">${esc(slot.label)}</p>
+      <div class="food-options">
+      ${slot.items.map(x => {
+        const full = x.placesLeft === 0;
+        return `<label class="food-option session-option ${full ? 'is-full' : ''}">
+          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
+          ${photoHtml(x)}
+          <span class="food-option-body">
+            <span class="food-name">${esc(x.title)}</span>
+            <span class="session-meta">${sessionMeta(x)}</span>
+            ${x.description ? `<span class="food-description">${esc(x.description)}</span>` : ''}
+            ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
+          </span>
+        </label>`;}).join('')}
+      ${eduhub.requireSessionChoice ? '' : `<label class="food-option"><input type="radio" name="session-slot-${i}" value="" ${slot.items.some(x => picked.has(x.id)) ? '' : 'checked'}><span class="food-option-body"><span class="food-name">No session in this slot</span></span></label>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderProgramme(){
+  const sessions = eduhub.sessions || [];
+  $('#programme').classList.toggle('hidden', !sessions.length);
+  $('#programme-list').innerHTML = slotsOf(sessions).map(slot => `
+    <div class="programme-slot">
+      <h3>${esc(slot.label)}</h3>
+      <div class="programme-cards">
+        ${slot.items.map(x => `<article class="programme-card">
+          ${photoHtml(x)}
+          <div>
+            <h4>${esc(x.title)}</h4>
+            <p class="session-meta">${sessionMeta(x)}</p>
+            ${x.description ? `<p>${esc(x.description)}</p>` : ''}
+            <div class="food-tags">${x.audiences.map(a => `<span class="tag">${esc(PHASE_NAMES[a])}</span>`).join('')}</div>
+          </div>
+        </article>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
 function render(){
   const e = eduhub;
   const status = e.effectiveStatus || 'coming-soon';
@@ -72,7 +153,7 @@ function render(){
   $('#side-time').textContent = e.time || 'Time to be confirmed';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';
   if(e.placesLeft !== null && e.placesLeft !== undefined && status === 'open'){
-    $('#side-places').textContent = e.placesLeft > 0 ? `${e.placesLeft} places remaining` : 'Fully booked. New bookings join the waiting list.';
+    $('#side-places').textContent = e.placesLeft > 0 ? `${e.placesLeft} ${e.placesLeft === 1 ? 'place' : 'places'} remaining` : 'Fully booked. New bookings join the waiting list.';
     $('#side-places').classList.remove('hidden');
   }
 
@@ -88,6 +169,17 @@ function render(){
     $('#status-contact').classList.remove('hidden');
   }
 
+  const schools = e.schools || [];
+  if(schools.length){
+    $('#organisation-field').classList.add('hidden');
+    $('#school-field').classList.remove('hidden');
+    $('#schoolId').innerHTML = '<option value="">Please choose</option>' + Object.entries(PHASE_NAMES).map(([p, n]) => {
+      const list = schools.filter(x => x.phase === p);
+      return list.length ? `<optgroup label="${esc(n)}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>` : '';
+    }).join('');
+  }
+  renderProgramme();
+  renderSessionChoices();
   renderFood();
   $('#dietary-field').classList.toggle('hidden', e.askDietary === false);
   $('#accessibility-field').classList.toggle('hidden', e.askAccessibility === false);
@@ -115,8 +207,17 @@ function validate(){
   form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
   const problems = [];
   const flag = (el, text) => { el.setAttribute('aria-invalid','true'); problems.push({el, text}); };
-  for(const [name, label] of [['firstName','your first name'],['lastName','your surname'],['organisation','your school or team']]){
+  for(const [name, label] of [['firstName','your first name'],['lastName','your surname']]){
     if(!form[name].value.trim()) flag(form[name], `Please enter ${label}.`);
+  }
+  const usesSchools = (eduhub.schools || []).length > 0;
+  if(usesSchools && !form.schoolId.value) flag(form.schoolId, 'Please choose your school or team.');
+  if(!usesSchools && !form.organisation.value.trim()) flag(form.organisation, 'Please enter your school or team.');
+  if(eduhub.requireSessionChoice && currentPhase() !== null){
+    for(const group of form.querySelectorAll('.session-slot')){
+      const open = group.querySelector('input:not([disabled])');
+      if(open && !group.querySelector('input:checked')) flag(open, `Please choose a session for ${group.querySelector('.food-group').textContent}.`);
+    }
   }
   const email = form.email.value.trim().toLowerCase();
   if(!email) flag(form.email, 'Please enter your Trust email address.');
@@ -164,6 +265,7 @@ function showConfirmation(data, body){
       <div><dt>Name</dt><dd>${esc(body.firstName)} ${esc(body.lastName)}</dd></div>
       <div><dt>Email</dt><dd>${esc(body.email)}</dd></div>
       <div><dt>Date</dt><dd>${fmtDate(eduhub.date)}${eduhub.time ? `, ${esc(eduhub.time)}` : ''}</dd></div>
+      ${body.sessionIds.length ? `<div><dt>Sessions</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
       ${food ? `<div><dt>Food choice</dt><dd>${esc(food)}</dd></div>` : ''}
     </dl>
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
@@ -187,14 +289,20 @@ form.addEventListener('submit', async ev => {
   const button = $('#submit-button');
   button.disabled = true;
   button.textContent = 'Sending your booking';
-  const body = Object.fromEntries(new FormData(form).entries());
+  const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => !k.startsWith('session-slot')));
+  body.sessionIds = [...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value).filter(Boolean);
+  if((eduhub.schools || []).length) body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
   body.itemType = 'eduhub';
   body.itemId = 'eduhub-2027';
   body.consent = form.consent.checked;
   try{
     const res = await fetch('/api/book', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
     const data = await res.json().catch(() => ({}));
-    if(!res.ok) throw new Error(data.error || 'Your booking could not be sent. Please try again.');
+    if(!res.ok){
+      // A session filled up while the form was open: refresh the numbers.
+      if(data.fullSession) await reloadData(false);
+      throw new Error(data.error || 'Your booking could not be sent. Please try again.');
+    }
     showConfirmation(data, body);
   }catch(err){
     showMessage(`<p>${esc(err.message)}</p>`);
@@ -204,14 +312,18 @@ form.addEventListener('submit', async ev => {
   }
 });
 
-(async () => {
+form.schoolId.addEventListener('change', renderSessionChoices);
+
+async function reloadData(full = true){
   try{
     const res = await fetch('/api/public-data', {cache:'no-store'});
     if(!res.ok) throw new Error();
     eduhub = (await res.json()).eduhub || {};
   }catch{
+    if(!full) return;
     eduhub = { effectiveStatus:'coming-soon' };
     $('#status-text').textContent = 'Event details are temporarily unavailable. Please try again shortly.';
   }
-  render();
-})();
+  if(full) render(); else renderSessionChoices();
+}
+reloadData();

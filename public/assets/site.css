@@ -151,3 +151,31 @@ table.compact{min-width:0}
 #eduhub-view .form-grid{gap:20px}
 @media(max-width:900px){.status-options,.filter-row,.stat-grid.three{grid-template-columns:1fr}.food-row-grid{grid-template-columns:1fr}}
 @media print{.site-header,.footer,.preview-banner,.eduhub-full-hero,.eduhub-booking-sidebar,.hero-actions,section.section:not(#booking){display:none!important}.eduhub-booking-layout{display:block}}
+
+/* ---------- v5.1: EduHub sessions ---------- */
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.small-button{padding:7px 12px;font-size:.84rem}
+.label-text{font-weight:800}
+.school-builder{display:grid;gap:10px;margin-bottom:12px}
+.school-row{display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid #d9e6e5;border-radius:14px;background:#f8fbfb}
+.school-row button{padding:10px 13px}
+.bulk-add{margin-top:16px;padding:12px 16px;border-radius:14px;background:#f3f8f8}
+.bulk-add summary{cursor:pointer;font-weight:800}
+.bulk-add .form-grid{margin-top:12px}
+.programme-grid{display:grid;grid-template-columns:150px 1fr;gap:18px}
+.photo-cell{display:grid;gap:8px;align-content:start;justify-items:start}
+.speaker-photo{width:140px;height:140px;border-radius:16px;background:#e7f2f1;display:grid;place-items:center;overflow:hidden;color:#617579;font-size:.85rem}
+.speaker-photo img{width:100%;height:100%;object-fit:cover}
+.session-slot{margin-bottom:14px}
+.session-option{align-items:center}
+.session-option .speaker-img{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:none}
+.session-option.is-full{opacity:.6;cursor:not-allowed}
+.session-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.9rem;color:#455a5d;margin:0}
+.programme-list{display:grid;gap:26px}
+.programme-slot h3{margin:0 0 12px;color:var(--teal)}
+.programme-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.programme-card{display:flex;gap:16px;align-items:flex-start;background:#fff;border-radius:20px;padding:18px;box-shadow:0 11px 32px rgba(28,63,65,.09)}
+.programme-card .speaker-img{width:88px;height:88px;border-radius:50%;object-fit:cover;flex:none}
+.programme-card h4{margin:0 0 4px;font-size:1.1rem}
+.programme-card p{margin:6px 0}
+@media(max-width:700px){.programme-grid,.school-row{grid-template-columns:1fr}.programme-cards{grid-template-columns:1fr}.session-option .speaker-img{width:48px;height:48px}}

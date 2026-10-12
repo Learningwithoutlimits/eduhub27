@@ -1,6 +1,6 @@
-# Deploying version 5.0
+# Deploying version 5.1
 
-Version 5 changes the folder layout. The website files now live in a `public` folder, so Netlify no longer publishes the server code or these guides. The included `netlify.toml` tells Netlify about the change, so you do not need to alter any build settings.
+Version 5 changed the folder layout. The website files now live in a `public` folder, so Netlify no longer publishes the server code or these guides. The included `netlify.toml` tells Netlify about the change, so you do not need to alter any build settings.
 
 ## Before you start
 

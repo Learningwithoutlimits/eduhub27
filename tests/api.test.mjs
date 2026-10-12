@@ -31,7 +31,7 @@ const MENU = [
   { name: "Quorn Sausage Casserole", group: "Hot meals", allergens: ["GL"], cerealTypes: "Wheat", allergensConfirmed: true },
   { name: "Tuna Mayo Sandwich", group: "Grab bags", allergens: ["GL", "EG", "FI"], cerealTypes: "Wheat" }
 ];
-const settings = (extra = {}) => ({ title: "EduHub 2027: Better Together", date: "2027-01-05", time: "08:30 to 15:30", venue: "Babington Academy", description: "Test", capacity: 0, bookingStatus: "open", foodChoices: MENU, askDietary: true, askAccessibility: true, ...extra });
+const settings = (extra = {}) => ({ title: "EduHub 2027: Better Together", date: "2027-01-05", time: "08:30 to 15:30", venue: "Babington Academy", description: "Test", capacity: 0, bookingStatus: "open", bookingDeadline: "", allowNoFood: false, foodChoices: MENU, askDietary: true, askAccessibility: true, ...extra });
 
 console.log("Public site and status lock");
 await test("EduHub defaults to coming soon", async () => {
@@ -235,6 +235,102 @@ await test("draft courses cannot be booked", async () => {
   const r = await call("course", { method: "POST", auth: true, body: { title: "Draft course", status: "draft", sessions: [{ date: "2099-01-01" }] } });
   const b = await call("book", { method: "POST", body: { itemType: "course", itemId: r.data.item.id, firstName: "A", lastName: "B", email: "d@example.com", organisation: "X" } });
   assert.equal(b.status, 404);
+});
+
+console.log("EduHub sessions and schools");
+const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+let photoId, prog;
+await test("admin uploads a speaker photo, anyone can view it, fake images are refused", async () => {
+  assert.equal((await call("photo", { method: "POST", body: { dataUrl: PNG } })).status, 401);
+  const r = await call("photo", { method: "POST", auth: true, body: { dataUrl: PNG } });
+  assert.equal(r.status, 200); photoId = r.data.id;
+  const img = await fetch(BASE + "/api/photo?id=" + photoId);
+  assert.equal(img.status, 200); assert.equal(img.headers.get("content-type"), "image/png");
+  const fake = "data:image/png;base64," + Buffer.from("<svg onload=alert(1)>").toString("base64");
+  assert.equal((await call("photo", { method: "POST", auth: true, body: { dataUrl: fake } })).status, 400);
+  assert.equal((await fetch(BASE + "/api/photo?id=../../eduhub")).status, 404);
+});
+await test("saving schools and sessions does not touch event details, and the reverse", async () => {
+  const before = (await call("admin-data", { auth: true })).data.eduhub;
+  const r = await call("eduhub", { method: "POST", auth: true, body: { section: "programme", title: "HACKED", bookingStatus: "closed", requireSessionChoice: true,
+    schools: [{ name: "Example Primary", phase: "primary" }, { name: "Example Academy", phase: "secondary" }, { name: "Trust Central Team", phase: "central" }],
+    sessions: [
+      { title: "Early reading", startTime: "10:00", endTime: "11:00", room: "S12", speakerName: "A Speaker", photoId, audiences: ["primary"], capacity: 1, description: "Phonics" },
+      { title: "Maths mastery", startTime: "10:00", endTime: "11:00", room: "S14", audiences: ["primary"] },
+      { title: "GCSE English", startTime: "10:00", endTime: "11:00", room: "Hall", audiences: ["secondary"] },
+      { title: "Keynote", startTime: "13:00", endTime: "14:00", room: "Main Hall", audiences: ["primary", "secondary", "central"] },
+      { title: "Finance update", startTime: "11:15", endTime: "12:00", audiences: ["central"] }
+    ] } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  prog = r.data.eduhub;
+  assert.equal(prog.title, before.title); assert.equal(prog.bookingStatus, before.bookingStatus);
+  assert.deepEqual(prog.foodChoices, before.foodChoices);
+  assert.deepEqual(prog.sessions.map(x => x.title), ["Early reading", "Maths mastery", "GCSE English", "Finance update", "Keynote"]);
+  const d = await call("eduhub", { method: "POST", auth: true, body: settings({ capacity: 0, foodChoices: menu, sessions: [], schools: [] }) });
+  assert.equal(d.data.eduhub.sessions.length, 5);
+  assert.equal(d.data.eduhub.schools.length, 3);
+});
+await test("session that finishes before it starts is refused", async () => {
+  const r = await call("eduhub", { method: "POST", auth: true, body: { section: "programme", sessions: [{ title: "Backwards", startTime: "11:00", endTime: "10:00" }] } });
+  assert.equal(r.status, 400);
+});
+const school = n => prog.schools.find(x => x.name === n).id;
+const sid = t => prog.sessions.find(x => x.title === t).id;
+const sBook = (n, extra) => call("book", { method: "POST", body: staff(n, { foodChoiceId: menu[0].id, organisation: "ignored", ...extra }) });
+await test("school must be chosen from the list", async () => {
+  assert.equal((await sBook(400, { sessionIds: [] })).status, 400);
+  assert.equal((await sBook(400, { schoolId: "made-up" })).status, 400);
+});
+await test("primary staff cannot book a secondary session", async () => {
+  const r = await sBook(401, { schoolId: school("Example Primary"), sessionIds: [sid("GCSE English"), sid("Keynote")] });
+  assert.equal(r.status, 400); assert.match(r.data.error, /not available to you/);
+});
+await test("only one session per time slot", async () => {
+  const r = await sBook(402, { schoolId: school("Example Primary"), sessionIds: [sid("Early reading"), sid("Maths mastery"), sid("Keynote")] });
+  assert.equal(r.status, 400); assert.match(r.data.error, /only one session/);
+});
+await test("a session must be chosen in every slot when required", async () => {
+  const r = await sBook(403, { schoolId: school("Example Primary"), sessionIds: [sid("Early reading")] });
+  assert.equal(r.status, 400); assert.match(r.data.error, /13:00 to 14:00/);
+});
+await test("valid primary booking saves school, phase and sessions", async () => {
+  const r = await sBook(404, { schoolId: school("Example Primary"), sessionIds: [sid("Early reading"), sid("Keynote")] });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "test.person404@lwlat.org.uk");
+  assert.equal(b.organisation, "Example Primary"); assert.equal(b.phase, "primary"); assert.equal(b.phaseName, "Primary");
+  assert.deepEqual(b.sessions.map(x => x.title), ["Early reading", "Keynote"]);
+  assert.equal(b.sessions[0].room, "S12");
+});
+await test("a full session is refused and shown as full", async () => {
+  const r = await sBook(405, { schoolId: school("Example Primary"), sessionIds: [sid("Early reading"), sid("Keynote")] });
+  assert.equal(r.status, 409); assert.equal(r.data.fullSession, true);
+  const pub = (await call("public-data")).data.eduhub.sessions.find(x => x.title === "Early reading");
+  assert.equal(pub.placesLeft, 0);
+  assert.equal((await sBook(405, { schoolId: school("Example Primary"), sessionIds: [sid("Maths mastery"), sid("Keynote")] })).status, 200);
+});
+await test("central staff see only their sessions", async () => {
+  const r = await sBook(406, { schoolId: school("Trust Central Team"), sessionIds: [sid("Finance update"), sid("Keynote")] });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+});
+await test("admin can move someone to another session, still one per slot", async () => {
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "test.person406@lwlat.org.uk");
+  const bad = await call("booking", { method: "POST", auth: true, body: { id: b.id, action: "update", fields: { sessionIds: [sid("Early reading"), sid("GCSE English")] } } });
+  assert.equal(bad.status, 400);
+  const ok = await call("booking", { method: "POST", auth: true, body: { id: b.id, action: "update", fields: { schoolId: school("Example Academy"), sessionIds: [sid("GCSE English"), sid("Keynote")] } } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.booking.phase, "secondary");
+  assert.deepEqual(ok.data.booking.sessions.map(x => x.title), ["GCSE English", "Keynote"]);
+});
+await test("session register lists confirmed attendees only", async () => {
+  const csv = await (await fetch(BASE + `/api/export-bookings?view=register&session=${sid("Keynote")}`, { headers: { cookie } })).text();
+  assert.match(csv, /Keynote/); assert.match(csv, /Person 404/); assert.match(csv, /Attended/);
+  assert.doesNotMatch(csv, /@lwlat/);
+  const full = await (await fetch(BASE + "/api/export-bookings?item=eduhub", { headers: { cookie } })).text();
+  assert.match(full, /10:00 to 11:00: Early reading \(S12\)/);
+});
+await test("sessions not required: slots can be left empty", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", requireSessionChoice: false, schools: prog.schools, sessions: prog.sessions } });
+  assert.equal((await sBook(407, { schoolId: school("Example Academy"), sessionIds: [] })).status, 200);
 });
 
 console.log("Sign-in protection");
