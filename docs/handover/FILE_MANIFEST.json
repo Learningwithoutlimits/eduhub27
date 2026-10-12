@@ -1,0 +1,126 @@
+[
+  {
+    "path": "LwLAT_Learning_Hub_v4.9_EduHub_Allergen_Matrix.zip",
+    "bytes": 778787
+  },
+  {
+    "path": "PROJECT_HISTORY_AND_REQUIREMENTS.md",
+    "bytes": 3506
+  },
+  {
+    "path": "START_HERE_FOR_CLAUDE.md",
+    "bytes": 6538
+  },
+  {
+    "path": "website-source/404.html",
+    "bytes": 436
+  },
+  {
+    "path": "website-source/README-FIRST.txt",
+    "bytes": 5122
+  },
+  {
+    "path": "website-source/_redirects",
+    "bytes": 19
+  },
+  {
+    "path": "website-source/admin/index.html",
+    "bytes": 7632
+  },
+  {
+    "path": "website-source/assets/admin.js",
+    "bytes": 9783
+  },
+  {
+    "path": "website-source/assets/conference-backdrop.png",
+    "bytes": 499422
+  },
+  {
+    "path": "website-source/assets/eduhub-logo.png",
+    "bytes": 87272
+  },
+  {
+    "path": "website-source/assets/eduhub-public-preview.js",
+    "bytes": 2071
+  },
+  {
+    "path": "website-source/assets/lwlat-logo.png",
+    "bytes": 144991
+  },
+  {
+    "path": "website-source/assets/preview.js",
+    "bytes": 6917
+  },
+  {
+    "path": "website-source/assets/public.js",
+    "bytes": 6689
+  },
+  {
+    "path": "website-source/assets/site.css",
+    "bytes": 11682
+  },
+  {
+    "path": "website-source/documents/EduHub-2027-Allergen-Matrix.pdf",
+    "bytes": 81222
+  },
+  {
+    "path": "website-source/eduhub-preview.html",
+    "bytes": 6571
+  },
+  {
+    "path": "website-source/index.html",
+    "bytes": 5522
+  },
+  {
+    "path": "website-source/netlify/functions/_utils.mjs",
+    "bytes": 1904
+  },
+  {
+    "path": "website-source/netlify/functions/admin-data.mjs",
+    "bytes": 319
+  },
+  {
+    "path": "website-source/netlify/functions/book.mjs",
+    "bytes": 1575
+  },
+  {
+    "path": "website-source/netlify/functions/course.mjs",
+    "bytes": 1102
+  },
+  {
+    "path": "website-source/netlify/functions/eduhub.mjs",
+    "bytes": 545
+  },
+  {
+    "path": "website-source/netlify/functions/export-bookings.mjs",
+    "bytes": 953
+  },
+  {
+    "path": "website-source/netlify/functions/login.mjs",
+    "bytes": 719
+  },
+  {
+    "path": "website-source/netlify/functions/logout.mjs",
+    "bytes": 169
+  },
+  {
+    "path": "website-source/netlify/functions/public-data.mjs",
+    "bytes": 264
+  },
+  {
+    "path": "website-source/netlify/functions/session.mjs",
+    "bytes": 156
+  },
+  {
+    "path": "website-source/netlify.toml",
+    "bytes": 537
+  },
+  {
+    "path": "website-source/package.json",
+    "bytes": 153
+  },
+  {
+    "path": "website-source/preview.html",
+    "bytes": 1511
+  }
+]
