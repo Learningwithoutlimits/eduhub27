@@ -1,5 +1,7 @@
-import { json, readJSON, defaults, requireAdmin } from "./_utils.mjs";
+import { json, readJSON, normaliseEduhub, eduhubEffectiveStatus, requireAdmin } from "./_utils.mjs";
 export default async request => {
  if(!requireAdmin(request)) return json({error:"Not signed in"},401);
- return json({courses:await readJSON("courses",[]),bookings:await readJSON("bookings",[]),eduhub:await readJSON("eduhub",defaults.eduhub)});
+ const [courses,bookings,raw]=await Promise.all([readJSON("courses",[]),readJSON("bookings",[]),readJSON("eduhub",null)]);
+ const eduhub=normaliseEduhub(raw);
+ return json({courses,bookings,eduhub:{...eduhub,effectiveStatus:eduhubEffectiveStatus(eduhub)}});
 };

@@ -1,6 +1,6 @@
-
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
+import { ALLERGEN_CODES, SUITABLE_CODES } from "../../public/assets/allergens.js";
 
 export const json = (data, status=200, headers={}) => new Response(JSON.stringify(data), {
   status, headers: {"content-type":"application/json; charset=utf-8", "cache-control":"no-store", ...headers}
@@ -12,13 +12,40 @@ export async function readJSON(key, fallback){
   try{return JSON.parse(raw)}catch{return fallback}
 }
 export async function writeJSON(key, value){ await store().set(key, JSON.stringify(value)); }
-const secret = () => process.env.SESSION_SECRET || "change-this-session-secret";
+
+// Read-modify-write that cannot lose another request's changes. If someone
+// else saved the key between our read and our write, we re-read and retry.
+// The mutator returns {value, result}; value === undefined means "no write".
+export async function updateJSON(key, fallback, mutator, attempts=8){
+  const s = store();
+  for(let i=0;i<attempts;i++){
+    const current = await s.getWithMetadata(key);
+    let value = fallback;
+    if(current?.data){ try{ value = JSON.parse(current.data) }catch{ value = fallback } }
+    const out = await mutator(structuredClone(value));
+    if(out.value === undefined) return out.result;
+    // Netlify Blobs returns an ETag with every read. If it ever does not, fall
+    // back to a plain write (the behaviour of v4.9) rather than failing.
+    const conditions = current?.etag ? { onlyIfMatch: current.etag } : current ? {} : { onlyIfNew: true };
+    const write = await s.set(key, JSON.stringify(out.value), conditions);
+    if(write.modified) return out.result;
+    await new Promise(r => setTimeout(r, 40 + Math.random()*120));
+  }
+  throw new Error("The system is busy. Please try again in a moment.");
+}
+
+// ---------- Admin sessions ----------
+const secret = () => {
+  const value = process.env.SESSION_SECRET || "";
+  return value.length >= 32 ? value : null;
+};
+export const sessionConfigured = () => Boolean(secret());
 function sign(value){return crypto.createHmac("sha256", secret()).update(value).digest("hex")}
 export function makeToken(){
   const exp=Date.now()+1000*60*60*12; const value=String(exp); return `${value}.${sign(value)}`;
 }
 export function validToken(token){
-  if(!token) return false; const [value,sig]=token.split("."); if(!value||!sig||Number(value)<Date.now()) return false;
+  if(!token || !secret()) return false; const [value,sig]=token.split("."); if(!value||!sig||Number(value)<Date.now()) return false;
   const expected=sign(value); try{return crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(expected))}catch{return false}
 }
 export function cookieValue(request,name){
@@ -26,7 +53,109 @@ export function cookieValue(request,name){
   return cookie.split(";").map(x=>x.trim()).find(x=>x.startsWith(name+"="))?.split("=").slice(1).join("=") || "";
 }
 export function requireAdmin(request){return validToken(cookieValue(request,"lwlat_admin"))}
+export const clientIp = request => request.headers.get("x-nf-client-connection-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+
+// ---------- Text helpers ----------
 export const slug = text => String(text||"course").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,70);
+export const clean = (value, max=300) => String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
+export const isDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value||""));
+export const isEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||""));
+export const STAFF_DOMAIN = "@lwlat.org.uk";
+
+// Today's date in the UK, as YYYY-MM-DD, for deadline checks.
+export const todayUK = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London"}).format(new Date());
+
+// ---------- EduHub settings ----------
+export const BOOKING_STATUSES = ["coming-soon","open","closed"];
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingOpen:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:""}
 };
+
+export function normaliseFoodChoice(choice, index=0){
+  if(typeof choice === "string") choice = { name: choice };
+  if(!choice || typeof choice !== "object") return null;
+  const name = clean(choice.name, 120);
+  if(!name) return null;
+  const allergens = Array.isArray(choice.allergens) ? ALLERGEN_CODES.filter(c => choice.allergens.includes(c)) : [];
+  return {
+    id: clean(choice.id, 60) || `${slug(name)}-${index+1}`,
+    group: clean(choice.group, 60),
+    name,
+    description: clean(choice.description, 300),
+    allergens,
+    cerealTypes: allergens.includes("GL") ? clean(choice.cerealTypes, 80) : "",
+    treeNutTypes: allergens.includes("TN") ? clean(choice.treeNutTypes, 120) : "",
+    suitableFor: Array.isArray(choice.suitableFor) ? SUITABLE_CODES.filter(c => choice.suitableFor.includes(c)) : [],
+    allergensConfirmed: Boolean(choice.allergensConfirmed)
+  };
+}
+
+// Brings any stored EduHub record (including pre-v5 records) into the current
+// shape. Older versions stored a true/false "bookingOpen" flag even though the
+// public site said "Bookings Open Soon". That flag is deliberately ignored: a
+// record without an explicit bookingStatus is treated as "coming soon", so
+// bookings only open when an administrator chooses "Open" in the dashboard.
+export function normaliseEduhub(raw){
+  const e = { ...defaults.eduhub, ...(raw && typeof raw === "object" ? raw : {}) };
+  const seen = new Set();
+  const foodChoices = (Array.isArray(e.foodChoices) ? e.foodChoices : [])
+    .map(normaliseFoodChoice).filter(Boolean)
+    .map(c => { let id=c.id, n=2; while(seen.has(id)) id=`${c.id}-${n++}`; seen.add(id); return {...c,id}; });
+  return {
+    title: clean(e.title, 150) || defaults.eduhub.title,
+    date: isDate(e.date) ? e.date : defaults.eduhub.date,
+    time: clean(e.time, 60),
+    venue: clean(e.venue, 150),
+    description: clean(e.description, 2000),
+    capacity: Math.max(0, Math.floor(Number(e.capacity) || 0)),
+    bookingStatus: BOOKING_STATUSES.includes(raw?.bookingStatus) ? raw.bookingStatus : "coming-soon",
+    bookingDeadline: isDate(e.bookingDeadline) ? e.bookingDeadline : "",
+    foodChoices,
+    askDietary: e.askDietary !== false,
+    askAccessibility: e.askAccessibility !== false,
+    allowNoFood: Boolean(e.allowNoFood),
+    privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
+    contactEmail: isEmail(e.contactEmail) ? clean(e.contactEmail, 120).toLowerCase() : "",
+    updatedAt: e.updatedAt || ""
+  };
+}
+
+// What the public can actually do right now, after deadlines are applied.
+export function eduhubEffectiveStatus(e){
+  if(e.bookingStatus !== "open") return e.bookingStatus;
+  if(e.bookingDeadline && todayUK() > e.bookingDeadline) return "closed";
+  if(e.date && todayUK() > e.date) return "closed";
+  return "open";
+}
+
+// ---------- Professional Learning ----------
+export const COURSE_STATUSES = ["draft","published","archived"];
+export const CATERING_TYPES = ["none","refreshments","lunch","other"];
+
+export function courseSessions(c){
+  return Array.isArray(c.sessions) && c.sessions.length ? c.sessions : (c.date||c.time ? [{label:"Session 1",date:c.date||"",time:c.time||""}] : []);
+}
+export function courseBookingClosedReason(c){
+  if(c.bookingOpen === false) return "Bookings are closed for this opportunity.";
+  if(c.bookingDeadline && todayUK() > c.bookingDeadline) return "The booking deadline for this opportunity has passed.";
+  const dates = courseSessions(c).map(s => s.date).filter(isDate).sort();
+  if(dates.length && todayUK() > dates[0]) return "This opportunity has already started, so new bookings cannot be taken.";
+  return "";
+}
+
+// ---------- Bookings ----------
+export const EDUHUB_ID = "eduhub-2027";
+export const activeBooking = b => !b.cancelled && b.status !== "cancelled";
+export const confirmedBooking = b => activeBooking(b) && !b.waitingList;
+export function placesTaken(bookings, itemId){
+  return bookings.filter(b => b.itemId === itemId && confirmedBooking(b)).length;
+}
+export function bookingStatusOf(b){
+  if(!activeBooking(b)) return "cancelled";
+  return b.waitingList ? "waiting" : "booked";
+}
+export function makeReference(prefix){
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(6);
+  return `${prefix}-${[...bytes].map(b => alphabet[b % alphabet.length]).join("")}`;
+}

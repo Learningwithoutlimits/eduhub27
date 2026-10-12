@@ -1,9 +1,33 @@
-import { readJSON, requireAdmin } from "./_utils.mjs";
-const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+import { readJSON, requireAdmin, bookingStatusOf, activeBooking, EDUHUB_ID } from "./_utils.mjs";
+
+// Excel treats cells beginning with = + - @ as formulas. Booking details come
+// from the public, so prefix those with an apostrophe to keep them as text.
+const safe=v=>{const s=String(v??""); return /^[=+\-@\t\r]/.test(s)?"'"+s:s};
+const esc=v=>`"${safe(v).replaceAll('"','""')}"`;
+const STATUS={booked:"Booked",waiting:"Waiting list",cancelled:"Cancelled"};
+const stamp=v=>v?new Date(v).toLocaleString("en-GB",{timeZone:"Europe/London"}):"";
+
 export default async request => {
  if(!requireAdmin(request)) return new Response("Not signed in",{status:401});
- const rows=await readJSON("bookings",[]);
- const headers=["Date booked","Type","Opportunity","First name","Surname","Email","Telephone","Organisation","Job title","Food choice","Dietary requirements","Accessibility requirements","Notes","Status"];
- const lines=[headers.map(esc).join(","),...rows.map(b=>[b.createdAt,b.itemType,b.itemTitle,b.firstName,b.lastName,b.email,b.telephone,b.organisation,b.jobTitle,b.foodChoice,b.dietary,b.accessibility,b.notes,b.waitingList?"Waiting list":"Booked"].map(esc).join(","))];
- return new Response("\ufeff"+lines.join("\n"),{headers:{"content-type":"text/csv; charset=utf-8","content-disposition":`attachment; filename="lwlat-bookings-${new Date().toISOString().slice(0,10)}.csv"`}});
+ const url=new URL(request.url);
+ const item=url.searchParams.get("item")||"";
+ const view=url.searchParams.get("view")||"full";
+ let rows=await readJSON("bookings",[]);
+ if(item==="eduhub") rows=rows.filter(b=>b.itemId===EDUHUB_ID);
+ else if(item==="courses") rows=rows.filter(b=>b.itemId!==EDUHUB_ID);
+ else if(item) rows=rows.filter(b=>b.itemId===item);
+
+ let headers, lines;
+ if(view==="catering"){
+   // For the caterer: confirmed places only, food and dietary details, no contact details.
+   rows=rows.filter(b=>activeBooking(b)&&!b.waitingList).sort((a,b)=>String(a.foodChoice||"").localeCompare(String(b.foodChoice||""))||String(a.lastName).localeCompare(String(b.lastName)));
+   headers=["Reference","First name","Surname","School or organisation","Food choice","Allergens in chosen food","Dietary requirements or allergies"];
+   lines=rows.map(b=>[b.reference,b.firstName,b.lastName,b.organisation,b.foodChoice,b.foodAllergens,b.dietary]);
+ }else{
+   headers=["Reference","Date booked","Type","Opportunity","First name","Surname","Email","Telephone","School or organisation","Job title","Food choice","Allergens in chosen food","Dietary requirements or allergies","Accessibility requirements","Notes","Admin notes","Status"];
+   lines=rows.map(b=>[b.reference,stamp(b.createdAt),b.itemType==="eduhub"?"EduHub":"Professional Learning",b.itemTitle,b.firstName,b.lastName,b.email,b.telephone,b.organisation,b.jobTitle,b.foodChoice,b.foodAllergens,b.dietary,b.accessibility,b.notes,b.adminNotes,STATUS[bookingStatusOf(b)]]);
+ }
+ const csv=[headers,...lines].map(r=>r.map(esc).join(",")).join("\r\n");
+ const name=`lwlat-${view==="catering"?"catering":"bookings"}${item?"-"+item.replace(/[^a-z0-9-]/gi,"").slice(0,40):""}-${new Date().toISOString().slice(0,10)}.csv`;
+ return new Response("﻿"+csv,{headers:{"content-type":"text/csv; charset=utf-8","cache-control":"no-store","content-disposition":`attachment; filename="${name}"`}});
 };
