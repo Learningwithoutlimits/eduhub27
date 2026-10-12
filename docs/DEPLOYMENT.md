@@ -1,5 +1,7 @@
 # Deploying version 5.1
 
+For the full step-by-step for https://eduhub27.netlify.app, see `GO-LIVE-GUIDE.md`.
+
 Version 5 changed the folder layout. The website files now live in a `public` folder, so Netlify no longer publishes the server code or these guides. The included `netlify.toml` tells Netlify about the change, so you do not need to alter any build settings.
 
 ## Before you start
