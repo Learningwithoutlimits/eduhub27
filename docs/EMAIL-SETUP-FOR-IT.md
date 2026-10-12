@@ -4,9 +4,9 @@ The Learning Hub (https://eduhub27.netlify.app) sends booking confirmations with
 
 This takes about 15 minutes and needs someone with Entra ID and Exchange Online admin rights.
 
-## 1. Choose the sending mailbox
+## 1. The sending mailbox
 
-Create a shared mailbox, for example `eduhub@lwlat.org.uk`. Replies from staff will go to it, so someone should monitor it. A shared mailbox needs no licence.
+Emails will be sent from the existing **communications@lwlat.org.uk** mailbox. Any replies from staff will arrive there. No new mailbox is needed.
 
 ## 2. Register an app in Entra ID
 
@@ -24,9 +24,9 @@ By default, Mail.Send lets an app send as **any** mailbox in the Trust. Limit it
 ```powershell
 Connect-ExchangeOnline
 New-ApplicationAccessPolicy -AppId "<Application (client) ID>" `
-  -PolicyScopeGroupId "eduhub@lwlat.org.uk" -AccessRight RestrictAccess `
-  -Description "Learning Hub may only send as the EduHub mailbox"
-Test-ApplicationAccessPolicy -Identity "eduhub@lwlat.org.uk" -AppId "<Application (client) ID>"
+  -PolicyScopeGroupId "communications@lwlat.org.uk" -AccessRight RestrictAccess `
+  -Description "Learning Hub may only send as the communications mailbox"
+Test-ApplicationAccessPolicy -Identity "communications@lwlat.org.uk" -AppId "<Application (client) ID>"
 ```
 
 The test should say `AccessCheckResult : Granted`. Testing against any other mailbox should say `Denied`. (Microsoft's newer "RBAC for Applications" in Exchange achieves the same and can be used instead.)
@@ -40,7 +40,7 @@ In https://app.netlify.com/projects/eduhub27, go to **Project configuration → 
 | `MS_TENANT_ID` | Directory (tenant) ID |
 | `MS_CLIENT_ID` | Application (client) ID |
 | `MS_CLIENT_SECRET` | The client secret **Value** |
-| `MAIL_FROM` | `eduhub@lwlat.org.uk` (the sending mailbox) |
+| `MAIL_FROM` | `communications@lwlat.org.uk` |
 
 Then go to **Deploys → Trigger deploy → Deploy site**.
 
