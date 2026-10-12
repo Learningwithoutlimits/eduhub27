@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 5.2: confirmation emails and QR check-in
+
+### New
+- Booking confirmation emails sent from a Trust mailbox through Microsoft 365. They include the booking details, sessions, food choice and a QR code ticket. Waiting-list bookings get a waiting-list email, and receive their ticket when an administrator gives them a place.
+- Each booking has its own ticket page at `/ticket/`, reached through the QR code or a link. Links are signed, so they cannot be guessed.
+- Scanning in: door staff sign in to admin on their phone and scan tickets with the phone camera. A green, amber or red screen shows the result. Check-ins can be undone.
+- The confirmation screen shows the QR code straight away, even before email is set up.
+- Admin shows email status and check-in status for every booking, with Check in, Resend email and View ticket buttons, and a test email button on the Overview page.
+- Exports include check-in times and email status. Session registers mark who checked in.
+- Set-up instructions for IT in `docs/EMAIL-SETUP-FOR-IT.md`.
+
 ## Version 5.1: EduHub sessions
 
 ### New

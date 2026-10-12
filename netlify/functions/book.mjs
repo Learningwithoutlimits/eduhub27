@@ -2,6 +2,7 @@ import { allergenSummary } from "../../public/assets/allergens.js";
 import { json, readJSON, updateJSON, clean, isEmail, STAFF_DOMAIN, normaliseEduhub, eduhubEffectiveStatus,
   courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID,
   slotKey, slotLabel, sessionPlacesTaken, PHASE_NAMES } from "./_utils.mjs";
+import { sendConfirmation, ticketUrl, siteOrigin } from "./_tickets.mjs";
 
 const NO_FOOD = "no-food";
 
@@ -107,11 +108,14 @@ export default async request => {
      const record={...b,...extra,id:crypto.randomUUID(),reference:makeReference(b.itemType==="eduhub"?"EH27":"PL"),
        itemTitle:item.title,waitingList,cancelled:false,createdAt:now,updatedAt:now};
      bookings.unshift(record);
-     return {value:bookings,result:{waitingList,reference:record.reference}};
+     return {value:bookings,result:{waitingList,reference:record.reference,id:record.id}};
    });
    if(result.fullSession) return json({error:`Sorry, "${result.fullSession}" has just become full. Please choose a different session.`,fullSession:true},409);
    if(result.duplicate) return json({error:"There is already a booking for this email address. If you need to change it, please contact the organiser."},409);
-   return json({ok:true,...result});
+   const {id,...pub}=result;
+   const origin=siteOrigin(request);
+   const email=await sendConfirmation(id,origin);
+   return json({ok:true,...pub,ticketUrl:result.waitingList?"":ticketUrl(origin,id),emailSent:email.sent});
  }catch(err){
    return json({error:err.message||"Your booking could not be saved. Please try again."},503);
  }

@@ -1,5 +1,6 @@
 // Administrator actions on a single booking.
 import { allergenSummary } from "../../public/assets/allergens.js";
+import { sendConfirmation, siteOrigin } from "./_tickets.mjs";
 import { json, readJSON, updateJSON, requireAdmin, clean, normaliseEduhub, EDUHUB_ID, slotKey, slotLabel, PHASE_NAMES } from "./_utils.mjs";
 
 export default async request => {
@@ -25,7 +26,10 @@ export default async request => {
    switch(body.action){
      case "cancel": b.cancelled=true; b.cancelledAt=now; break;
      case "reinstate": b.cancelled=false; delete b.cancelledAt; break;
-     case "confirm": b.waitingList=false; b.cancelled=false; break;
+     case "confirm": b.waitingList=false; b.cancelled=false; b.sendEmail=true; break;
+     case "resend": b.sendEmail=true; break;
+     case "checkin": if(!b.checkedInAt) b.checkedInAt=now; break;
+     case "undo-checkin": delete b.checkedInAt; break;
      case "waiting": b.waitingList=true; break;
      case "update": {
        const f=body.fields||{};
@@ -67,5 +71,12 @@ export default async request => {
    return {value:bookings,result:{booking:b}};
  });
  if(result.error) return json({error:result.error},result.status);
- return json({ok:true,booking:result.booking});
+ // Giving someone a place, or resending, emails them their ticket.
+ let email=null;
+ if(result.booking.sendEmail){
+   await updateJSON("bookings",[],list=>{const x=list.find(y=>y.id===id); if(!x) return {result:null}; delete x.sendEmail; return {value:list,result:null};});
+   email=await sendConfirmation(id,siteOrigin(request));
+ }
+ const {sendEmail,...booking}=result.booking;
+ return json({ok:true,booking,email});
 };

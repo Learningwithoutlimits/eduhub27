@@ -19,7 +19,11 @@
 
 <section id="overview-view" class="admin-section">
 <div class="stat-grid"><div class="stat"><span>Published courses</span><strong id="stat-published">0</strong></div><div class="stat"><span>Draft courses</span><strong id="stat-drafts">0</strong></div><div class="stat"><span>PL bookings</span><strong id="stat-course-bookings">0</strong></div><div class="stat"><span>EduHub bookings</span><strong id="stat-eduhub-bookings">0</strong></div></div>
-<div class="panel"><h2>EduHub 2027 booking status</h2><p id="overview-eduhub-status"></p></div>
+<div class="panel"><h2>EduHub 2027 booking status</h2><p id="overview-eduhub-status"></p><p id="overview-checkins" class="muted"></p></div>
+<div class="panel"><h2>Confirmation emails</h2><p id="email-status"></p>
+  <form id="email-test-form" class="filter-row email-test-row hidden"><div class="field"><label for="email-test-to">Send a test email to</label><input id="email-test-to" type="email" placeholder="you@lwlat.org.uk"></div><div class="field"><label>&nbsp;</label><button type="submit" class="button secondary">Send test email</button></div></form>
+</div>
+<div class="panel"><h2>Scanning tickets on the day</h2><p>Each confirmation email includes a QR code. To scan people in, sign in to this admin area on your phone, then point the phone's camera at each QR code and tap the link that appears. The phone shows a green screen when someone is checked in, amber if they have already been checked in, and red if their booking was cancelled.</p></div>
 <div class="panel"><h2>Welcome to the Learning Hub</h2><p>Create and publish professional learning opportunities, manage EduHub separately, monitor bookings and export delegate information from one place.</p></div>
 </section>
 

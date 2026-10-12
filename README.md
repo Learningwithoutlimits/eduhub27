@@ -4,7 +4,7 @@ The Trust's site for Professional Learning bookings and the EduHub 2027 staff co
 
 - Public site: `public/` (plain HTML, CSS and JavaScript)
 - Server code: `netlify/functions/` (Netlify Functions, data kept in Netlify Blobs)
-- Guides: `docs/DEPLOYMENT.md`, `docs/BEFORE-OPENING-EDUHUB.md`, `docs/CHANGELOG.md`
+- Guides: `docs/GO-LIVE-GUIDE.md` (start here), `docs/DEPLOYMENT.md`, `docs/BEFORE-OPENING-EDUHUB.md`, `docs/CHANGELOG.md`
 - Tests: `tests/` (run locally, never deployed)
 
 ## Pages

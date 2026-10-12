@@ -60,6 +60,12 @@ function renderAll({keepEduhubForm=false,keepProgrammeForm=false}={}){
   $('#stat-course-bookings').textContent=data.bookings.filter(b=>b.itemId!==EDUHUB_ID&&active(b)).length;
   $('#stat-eduhub-bookings').textContent=data.bookings.filter(b=>b.itemId===EDUHUB_ID&&active(b)).length;
   $('#overview-eduhub-status').textContent=EDUHUB_STATUS_TEXT[data.eduhub.effectiveStatus]||'';
+  const ehConfirmed=data.bookings.filter(b=>b.itemId===EDUHUB_ID&&statusOf(b)==='booked');
+  $('#overview-checkins').textContent=ehConfirmed.length?`${ehConfirmed.filter(b=>b.checkedInAt).length} of ${ehConfirmed.length} confirmed EduHub places checked in.`:'';
+  $('#email-status').innerHTML=data.emailConfigured
+    ?`<span class="email-ok"><strong>Switched on.</strong></span> Confirmation emails with QR codes are sent from <strong>${escapeHtml(data.mailFrom)}</strong> when someone books.`
+    :'<strong>Not set up yet.</strong> Bookings still work, but no emails are sent. Your IT team need to add four settings in Netlify. The steps are in docs/EMAIL-SETUP-FOR-IT.md.';
+  $('#email-test-form').classList.toggle('hidden',!data.emailConfigured);
   $('#courses-table').innerHTML=data.courses.length?data.courses.map(c=>{
     const booked=countFor(c.id,'booked'), waiting=countFor(c.id,'waiting');
     return `<tr><td><strong>${escapeHtml(c.title)}</strong><br><span class="muted">${escapeHtml(c.audience||'')}</span></td><td>${fmt(nextDate(c))}</td><td>${escapeHtml(c.status)}</td><td>${c.bookingOpen===false?'Closed':'Open'}${c.bookingDeadline?`<br><span class="muted">until ${fmt(c.bookingDeadline)}</span>`:''}</td><td>${booked}${Number(c.capacity)?` of ${escapeHtml(c.capacity)}`:''}${waiting?`<br><span class="muted">${waiting} waiting</span>`:''}</td><td><div class="actions"><button class="ghost preview-course" data-id="${escapeHtml(c.id)}">Preview</button><button class="ghost edit-course" data-id="${escapeHtml(c.id)}">Edit</button><button class="ghost duplicate-course" data-id="${escapeHtml(c.id)}">Duplicate</button><button class="ghost view-course-bookings" data-id="${escapeHtml(c.id)}">Bookings</button><button class="danger delete-course" data-id="${escapeHtml(c.id)}">Delete</button></div></td></tr>`}).join(''):'<tr><td colspan="6">No opportunities have been created yet.</td></tr>';
@@ -243,10 +249,14 @@ function renderBookings(){
     return `<tr class="${st==='cancelled'?'row-cancelled':''}"><td>${new Date(b.createdAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}${b.reference?`<br><span class="muted">${escapeHtml(b.reference)}</span>`:''}</td>
       <td><strong>${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}</strong><br>${escapeHtml(b.jobTitle||'')}${b.jobTitle?'<br>':''}${escapeHtml(b.organisation)}${b.phaseName?` <span class="muted">(${escapeHtml(b.phaseName)})</span>`:''}<br><a href="mailto:${escapeHtml(b.email)}">${escapeHtml(b.email)}</a>${b.telephone?`<br>${escapeHtml(b.telephone)}`:''}</td>
       <td>${escapeHtml(b.itemTitle)}</td><td class="needs-cell">${needs||'<span class="muted">None given</span>'}</td>
-      <td><span class="status-pill ${st}">${STATUS_LABEL[st]}</span></td>
+      <td><span class="status-pill ${st}">${STATUS_LABEL[st]}</span>${b.checkedInAt?`<br><span class="status-pill checkin-pill">Checked in ${new Date(b.checkedInAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
+        <br><span class="small ${b.emailSentAt?'email-ok':b.emailError?'email-fail':'muted'}" title="${escapeHtml(b.emailError||'')}">${b.emailSentAt?'Email sent':b.emailError?'Email failed':'No email sent'}</span></td>
       <td><div class="actions">
         <button class="ghost" data-booking-edit="${escapeHtml(b.id)}">Edit</button>
         ${st==='waiting'?`<button class="ghost" data-booking-action="confirm" data-id="${escapeHtml(b.id)}">Give place</button>`:''}
+        ${st==='booked'?(b.checkedInAt?`<button class="ghost" data-booking-action="undo-checkin" data-id="${escapeHtml(b.id)}">Undo check-in</button>`:`<button class="ghost" data-booking-action="checkin" data-id="${escapeHtml(b.id)}">Check in</button>`):''}
+        ${st==='booked'&&b.ticketSig?`<a class="button ghost" href="/ticket/?b=${encodeURIComponent(b.id)}&amp;s=${encodeURIComponent(b.ticketSig)}&amp;view=1" target="_blank" rel="noopener">View ticket</a>`:''}
+        ${data.emailConfigured&&st!=='cancelled'?`<button class="ghost" data-booking-action="resend" data-id="${escapeHtml(b.id)}">Resend email</button>`:''}
         ${st==='cancelled'?`<button class="ghost" data-booking-action="reinstate" data-id="${escapeHtml(b.id)}">Reinstate</button>`:`<button class="ghost" data-booking-action="cancel" data-id="${escapeHtml(b.id)}">Cancel</button>`}
         <button class="danger" data-booking-delete="${escapeHtml(b.id)}">Delete</button>
       </div></td></tr>`}).join(''):'<tr><td colspan="6">No matching bookings.</td></tr>';
@@ -259,9 +269,12 @@ function renderBookings(){
 async function bookingAction(id,action){
   const b=data.bookings.find(x=>x.id===id);
   const name=`${b?.firstName||''} ${b?.lastName||''}`.trim();
-  const prompts={cancel:`Cancel the booking for ${name}? The place will be freed up. You can reinstate it later.`,confirm:`Give ${name} a confirmed place? This may take the event over its capacity.`,reinstate:`Reinstate the booking for ${name}?`};
+  const prompts={cancel:`Cancel the booking for ${name}? The place will be freed up. You can reinstate it later.`,confirm:`Give ${name} a confirmed place? This may take the event over its capacity.${data.emailConfigured?' They will be emailed their ticket.':''}`,reinstate:`Reinstate the booking for ${name}?`,resend:`Send ${name} their confirmation email again?`};
   if(prompts[action]&&!confirm(prompts[action])) return;
-  try{await api('booking',{method:'POST',body:JSON.stringify({id,action})});await refresh();message('Booking updated.')}
+  try{
+    const r=await api('booking',{method:'POST',body:JSON.stringify({id,action})});await refresh();
+    message(r.email?(r.email.sent?`Done. The email to ${name} has been sent.`:`Booking updated, but the email was not sent: ${r.email.reason==='not-configured'?'email is not set up yet.':r.email.reason}`):'Booking updated.',r.email&&!r.email.sent?'notice warn':'notice');
+  }
   catch(err){message(err.message,'notice error')}
 }
 async function deleteBooking(id){
@@ -310,6 +323,14 @@ bf.addEventListener('submit',async e=>{
   if(b?.itemId===EDUHUB_ID&&(data.eduhub.sessions||[]).length) fields.sessionIds=$$('[data-slot]',bf).map(x=>x.value).filter(Boolean);
   try{await api('booking',{method:'POST',body:JSON.stringify({id:bf.id.value,action:'update',fields})});closeBookingModal();await refresh();message('Booking saved.')}
   catch(err){message(err.message,'notice error')}
+});
+
+$('#email-test-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+  try{await api('email-test',{method:'POST',body:JSON.stringify({to:$('#email-test-to').value})});message(`Test email sent to ${$('#email-test-to').value}. It may take a minute to arrive.`)}
+  catch(err){message(err.message,'notice error')}
+  finally{btn.disabled=false}
 });
 
 // ---------- Course editor ----------

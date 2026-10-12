@@ -186,6 +186,32 @@ await step("member of staff books a place with a food choice", async () => {
   await snap("05-eduhub-confirmation", staffPage);
 });
 
+await step("confirmation shows a QR ticket; the ticket page works for staff and door staff", async () => {
+  const qr = staffPage.locator(".confirmation .ticket-qr");
+  await qr.waitFor();
+  assert.ok(await qr.evaluate(img => img.complete && img.naturalWidth > 100), "QR image should load");
+  const href = await staffPage.getAttribute(".confirmation a[href*='/ticket/']", "href");
+  // A member of staff (not signed in) sees their ticket and QR code only.
+  const outsider = await browser.newContext();
+  const op = await outsider.newPage();
+  await op.goto(href);
+  await op.waitForSelector(".ticket-qr");
+  assert.match(await op.textContent("#ticket"), /Your ticket/);
+  assert.doesNotMatch(await op.textContent("#ticket"), /lactose|Taylor/);
+  await snap("05b-ticket-public", op);
+  await outsider.close();
+  // Door staff, signed in to admin, scan the code and get a green screen.
+  const door = await context.newPage();
+  await door.goto(href);
+  await door.waitForSelector(".scan-result.ok");
+  assert.match(await door.textContent(".scan-result"), /Checked in: Alex Taylor/);
+  await snap("05c-door-checked-in", door);
+  await door.reload();
+  await door.waitForSelector(".scan-result.warn");
+  assert.match(await door.textContent(".scan-result"), /Already checked in/);
+  await door.close();
+});
+
 await step("booking the same email again is refused", async () => {
   await staffPage.goto(BASE + "/eduhub/");
   await staffPage.waitForSelector(".food-option");
@@ -223,6 +249,8 @@ await step("admin sees food, allergens and catering totals", async () => {
   assert.match(table, /Tuna Mayo Sandwich/);
   assert.match(table, /Gluten \(wheat\), Eggs, Fish/);
   assert.match(table, /Waiting list/);
+  assert.match(table, /Checked in \d\d:\d\d/);
+  assert.match(await page.textContent("#overview-view"), /Not set up yet/);
   await snap("07-admin-bookings");
 });
 

@@ -179,3 +179,26 @@ table.compact{min-width:0}
 .programme-card h4{margin:0 0 4px;font-size:1.1rem}
 .programme-card p{margin:6px 0}
 @media(max-width:700px){.programme-grid,.school-row{grid-template-columns:1fr}.programme-cards{grid-template-columns:1fr}.session-option .speaker-img{width:48px;height:48px}}
+
+/* ---------- v5.2: tickets and check-in ---------- */
+.ticket-wrap{max-width:560px}
+.ticket-card{text-align:left}
+.ticket-title{font-size:clamp(1.8rem,5vw,2.4rem);margin:.2em 0 .4em}
+.ticket-qr{display:block;margin:10px auto;border:1px solid #d5e7e4;border-radius:12px;width:min(260px,70vw);height:auto;image-rendering:pixelated}
+.ticket-hint{text-align:center;font-weight:700}
+.scan-result{border-radius:20px;padding:22px;margin-bottom:18px;color:#fff;box-shadow:var(--shadow)}
+.scan-result p{margin:0 0 10px}
+.scan-result .scan-heading{font-size:1.6rem;font-weight:800;line-height:1.2}
+.scan-result.ok{background:#2f7d32}
+.scan-result.warn{background:#a86b00}
+.scan-result.stop{background:var(--red)}
+.scan-result .button.secondary{background:#fff;border-color:#fff;color:#183033}
+.checkin-pill{background:#e3f1e4;color:#2f7d32}
+.email-ok{color:#2f7d32}.email-fail{color:var(--red)}
+@media print{.site-header,#print-ticket,.scan-result{display:none!important}}
+
+.ticket-inline{text-align:center;padding:16px;border:1px dashed #b9cecc;border-radius:14px;margin:16px 0}
+.ticket-inline h3{margin:0 0 6px}
+.email-test-row{grid-template-columns:2fr 1fr;margin-top:12px}
+.actions a.button{padding:7px 11px;font-size:.82rem}
+.door-mode .ticket-qr,.door-mode .ticket-hint{display:none}

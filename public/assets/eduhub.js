@@ -268,6 +268,10 @@ function showConfirmation(data, body){
       ${body.sessionIds.length ? `<div><dt>Sessions</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
       ${food ? `<div><dt>Food choice</dt><dd>${esc(food)}</dd></div>` : ''}
     </dl>
+    ${data.ticketUrl ? `<div class="ticket-inline"><h3>Your ticket</h3>
+      <img class="ticket-qr" src="/api/qr?${esc(data.ticketUrl.split('?')[1] || '')}" width="220" height="220" alt="QR code for your booking">
+      <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
+      <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
       ${cal && !data.waitingList ? `<a class="button" href="${cal}" download="EduHub-2027.ics">Add to my calendar</a>` : ''}
