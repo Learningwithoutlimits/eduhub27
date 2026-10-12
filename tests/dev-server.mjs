@@ -19,7 +19,7 @@ process.env.ADMIN_PASSWORD ||= "local-admin-password";
 process.env.SESSION_SECRET ||= "local-session-secret-that-is-at-least-32-chars";
 
 const types = { ".html":"text/html; charset=utf-8", ".css":"text/css", ".js":"text/javascript", ".png":"image/png", ".pdf":"application/pdf", ".svg":"image/svg+xml", ".json":"application/json" };
-const redirects = { "/admin":"/admin/", "/eduhub":"/eduhub/", "/eduhub-preview.html":"/eduhub/?preview=1" };
+const redirects = { "/admin":"/admin/", "/eduhub":"/eduhub/", "/ticket":"/ticket/", "/eduhub-preview.html":"/eduhub/?preview=1" };
 
 http.createServer(async (req, res) => {
   try {

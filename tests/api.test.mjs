@@ -4,6 +4,25 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { getStore } from "@netlify/blobs";
 
+// Stand-in for Microsoft sign-in and Graph, recording every email "sent".
+import http from "node:http";
+const mails = [];
+const msMock = http.createServer(async (req, res) => {
+  const chunks = []; for await (const c of req) chunks.push(c);
+  const body = Buffer.concat(chunks).toString();
+  if (req.url.includes("/oauth2/v2.0/token")) { res.writeHead(200, { "content-type": "application/json" }); return res.end(JSON.stringify({ access_token: "fake-token", expires_in: 3600 })); }
+  if (req.url.includes("/sendMail")) {
+    const msg = JSON.parse(body).message;
+    if (msg.toRecipients[0].emailAddress.address.startsWith("bounce")) { res.writeHead(403, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { code: "ErrorAccessDenied" } })); }
+    mails.push({ auth: req.headers.authorization, from: decodeURIComponent(req.url.split("/users/")[1].split("/")[0]), msg });
+    res.writeHead(202); return res.end();
+  }
+  res.writeHead(404); res.end();
+});
+await new Promise(r => msMock.listen(0, r));
+const msBase = `http://localhost:${msMock.address().port}`;
+Object.assign(process.env, { MS_TENANT_ID: "tenant", MS_CLIENT_ID: "client", MS_CLIENT_SECRET: "secret", MAIL_FROM: "eduhub@lwlat.org.uk", MS_LOGIN_BASE: msBase, MS_GRAPH_BASE: msBase });
+
 const PORT = 8950 + Math.floor(Math.random() * 40) * 2;
 const BASE = `http://localhost:${PORT}`;
 const server = spawn(process.execPath, ["tests/dev-server.mjs", String(PORT)], { stdio: ["ignore", "pipe", "inherit"] });
@@ -333,6 +352,92 @@ await test("sessions not required: slots can be left empty", async () => {
   assert.equal((await sBook(407, { schoolId: school("Example Academy"), sessionIds: [] })).status, 200);
 });
 
+console.log("Tickets, check-in and email");
+let ticketBooking, ticketPath;
+await test("booking sends an email with an inline QR code and returns a ticket link", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", requireSessionChoice: false, schools: prog.schools, sessions: prog.sessions } });
+  await call("eduhub", { method: "POST", auth: true, body: settings({ capacity: 0, foodChoices: menu, contactEmail: "eduhub@lwlat.org.uk" }) });
+  mails.length = 0;
+  const r = await sBook(500, { schoolId: school("Example Primary"), sessionIds: [sid("Keynote")] });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.emailSent, true);
+  assert.match(r.data.ticketUrl, /^http:\/\/localhost:\d+\/ticket\/\?b=[0-9a-f-]{36}&s=[\w-]{22}$/);
+  ticketPath = r.data.ticketUrl.split("/ticket/?")[1];
+  assert.equal(mails.length, 1);
+  const m = mails[0];
+  assert.equal(m.from, "eduhub@lwlat.org.uk"); assert.equal(m.auth, "Bearer fake-token");
+  assert.equal(m.msg.toRecipients[0].emailAddress.address, "test.person500@lwlat.org.uk");
+  assert.match(m.msg.subject, /EH27-/);
+  assert.match(m.msg.body.content, /cid:ticketqr/); assert.match(m.msg.body.content, /Keynote/); assert.match(m.msg.body.content, /Dear Test/);
+  assert.match(m.msg.body.content, /mailto:eduhub@lwlat\.org\.uk/);
+  const png = Buffer.from(m.msg.attachments[0].contentBytes, "base64");
+  assert.equal(png.subarray(0, 4).toString("hex"), "89504e47"); assert.equal(m.msg.attachments[0].isInline, true);
+  ticketBooking = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "test.person500@lwlat.org.uk");
+  assert.ok(ticketBooking.emailSentAt);
+});
+await test("a failed email never loses the booking, and is recorded", async () => {
+  const r = await sBook(501, { email: "bounce.me@lwlat.org.uk", schoolId: school("Example Primary"), sessionIds: [] });
+  assert.equal(r.status, 200); assert.equal(r.data.emailSent, false);
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "bounce.me@lwlat.org.uk");
+  assert.match(b.emailError, /ErrorAccessDenied/);
+});
+await test("QR image and ticket need a valid signature", async () => {
+  const good = await fetch(`${BASE}/api/qr?${ticketPath}`);
+  assert.equal(good.status, 200); assert.equal(good.headers.get("content-type"), "image/png");
+  assert.equal((await fetch(`${BASE}/api/qr?${ticketPath.slice(0, -2)}xx`)).status, 404);
+  assert.equal((await fetch(`${BASE}/api/ticket?b=${ticketBooking.id}&s=forged`)).status, 404);
+});
+await test("ticket shows only basic details to the public, full details to admins", async () => {
+  const pub = await (await fetch(`${BASE}/api/ticket?${ticketPath}`)).json();
+  assert.equal(pub.firstName, "Test"); assert.equal(pub.isAdmin, false);
+  assert.equal(pub.lastName, undefined); assert.equal(pub.dietary, undefined); assert.equal(pub.accessibility, undefined);
+  const adm = await (await fetch(`${BASE}/api/ticket?${ticketPath}`, { headers: { cookie } })).json();
+  assert.equal(adm.isAdmin, true); assert.equal(adm.lastName, "Person 500"); assert.equal(adm.organisation, "Example Primary");
+});
+const scan = (extra = {}, auth = true) => fetch(`${BASE}/api/ticket`, { method: "POST", headers: { "content-type": "application/json", ...(auth ? { cookie } : {}) },
+  body: JSON.stringify({ b: new URLSearchParams(ticketPath).get("b"), s: new URLSearchParams(ticketPath).get("s"), ...extra }) }).then(async r => ({ status: r.status, data: await r.json() }));
+await test("scanning checks someone in once, warns on repeat, and can be undone", async () => {
+  assert.equal((await scan({}, false)).status, 401);
+  const first = await scan(); assert.equal(first.status, 200); assert.equal(first.data.already, false); assert.ok(first.data.checkedInAt);
+  const again = await scan(); assert.equal(again.data.already, true); assert.equal(again.data.checkedInAt, first.data.checkedInAt);
+  await scan({ action: "undo" });
+  assert.equal((await call("admin-data", { auth: true })).data.bookings.find(x => x.id === ticketBooking.id).checkedInAt, undefined);
+});
+await test("cancelled bookings are refused at the door, waiting list needs 'check in anyway'", async () => {
+  await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "cancel" } });
+  const c = await scan(); assert.equal(c.status, 409); assert.match(c.data.error, /cancelled/);
+  await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "reinstate" } });
+  await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "waiting" } });
+  const w = await scan(); assert.equal(w.status, 409); assert.equal(w.data.canForce, true);
+  assert.equal((await scan({ force: true })).status, 200);
+  await scan({ action: "undo" });
+});
+await test("giving a waiting-list place emails the ticket, resend works", async () => {
+  mails.length = 0;
+  const r = await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "confirm" } });
+  assert.equal(r.status, 200); assert.equal(r.data.email.sent, true); assert.equal(r.data.booking.sendEmail, undefined);
+  assert.equal(mails.length, 1); assert.ok(mails[0].msg.attachments);
+  assert.equal((await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "resend" } })).data.email.sent, true);
+  assert.equal(mails.length, 2);
+  const stored = (await call("admin-data", { auth: true })).data.bookings.find(x => x.id === ticketBooking.id);
+  assert.equal(stored.sendEmail, undefined);
+});
+await test("waiting-list email has no QR code", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: settings({ capacity: 1, foodChoices: menu }) });
+  mails.length = 0;
+  const r = await sBook(502, { schoolId: school("Example Primary"), sessionIds: [] });
+  assert.equal(r.data.waitingList, true); assert.equal(r.data.ticketUrl, "");
+  assert.match(mails[0].msg.subject, /^Waiting list/); assert.equal(mails[0].msg.attachments, undefined);
+  await call("eduhub", { method: "POST", auth: true, body: settings({ capacity: 0, foodChoices: menu }) });
+});
+await test("admin can send a test email, check in from the list, and export check-ins", async () => {
+  assert.equal((await call("email-test", { method: "POST", auth: true, body: { to: "not-an-email" } })).status, 400);
+  assert.equal((await call("email-test", { method: "POST", auth: true, body: { to: "tom@lwlat.org.uk" } })).status, 200);
+  await call("booking", { method: "POST", auth: true, body: { id: ticketBooking.id, action: "checkin" } });
+  const csv = await (await fetch(BASE + "/api/export-bookings?item=eduhub", { headers: { cookie } })).text();
+  assert.match(csv, /"Checked in","Email sent"/);
+});
+
 console.log("Sign-in protection");
 await test("repeated wrong passwords lead to a temporary lockout", async () => {
   let last;
@@ -341,6 +446,6 @@ await test("repeated wrong passwords lead to a temporary lockout", async () => {
   assert.equal((await call("login", { method: "POST", body: { password: "local-admin-password" } })).status, 429);
 });
 
-server.kill();
+server.kill(); msMock.close();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -1,4 +1,4 @@
-# Learning Hub version 5.1: go-live guide
+# Learning Hub version 5.2: go-live guide
 
 Live site: https://eduhub27.netlify.app
 Netlify project: https://app.netlify.com/projects/eduhub27/overview
@@ -102,6 +102,17 @@ To stop bookings, choose **Closed** and save. Bookings also close by themselves 
 - **EduHub sessions → Session numbers** shows how full each session is. **Register (CSV)** gives a printable list for each room.
 - After the event, export what you need to keep, then delete bookings in line with the retention period agreed with the DPO.
 
+## Confirmation emails
+
+Send `EMAIL-SETUP-FOR-IT.md` to your IT team. When they have finished, the admin Overview page says emails are switched on. Send yourself a test email from there.
+
+## On the day: scanning people in
+
+1. Each person at the registration desk signs in at https://eduhub27.netlify.app/admin/ on their phone before doors open. Sign-in lasts 12 hours.
+2. Open the phone's normal camera and point it at a ticket's QR code. Tap the link that appears.
+3. Green means checked in. Amber means already checked in (the time is shown). Red means the booking was cancelled or the person is only on the waiting list.
+4. If someone has no ticket, find them under **Bookings** and press **Check in**.
+
 ## Troubleshooting
 
 | Problem | What to do |
@@ -113,3 +124,5 @@ To stop bookings, choose **Closed** and save. Bookings also close by themselves 
 | Deploy fails in Netlify | Open the failed deploy, copy the last 20 lines of the log and send them to Claude |
 | Courses or bookings seem to be missing | Check you are on the eduhub27 project. Your CSV backup from Part 1 has every booking |
 | Staff see "Please use your @lwlat.org.uk email address" | They must book with their Trust email |
+| A booking shows "Email failed" | Hover over it to see why, fix the cause, then press **Resend email** |
+| Scanning a code shows the ticket but no green screen | That phone is not signed in to admin. Sign in, then scan again |

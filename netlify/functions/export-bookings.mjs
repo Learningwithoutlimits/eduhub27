@@ -27,7 +27,7 @@ export default async request => {
    rows=rows.filter(b=>b.itemId===EDUHUB_ID&&activeBooking(b)&&!b.waitingList&&Array.isArray(b.sessionIds)&&b.sessionIds.includes(session.id))
      .sort((a,b)=>String(a.lastName).localeCompare(String(b.lastName)));
    headers=["Session","Time","Room or area","Reference","First name","Surname","School or team","Phase","Accessibility requirements","Attended"];
-   lines=rows.map(b=>[session.title,slotLabel(session),session.room,b.reference,b.firstName,b.lastName,b.organisation,b.phaseName,b.accessibility,""]);
+   lines=rows.map(b=>[session.title,slotLabel(session),session.room,b.reference,b.firstName,b.lastName,b.organisation,b.phaseName,b.accessibility,b.checkedInAt?"Checked in at event":""]);
    label=`register-${session.id}`;
  }else if(view==="catering"){
    // For the caterer: confirmed places only, food and dietary details, no contact details.
@@ -35,8 +35,8 @@ export default async request => {
    headers=["Reference","First name","Surname","School or organisation","Food choice","Allergens in chosen food","Dietary requirements or allergies"];
    lines=rows.map(b=>[b.reference,b.firstName,b.lastName,b.organisation,b.foodChoice,b.foodAllergens,b.dietary]);
  }else{
-   headers=["Reference","Date booked","Type","Opportunity","First name","Surname","Email","Telephone","School or organisation","Phase","Job title","Sessions","Food choice","Allergens in chosen food","Dietary requirements or allergies","Accessibility requirements","Notes","Admin notes","Status"];
-   lines=rows.map(b=>[b.reference,stamp(b.createdAt),b.itemType==="eduhub"?"EduHub":"Professional Learning",b.itemTitle,b.firstName,b.lastName,b.email,b.telephone,b.organisation,b.phaseName,b.jobTitle,sessionList(b),b.foodChoice,b.foodAllergens,b.dietary,b.accessibility,b.notes,b.adminNotes,STATUS[bookingStatusOf(b)]]);
+   headers=["Reference","Date booked","Type","Opportunity","First name","Surname","Email","Telephone","School or organisation","Phase","Job title","Sessions","Food choice","Allergens in chosen food","Dietary requirements or allergies","Accessibility requirements","Notes","Admin notes","Status","Checked in","Email sent"];
+   lines=rows.map(b=>[b.reference,stamp(b.createdAt),b.itemType==="eduhub"?"EduHub":"Professional Learning",b.itemTitle,b.firstName,b.lastName,b.email,b.telephone,b.organisation,b.phaseName,b.jobTitle,sessionList(b),b.foodChoice,b.foodAllergens,b.dietary,b.accessibility,b.notes,b.adminNotes,STATUS[bookingStatusOf(b)],stamp(b.checkedInAt),b.emailSentAt?stamp(b.emailSentAt):b.emailError?"Failed":""]);
  }
  const csv=[headers,...lines].map(r=>r.map(esc).join(",")).join("\r\n");
  const name=`lwlat-${label}${item&&view!=="register"?"-"+item.replace(/[^a-z0-9-]/gi,"").slice(0,40):""}-${new Date().toISOString().slice(0,10)}.csv`;

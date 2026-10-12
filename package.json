@@ -1,10 +1,11 @@
 {
   "name": "lwlat-learning-hub",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^10.0.10"
+    "@netlify/blobs": "^10.0.10",
+    "qrcode": "^1.5.4"
   },
   "scripts": {
     "dev": "node tests/dev-server.mjs",

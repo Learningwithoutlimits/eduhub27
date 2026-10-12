@@ -198,6 +198,7 @@ form.addEventListener('submit', async e => {
       <p><strong>Thank you. Your ${data.waitingList ? 'waiting-list request' : 'booking'} has been received.</strong></p>
       ${data.reference ? `<p>Your booking reference is <strong>${escapeHtml(data.reference)}</strong>. Please keep a note of it.</p>` : ''}
       ${data.waitingList ? '<p>We will contact you if a place becomes available.</p>' : ''}
+      ${data.ticketUrl ? `<p>${data.emailSent ? 'We have emailed you a confirmation with your ticket. ' : ''}<a href="${escapeHtml(data.ticketUrl)}">Open your ticket</a> to see the QR code to bring on the day.</p>` : ''}
     </div>`;
     load();
   }catch(err){

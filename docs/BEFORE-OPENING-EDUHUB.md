@@ -19,6 +19,8 @@ The booking form collects the following:
 How it is handled:
 
 - Bookings are stored in Netlify Blobs, in the Learning Hub's Netlify account. Netlify's storage location should be confirmed with the DPO.
+- A confirmation email is sent to the person booking from a Trust Microsoft 365 mailbox. It contains their name, booking details, sessions and food choice, but not their dietary or accessibility details. Emails are not kept in the mailbox's Sent Items.
+- Each ticket's QR code holds a web link with a random booking number and a signature, but no personal details. Anyone who opens the link sees the person's first name, booking reference and sessions. Signed-in administrators also see school, food, dietary and accessibility details, so door staff can help people on arrival.
 - Only someone with the admin password can see bookings. There are no individual admin accounts, so everyone who signs in shares one password.
 - The **caterer's list** download contains names, school, food choice and dietary details. It leaves out email addresses and telephone numbers.
 - Administrators can cancel, edit or permanently delete a booking.
