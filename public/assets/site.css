@@ -223,3 +223,108 @@ table.compact{min-width:0}
 .session-option .taken-note{display:none;font-size:.85rem;color:#795400;font-weight:700}
 .session-option.is-taken{opacity:.55;cursor:not-allowed}.session-option.is-taken .taken-note{display:block}
 @media(max-width:700px){.keynote-card{flex-direction:column}.keynote-card .speaker-img{width:110px;height:110px}}
+
+.agenda-row{border:1px solid #d9e6e5;border-radius:14px;background:#f8fbfb;padding:12px 14px}
+.agenda-grid{display:grid;grid-template-columns:110px 110px 2fr 1fr 1fr 1fr;gap:10px;margin-bottom:8px}
+.agenda-grid .agenda-detail{grid-column:3/-1}
+@media(max-width:900px){.agenda-grid{grid-template-columns:1fr 1fr}.agenda-grid .agenda-title,.agenda-grid .agenda-detail{grid-column:1/-1}}
+
+/* ---------- v5.4: EduHub page design ---------- */
+.eduhub-page{background:#f4f8f8}
+.hero-chips{list-style:none;display:flex;flex-wrap:wrap;gap:10px;padding:0;margin:18px 0 0}
+.hero-chips li{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:7px 14px;border-radius:999px;font-weight:700;font-size:.95rem}
+
+/* Day timeline */
+.day-section{padding-top:30px}
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;background:#e3eeed;padding:5px;border-radius:999px}
+.day-tab{background:transparent;color:#17383a;padding:9px 16px;font-size:.92rem}
+.day-tab[aria-selected="true"]{background:#fff;color:var(--teal);box-shadow:0 3px 10px rgba(19,58,60,.12)}
+.timeline{list-style:none;margin:0;padding:0;position:relative;background:#fff;border-radius:24px;padding:26px 28px;box-shadow:var(--shadow)}
+.timeline-item{display:grid;grid-template-columns:120px 22px 1fr;gap:14px;align-items:start;padding:12px 0;position:relative}
+.timeline-item:not(:last-child)::after{content:"";position:absolute;left:calc(120px + 14px + 10px);top:34px;bottom:-12px;width:2px;background:#dbe8e7}
+.timeline-time{font-weight:800;color:#17383a;font-variant-numeric:tabular-nums;padding-top:1px}
+.timeline-time span{display:block;font-weight:400;color:#617579;font-size:.86rem}
+.timeline-dot{width:16px;height:16px;border-radius:50%;margin-top:4px;background:#b9cecc;border:3px solid #fff;box-shadow:0 0 0 2px #b9cecc;position:relative;z-index:1}
+.timeline-body{display:grid;gap:2px}
+.timeline-body strong{font-size:1.05rem}
+.timeline-kind{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:#617579}
+.timeline-where{color:#455a5d;font-size:.92rem}
+.timeline-where::before{content:"\25CF";color:var(--teal);font-size:.6rem;margin-right:6px;vertical-align:2px}
+.timeline-detail{color:#617579;font-size:.9rem}
+.kind-keynote .timeline-dot{background:var(--teal);box-shadow:0 0 0 2px var(--teal)}
+.kind-workshop .timeline-dot{background:var(--purple);box-shadow:0 0 0 2px var(--purple)}
+.kind-workshop .timeline-kind{color:var(--purple)}
+.kind-break .timeline-dot,.kind-lunch .timeline-dot{background:var(--yellow);box-shadow:0 0 0 2px var(--yellow)}
+.kind-awards .timeline-dot{background:var(--red);box-shadow:0 0 0 2px var(--red)}
+.kind-arrival .timeline-dot{background:var(--lime);box-shadow:0 0 0 2px var(--lime)}
+.kind-workshop.is-chosen .timeline-body strong{color:var(--purple)}
+.timeline.compact{box-shadow:none;padding:6px 0 0;border-radius:0}
+.timeline.compact .timeline-item{grid-template-columns:52px 18px 1fr;gap:10px;padding:8px 0}
+.timeline.compact .timeline-item:not(:last-child)::after{left:calc(52px + 10px + 8px);top:28px}
+.timeline.compact .timeline-dot{width:14px;height:14px}
+.timeline.compact .timeline-body strong{font-size:.95rem}
+.your-day{margin-top:16px}
+.eduhub-booking-sidebar{max-height:calc(100vh - 120px);overflow:auto}
+
+/* Keynote feature */
+.programme-section{padding-top:20px}
+.keynote-feature{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:center;background:linear-gradient(120deg,#00756f,#0d4f53);color:#fff;border-radius:28px;padding:30px 34px;box-shadow:var(--shadow);margin-bottom:56px}
+.keynote-feature img{width:220px;height:220px;border-radius:50%;object-fit:cover;border:6px solid rgba(255,255,255,.25)}
+.keynote-feature h2{font-size:clamp(2rem,4vw,3rem);margin:.15em 0}
+.keynote-name{font-size:1.2rem;font-weight:700;margin:0}
+.keynote-role{opacity:.9;margin:4px 0 18px}
+.button.on-dark{background:transparent;color:#fff;border-color:#fff}
+.button.on-dark:hover{background:#fff;color:var(--teal)}
+
+/* Workshop tiles */
+.workshop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+.workshop-tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 11px 32px rgba(28,63,65,.09);transition:transform .18s ease,box-shadow .18s ease;font-family:inherit;color:var(--ink)}
+.workshop-tile:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(28,63,65,.16)}
+.workshop-tile:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.workshop-tile-photo{aspect-ratio:1/1;background:linear-gradient(135deg,#dff3f1,#eef7f6);display:grid;place-items:center;overflow:hidden}
+.workshop-tile-photo img{width:100%;height:100%;object-fit:cover;object-position:center 22%;transition:transform .3s ease}
+.workshop-tile:hover .workshop-tile-photo img{transform:scale(1.04)}
+.workshop-tile-initials{font-size:3rem;font-weight:800;color:var(--teal)}
+.workshop-tile-body{display:flex;flex-direction:column;gap:6px;padding:16px 18px 20px;flex:1}
+.workshop-tile-title{font-weight:800;font-size:1.06rem;line-height:1.3}
+.workshop-tile-speaker{color:#455a5d}
+.workshop-tile .tag{align-self:flex-start;margin-top:auto}
+.info-link{font-size:.88rem;font-weight:700;color:var(--teal);text-decoration:underline;text-underline-offset:2px;justify-self:start;width:max-content}
+
+/* Lightbox */
+.lightbox{border:0;padding:0;border-radius:26px;width:min(760px,calc(100% - 32px));max-height:88vh;box-shadow:0 30px 80px rgba(0,0,0,.35);color:var(--ink)}
+.lightbox::backdrop{background:rgba(9,32,34,.72);backdrop-filter:blur(3px)}
+.lightbox[open]{animation:pop .2s ease}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.lightbox-inner{padding:30px 32px;position:relative}
+.lightbox-close{position:absolute;top:14px;right:14px;width:42px;height:42px;padding:0;font-size:1.6rem;line-height:1;background:#e9f1f1;color:#17383a}
+.lightbox-head{display:flex;gap:22px;align-items:center;margin-bottom:16px;padding-right:40px}
+.lightbox-head img{width:130px;height:130px;border-radius:50%;object-fit:cover;object-position:center 22%;flex:none}
+.lightbox-head h2{margin:0 0 6px;font-size:1.6rem;line-height:1.2}
+.lightbox-speaker{margin:0 0 8px;display:grid}
+.lightbox-speaker span{color:#617579;font-size:.92rem}
+.lightbox-facts{background:#eef7f6;border-radius:14px;padding:12px 16px;margin:16px 0}
+.lightbox-facts p{margin:4px 0}.lightbox-facts ul{margin:4px 0;padding-left:20px}
+.lightbox h3{margin:18px 0 6px}
+@media(max-width:700px){
+  .keynote-feature{grid-template-columns:1fr;text-align:center;justify-items:center;padding:26px 22px}
+  .keynote-feature img{width:160px;height:160px}
+  .timeline{padding:18px}
+  .timeline-item{grid-template-columns:62px 18px 1fr;gap:10px}
+  .timeline-item:not(:last-child)::after{left:calc(62px + 10px + 8px)}
+  .timeline-time span{display:none}
+  .workshop-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .workshop-tile-body{padding:12px 12px 14px}
+  .workshop-tile-title{font-size:.95rem}
+  .lightbox-inner{padding:24px 20px}
+  .lightbox-head{flex-direction:column;align-items:flex-start}
+  .lightbox-head img{width:96px;height:96px}
+  .eduhub-booking-sidebar{max-height:none}
+}
+@media(prefers-reduced-motion:reduce){.workshop-tile,.workshop-tile-photo img,.lightbox[open]{transition:none;animation:none}}
+
+.tile-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.workshop-tile .tile-tags .tag{margin-top:0}
+.tag.warning-tag{background:#fde8ed;color:#971238}
+.warning-notice{margin:12px 0}
+.choice-warning{font-size:.88rem;font-weight:700;color:#971238}

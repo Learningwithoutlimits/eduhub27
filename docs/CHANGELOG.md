@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 5.4: a more visual EduHub page
+
+### New
+- **Structure of the day** timeline on the EduHub page, with tabs for primary, secondary and central Trust staff. Editable in admin under EduHub sessions, and filled in from the structure-of-the-day document by the booklet button.
+- **Your day** beside the booking form. It switches to the person's group when they choose their school, and fills in each workshop and room as they choose them.
+- Workshop **tiles** showing only the speaker photo, title, speaker name and recommended audience. Selecting a tile opens a **lightbox** with the description, speaker biography, room and round times.
+- The booking form uses the same compact tiles, with a "More about this workshop" link to the lightbox.
+- Keynote banner with an "About Graham" lightbox.
+- A **warning** field for each workshop, shown on the tile, in the lightbox and on the booking form. "10 Things I Love About Food" carries a warning that the session will involve the use of nuts.
+
 ## Version 5.3: workshop rounds, keynote and the workshop booklet
 
 ### Changed

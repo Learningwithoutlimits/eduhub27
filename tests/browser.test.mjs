@@ -154,6 +154,32 @@ await step("homepage now links straight to booking", async () => {
   await staffPage.waitForURL(/\/eduhub\/#booking$/);
 });
 
+await step("EduHub page shows the day, workshop tiles and a lightbox with details", async () => {
+  await staffPage.waitForSelector(".workshop-tile");
+  assert.equal(await staffPage.locator(".workshop-tile").count(), 12);
+  // Tiles show only photo, title, speaker and recommended audience.
+  const tile = staffPage.locator(".workshop-tile").first();
+  assert.doesNotMatch(await tile.textContent(), /Kindness matters/);
+  // Timeline with group tabs: primaries have People Strategy at 10:30, secondaries a workshop.
+  assert.match(await staffPage.textContent("#day-timeline"), /People Strategy launch/);
+  await staffPage.click('#day-tabs [data-phase="secondary"]');
+  assert.match(await staffPage.locator("#day-timeline .timeline-item").nth(4).textContent(), /Workshop: Round 1/);
+  await snap("04a-eduhub-day-and-tiles", staffPage);
+  await tile.click();
+  await staffPage.waitForSelector("#workshop-dialog[open]");
+  assert.match(await staffPage.textContent("#workshop-dialog"), /Kindness matters/);
+  assert.match(await staffPage.textContent("#workshop-dialog"), /Round 2, 11:20 to 12:05/);
+  await snap("04b-eduhub-lightbox", staffPage);
+  await staffPage.keyboard.press("Escape");
+  assert.equal(await staffPage.locator("#workshop-dialog[open]").count(), 0);
+  // The food workshop carries its nut warning on the tile and in the lightbox.
+  const food = staffPage.locator(".workshop-tile", { hasText: "10 Things I Love About Food" });
+  assert.match(await food.textContent(), /Allergy warning/);
+  await food.click();
+  assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /use of nuts/);
+  await staffPage.click("#dialog-close");
+});
+
 await step("form explains every problem before sending", async () => {
   await staffPage.waitForSelector(".food-option");
   await staffPage.fill("#email", "someone@gmail.com");
@@ -171,6 +197,9 @@ await step("member of staff books a place with a food choice", async () => {
   assert.match(offered, /Round 2/); assert.match(offered, /Round 3/); assert.doesNotMatch(offered, /Round 1|Round 4/);
   assert.equal(await staffPage.locator(".session-slot").nth(1).locator(".session-option.is-taken").count(), 1);
   assert.match(await staffPage.textContent("#programme"), /Graham Allcott/);
+  // "Your day" beside the form follows their school and fills in chosen workshops.
+  assert.match(await staffPage.textContent("#your-day"), /Botheredness/);
+  assert.doesNotMatch(await staffPage.textContent("#your-day"), /Round 1/);
   await snap("05a-eduhub-sessions", staffPage);
   await staffPage.locator(".food-option", { hasText: "Tuna Mayo Sandwich" }).locator("input").check();
   await staffPage.fill("#dietary", "Mild lactose intolerance");

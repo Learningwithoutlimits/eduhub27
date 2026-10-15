@@ -93,7 +93,7 @@
 <section id="programme-view" class="admin-section hidden">
 <form id="programme-form" class="form-grid" novalidate>
 <div class="panel field full">
-  <div class="section-head"><div><h2>Workshop booklet</h2><p class="muted">Fill in the keynote, the four workshop rounds with their times, and twelve workshops from the workshop booklet, with speaker photos. Nothing is saved until you check the details and press Save.</p></div>
+  <div class="section-head"><div><h2>Workshop booklet</h2><p class="muted">Fill in the keynote, the structure of the day, the four workshop rounds with their times, and twelve workshops from the workshop booklet, with speaker photos. Nothing is saved until you check the details and press Save.</p></div>
   <button type="button" class="button secondary" id="load-booklet">Fill in from the workshop booklet</button></div>
 </div>
 
@@ -111,6 +111,13 @@
       <div class="field full"><label for="k-bio">About the speaker</label><textarea id="k-bio" data-k="bio" rows="5" maxlength="3000"></textarea></div>
     </div>
   </div>
+</div>
+
+<div class="panel field full">
+  <h2>Structure of the day</h2>
+  <p class="muted">Shown as a timeline on the EduHub page and beside the booking form. Untick groups for lines that apply to some staff only. A workshop line linked to a round shows each person the workshop they chose for it.</p>
+  <div id="agenda-builder" class="food-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-agenda">Add a line</button></div>
 </div>
 
 <div class="panel field full">
