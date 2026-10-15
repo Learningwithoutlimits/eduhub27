@@ -18,6 +18,9 @@ await new Promise(r => server.stdout.on("data", d => String(d).includes("test se
 
 const browser = await playwright.chromium.launch({ executablePath: fs.existsSync("/opt/pw-browsers/chromium") ? undefined : undefined });
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+// Most steps act as someone who has already said who they are. A separate
+// step checks the "Who are you?" lightbox from a first visit.
+await context.addInitScript(() => { try{ if(!localStorage.getItem("eduhub-who")) localStorage.setItem("eduhub-who", "primary"); }catch{} });
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", e => errors.push(e.message));
@@ -109,8 +112,14 @@ await step("admin preview shows the menu with allergens and never submits", asyn
   await preview.click("#submit-button");
   await preview.waitForSelector(".confirmation");
   assert.match(await preview.textContent(".confirmation"), /Nothing has been sent or saved/);
-  assert.match(await preview.textContent(".confirmation"), /Recognising colleagues/);
+  assert.match(await preview.textContent(".confirmation"), /LwLAT Better Together Recognition Awards 2027/);
   assert.equal(posted, false);
+  // The awards lightbox celebrates the booking and links to the nomination form.
+  await preview.waitForSelector("#awards-dialog[open]");
+  assert.match(await preview.textContent("#awards-dialog"), /LwLAT Better Together Recognition Awards 2027/);
+  assert.equal(await preview.getAttribute("#awards-link", "href"), "https://forms.cloud.microsoft/e/PsKimNCMdT");
+  await snap("03b-awards-lightbox", preview);
+  await preview.click("#awards-dialog [data-close-dialog]");
   await preview.click("#back-to-form");
   assert.ok(await preview.isVisible("#eduhub-form"));
   await snap("03-eduhub-preview", preview);
@@ -174,8 +183,13 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   assert.doesNotMatch(await tile.textContent(), /Kindness matters/);
   // Timeline with group tabs: primaries have People Strategy at 10:30, secondaries a workshop.
   assert.match(await staffPage.textContent("#day-timeline"), /People Strategy launch/);
-  await staffPage.click('#day-tabs [data-phase="secondary"]');
+  assert.match(await staffPage.textContent("#day-who"), /Primary school staff/);
+  await staffPage.click('#day-who [data-open-who]');
+  await staffPage.click('#who-options [data-who="secondary"]');
+  assert.match(await staffPage.textContent("#day-who"), /Secondary school staff/);
   assert.match(await staffPage.locator("#day-timeline .timeline-item").nth(4).textContent(), /Workshop: Round 1/);
+  await staffPage.click('#day-who [data-open-who]');
+  await staffPage.click('#who-options [data-who="primary"]');
   await snap("04a-eduhub-day-and-tiles", staffPage);
   await tile.click();
   await staffPage.waitForSelector("#workshop-dialog[open]");
@@ -191,6 +205,29 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   await food.click();
   assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /variety of allergens, including nuts/);
   await staffPage.click("#dialog-close");
+});
+
+await step("first visit asks who you are, then shows that day and sets the form", async () => {
+  const fresh = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const fp = await fresh.newPage();
+  fp.on("pageerror", e => errors.push(e.message));
+  await fp.goto(BASE + "/eduhub/");
+  await fp.waitForSelector("#who-dialog[open]");
+  assert.equal(await fp.locator("#who-options [data-who]").count(), 6);
+  await snap("04c-who-are-you", fp);
+  await fp.click('#who-options [data-who="gov-secondary"]');
+  assert.match(await fp.textContent("#day-who"), /Governor of a secondary school/);
+  assert.equal(await fp.isChecked('[name=role][value=governor]'), true);
+  assert.match(await fp.textContent("#day-timeline"), /Workshop: Round 1/);
+  // Remembered on the next visit.
+  await fp.reload();
+  await fp.waitForSelector("#day-who .who-chip");
+  assert.equal(await fp.locator("#who-dialog[open]").count(), 0);
+  // The awards line in the timeline opens the awards lightbox.
+  await fp.click("#day-timeline [data-open-awards]");
+  await fp.waitForSelector("#awards-dialog[open]");
+  await fp.keyboard.press("Escape");
+  await fresh.close();
 });
 
 await step("form explains every problem before sending", async () => {

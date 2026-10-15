@@ -389,3 +389,69 @@ table.compact{min-width:0}
 @media(max-width:650px){.choice-grid{grid-template-columns:repeat(2,1fr);gap:8px}.choice-tile-body{padding:8px 10px 10px}.choice-tile-title{font-size:.92rem}}
 .day-section{padding-top:56px}
 .day-intro{margin:6px 0 0;max-width:520px}
+
+/* ---------- v5.7: who-are-you and awards lightboxes ---------- */
+.day-who{display:flex;align-items:center}
+.who-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:#fff;border:2px solid var(--teal);border-radius:999px;padding:8px 10px 8px 20px;box-shadow:0 6px 18px rgba(19,58,60,.08)}
+.who-chip span{color:#617579;font-size:.9rem}
+.who-chip strong{color:var(--teal);font-size:1.05rem}
+.who-prompt{list-style:none;text-align:center;padding:30px 10px}
+.who-prompt p{max-width:560px;margin:0 auto 16px}
+.who-dialog{width:min(820px,calc(100% - 32px))}
+.who-dialog h2{font-size:clamp(1.8rem,4vw,2.4rem);margin:.15em 0}
+.who-options{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.who-option{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:22px 14px;border-radius:20px;background:#f3f8f8;border:2px solid #d5e3e2;font-family:inherit;color:var(--ink);transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.who-option:hover{transform:translateY(-3px);border-color:var(--teal);box-shadow:0 12px 28px rgba(19,58,60,.12)}
+.who-option:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.who-option[aria-pressed="true"]{border-color:var(--teal);background:#e3f4f2}
+.who-icon{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.6rem;color:#fff;background:var(--teal)}
+.who-governor .who-icon{background:var(--purple)}
+.who-trustee .who-icon{background:var(--red)}
+.who-label{font-weight:800;font-size:1.02rem;line-height:1.3}
+.link-button{all:unset;cursor:pointer;color:var(--teal);font-weight:800;text-decoration:underline;text-underline-offset:3px;margin-top:4px;width:max-content}
+.link-button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.kind-awards .link-button{color:var(--red)}
+.recognition-box .link-button{color:var(--purple);margin-left:14px}
+
+.awards-dialog{border:0;padding:0;background:transparent;width:100vw;height:100vh;max-width:100vw;max-height:100vh;margin:0;display:none;place-items:center;overflow:hidden}
+.awards-dialog[open]{display:grid}
+.awards-dialog::backdrop{background:radial-gradient(circle at 50% 40%,rgba(111,39,137,.82),rgba(9,32,34,.92))}
+.celebrate-canvas{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2}
+.awards-card{position:relative;z-index:1;width:min(560px,calc(100% - 32px));max-height:90vh;overflow:auto;background:#fff;border-radius:28px;padding:40px 34px 32px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4);animation:awardsPop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes awardsPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+.awards-badge{width:84px;height:84px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;font-size:2.6rem;color:#fff;background:linear-gradient(135deg,var(--yellow),#f08a00);box-shadow:0 0 0 8px rgba(253,185,19,.25),0 0 40px rgba(253,185,19,.6)}
+.awards-card .eyebrow{color:var(--purple)}
+.awards-card h2{font-size:clamp(1.7rem,4vw,2.3rem);margin:.25em 0 .4em;line-height:1.15}
+.awards-card p{margin:0 0 22px}
+.awards-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.awards-button{background:var(--purple);font-size:1.05rem;padding:14px 26px}
+.awards-card .lightbox-close{top:14px;right:14px}
+@media(max-width:650px){.who-options{grid-template-columns:1fr 1fr}.who-icon{width:50px;height:50px;font-size:1.3rem}.awards-card{padding:32px 20px 24px}}
+@media(prefers-reduced-motion:reduce){.awards-card{animation:none}.who-option{transition:none}}
+
+/* Awards lightbox in the Better Together Recognition Awards gold. The photo
+   backdrop (awards-backdrop.jpg) sits over a gold gradient, which shows on
+   its own if the photo is missing. */
+.awards-dialog{
+  background:
+    url("/assets/awards-backdrop.jpg") center/cover no-repeat,
+    radial-gradient(circle at 12% 30%, rgba(255,214,120,.55) 0 3%, transparent 3.5%),
+    radial-gradient(circle at 22% 18%, rgba(255,205,110,.45) 0 2.4%, transparent 2.9%),
+    radial-gradient(circle at 30% 62%, rgba(255,220,140,.5) 0 2.8%, transparent 3.3%),
+    radial-gradient(circle at 8% 70%, rgba(255,200,100,.4) 0 3.4%, transparent 3.9%),
+    radial-gradient(circle at 40% 80%, rgba(255,230,160,.45) 0 2%, transparent 2.5%),
+    radial-gradient(circle at 78% 88%, rgba(255,215,130,.35) 0 1.6%, transparent 2%),
+    radial-gradient(ellipse at 18% 40%, rgba(236,172,60,.75), transparent 45%),
+    radial-gradient(ellipse at 55% 92%, rgba(214,150,50,.55), transparent 40%),
+    linear-gradient(135deg,#3a2408,#24160a 55%,#140c05);
+}
+.awards-dialog::backdrop{background:#140c05}
+.awards-card{background:rgba(28,17,6,.78);color:#fbf3e2;border:1px solid rgba(240,196,98,.75);box-shadow:0 0 0 6px rgba(240,196,98,.12),0 30px 90px rgba(0,0,0,.6);backdrop-filter:blur(6px)}
+.awards-card .eyebrow{color:#f3c862}
+.awards-card h2{color:#ffe3a1}
+.awards-card strong{color:#ffe3a1}
+.awards-badge{background:linear-gradient(135deg,#ffe08a,#c98a1a);color:#3a2408;box-shadow:0 0 0 8px rgba(240,196,98,.2),0 0 50px rgba(255,200,90,.7)}
+.awards-button{background:linear-gradient(135deg,#f6cf6b,#c98a1a);color:#2a1806;box-shadow:0 8px 24px rgba(201,138,26,.45)}
+.awards-button:hover{filter:brightness(1.08)}
+.awards-card .button.secondary{background:transparent;color:#fbf3e2;border-color:rgba(251,243,226,.7)}
+.awards-card .lightbox-close{background:rgba(255,255,255,.12);color:#fbf3e2}

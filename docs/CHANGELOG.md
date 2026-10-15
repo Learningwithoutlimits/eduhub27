@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 5.7: "Who are you?" and the Recognition Awards lightbox
+
+### New
+- **Who are you?** On a first visit, a lightbox asks people to choose: primary school staff, secondary school staff, central Trust staff, governor of a primary school, governor of a secondary school, or trustee. The structure of the day then shows their version, under "Showing the day for…" with a **Change** button. The choice also sets "I am booking as" on the form, and the browser remembers it.
+- **LwLAT Better Together Recognition Awards 2027** lightbox in gold, with confetti and sparklers. It opens after booking (and in preview), and from a "Nominate a colleague" button on the awards line of the timeline. People who ask their device to reduce motion see it without animation.
+- The awards lightbox uses `public/assets/awards-backdrop.jpg` as its backdrop when that file is uploaded, and a matching gold background until then.
+- The awards are called "LwLAT Better Together Recognition Awards 2027" on the confirmation screen, in the email and in the structure of the day.
+
 ## Version 5.6: workshops chosen one round at a time
 
 ### Changed

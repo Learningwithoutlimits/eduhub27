@@ -334,7 +334,7 @@ export const WORKSHOP_BOOKLET_2027 = {
   {
    "startTime": "13:40",
    "endTime": "14:30",
-   "title": "LwLAT Recognition Awards",
+   "title": "LwLAT Better Together Recognition Awards 2027",
    "kind": "awards",
    "detail": "",
    "location": "Sports hall",

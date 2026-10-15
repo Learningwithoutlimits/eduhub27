@@ -51,9 +51,9 @@
       <div>
         <div class="eyebrow teal">Structure of the day</div>
         <h2>How the day works</h2>
-        <p class="muted day-intro">Choose your group to see your day. Your school decides which two workshop rounds you attend.</p>
+        <p class="muted day-intro">The day is a little different depending on who you are, so tell us and we will show you yours.</p>
       </div>
-      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="Show the day for"></div>
+      <div class="day-who" id="day-who"></div>
     </div>
     <ol class="timeline" id="day-timeline"></ol>
   </div>
@@ -227,6 +227,31 @@
     <div>Winning hearts and inspiring minds to learn without limits.</div>
   </div>
 </footer>
+
+<dialog class="lightbox who-dialog" id="who-dialog" aria-labelledby="who-title">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" type="button" data-close-dialog aria-label="Close">&times;</button>
+    <div class="eyebrow teal">EduHub 2027</div>
+    <h2 id="who-title">Who are you?</h2>
+    <p class="muted">Choose the option that describes you, and we will show you how your day works.</p>
+    <div class="who-options" id="who-options"></div>
+  </div>
+</dialog>
+
+<dialog class="awards-dialog" id="awards-dialog" aria-labelledby="awards-title">
+  <canvas class="celebrate-canvas" id="celebrate-canvas" aria-hidden="true"></canvas>
+  <div class="awards-card">
+    <button class="lightbox-close" type="button" data-close-dialog aria-label="Close">&times;</button>
+    <div class="awards-badge" aria-hidden="true">&#9733;</div>
+    <div class="eyebrow" id="awards-when">LwLAT Better Together Recognition Awards 2027</div>
+    <h2 id="awards-title">Who deserves to be celebrated?</h2>
+    <p>At the end of EduHub we come together for the <strong>LwLAT Better Together Recognition Awards 2027</strong>. Do you know a colleague whose work deserves recognition? Nominate them now. It only takes a few minutes.</p>
+    <div class="awards-actions">
+      <a class="button awards-button" id="awards-link" href="#" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
+      <button type="button" class="button secondary" data-close-dialog>Maybe later</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog class="lightbox" id="workshop-dialog" aria-labelledby="dialog-title">
   <div class="lightbox-inner">
