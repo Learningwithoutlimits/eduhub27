@@ -121,7 +121,7 @@ function renderSessionChoices(){
   }
   const eligible = sessions.filter(x => openTo(x, phase));
   const slots = slotsOf(eligible);
-  $('#sessions-help').textContent = `${phase ? `${PHASE_NAMES[phase]} staff attend ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}${eduhub.requireSessionChoice ? 'Please choose one workshop for each round.' : 'You can choose one workshop for each round.'} You cannot choose the same workshop twice. Full details of every workshop are in the programme above.`;
+  $('#sessions-help').textContent = `${phase ? `${PHASE_NAMES[phase]} staff attend ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}${eduhub.requireSessionChoice ? 'Please choose one workshop for each round.' : 'You can choose one workshop for each round.'} You cannot choose the same workshop twice. Select "More about this workshop" for full details.`;
   if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no workshops to choose from for your school yet.</p>'; return; }
   $('#session-options').innerHTML = slots.map((slot, i) => `
     <div class="session-slot" role="radiogroup" aria-labelledby="slot-${i}">
@@ -130,12 +130,14 @@ function renderSessionChoices(){
       ${slot.items.map(x => {
         const full = x.placesLeft === 0;
         return `<label class="food-option session-option ${full ? 'is-full' : ''}">
-          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" data-workshop="${esc(x.workshopId || '')}" data-full="${full ? 1 : 0}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
+          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" data-workshop="${esc(x.workshopId || '')}" data-round="${esc(x.roundId || '')}" data-full="${full ? 1 : 0}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
           ${photoHtml(x)}
           <span class="food-option-body">
             <span class="food-name">${esc(x.title)}</span>
-            <span class="session-meta">${sessionMeta(x)}</span>
+            ${x.speakerName ? `<span class="session-meta"><span>${esc(x.speakerName)}</span></span>` : ''}
             <span class="food-tags">${audienceTag(x)}</span>
+            ${x.warning ? `<span class="choice-warning">${esc(x.warning)}</span>` : ''}
+            ${x.workshopId ? `<a href="#" class="info-link" data-open-workshop="${esc(x.workshopId)}">More about this workshop</a>` : ''}
             ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
             <span class="taken-note">Already chosen for another round</span>
           </span>
@@ -145,35 +147,141 @@ function renderSessionChoices(){
     </div>`).join('');
   lockRepeats();
 }
-form.addEventListener('change', e => { if(e.target.name?.startsWith('session-slot')) lockRepeats(); });
+form.addEventListener('change', e => { if(e.target.name?.startsWith('session-slot')){ lockRepeats(); renderYourDay(); } });
 
+// ---------- Structure of the day ----------
+const KIND_LABEL = { arrival:'Arrival', keynote:'Keynote', workshop:'Workshop', break:'Break', lunch:'Lunch', awards:'Awards', general:'' };
+let dayPhase = '';
+const agendaFor = phase => (eduhub.agenda || []).filter(a => !phase || !(a.groups || []).length || a.groups.includes(phase));
+const chosenFor = roundId => {
+  const input = [...form.querySelectorAll('[name^=session-slot]:checked')].find(i => i.dataset.round === roundId);
+  return input ? (eduhub.sessions || []).find(x => x.id === input.value) : null;
+};
+function timelineHtml(items, personal){
+  return items.map(a => {
+    const chosen = personal && a.roundId ? chosenFor(a.roundId) : null;
+    const round = a.roundId ? (eduhub.rounds || []).find(r => r.id === a.roundId) : null;
+    const title = chosen ? chosen.title : a.kind === 'workshop' && round ? `${a.title}: ${round.label}` : a.title;
+    const where = chosen?.room || a.location;
+    return `<li class="timeline-item kind-${esc(a.kind)}${chosen ? ' is-chosen' : ''}">
+      <span class="timeline-time">${esc(a.startTime)}${a.endTime && !personal ? `<span> to ${esc(a.endTime)}</span>` : ''}</span>
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-body">
+        ${KIND_LABEL[a.kind] && !chosen ? `<span class="timeline-kind">${KIND_LABEL[a.kind]}</span>` : ''}
+        ${chosen ? '<span class="timeline-kind">Your workshop</span>' : ''}
+        <strong>${esc(title)}</strong>
+        ${where ? `<span class="timeline-where">${esc(where)}</span>` : ''}
+        ${a.detail && !personal ? `<span class="timeline-detail">${esc(a.detail)}</span>` : ''}
+        ${personal && a.kind === 'workshop' && !chosen ? '<span class="timeline-detail">Choose your workshop below</span>' : ''}
+      </div>
+    </li>`;
+  }).join('');
+}
+function renderDay(){
+  const agenda = eduhub.agenda || [];
+  $('#day').classList.toggle('hidden', !agenda.length);
+  if(!agenda.length) return;
+  const grouped = agenda.some(a => (a.groups || []).length);
+  const phases = grouped ? Object.keys(PHASE_NAMES).filter(p => agenda.some(a => (a.groups || []).includes(p))) : [];
+  if(grouped && !phases.includes(dayPhase)) dayPhase = phases[0];
+  $('#day-tabs').innerHTML = grouped ? phases.map(p => `<button type="button" role="tab" class="day-tab" aria-selected="${p === dayPhase}" data-phase="${p}">${esc(PHASE_NAMES[p])} staff</button>`).join('') : '';
+  $('#day-timeline').innerHTML = timelineHtml(agendaFor(grouped ? dayPhase : ''), false);
+}
+$('#day-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('[data-phase]'); if(!tab) return;
+  dayPhase = tab.dataset.phase; renderDay();
+  $(`#day-tabs [data-phase="${dayPhase}"]`)?.focus();
+});
+$('#day-tabs').addEventListener('keydown', e => {
+  if(!['ArrowLeft','ArrowRight'].includes(e.key)) return;
+  const tabs = [...$('#day-tabs').querySelectorAll('[data-phase]')]; const i = tabs.findIndex(t => t.dataset.phase === dayPhase);
+  dayPhase = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length].dataset.phase; renderDay();
+  $(`#day-tabs [data-phase="${dayPhase}"]`)?.focus();
+});
+function renderYourDay(){
+  const phase = currentPhase();
+  const agenda = eduhub.agenda || [];
+  const show = agenda.length && phase !== null;
+  $('#your-day').classList.toggle('hidden', !show);
+  if(show) $('#your-day-timeline').innerHTML = timelineHtml(agendaFor(phase), true);
+}
+
+// ---------- Keynote and workshops ----------
 function renderProgramme(){
   const workshops = eduhub.workshops || [];
   const k = eduhub.keynote || {};
-  const rounds = eduhub.rounds || [];
   $('#programme').classList.toggle('hidden', !workshops.length && !k.name);
-  const keynote = k.name ? `<article class="keynote-card">
-      ${photoHtml(k, k.name)}
+  $('#keynote-feature').innerHTML = k.name ? `<article class="keynote-feature">
+      ${photoSrc(k) ? `<img src="${esc(photoSrc(k))}" alt="Photo of ${esc(k.name)}">` : ''}
       <div>
-        <div class="eyebrow teal">Keynote${times(k) ? `, ${esc(times(k))}` : ''}</div>
-        <h3>${esc(k.title || k.name)}</h3>
-        ${k.title ? `<p class="session-meta"><span><strong>${esc(k.name)}</strong>${k.role ? `, ${esc(k.role)}` : ''}</span></p>` : k.role ? `<p class="session-meta"><span>${esc(k.role)}</span></p>` : ''}
-        ${k.bio ? `<div class="programme-text">${textHtml(k.bio)}</div>` : ''}
+        <div class="eyebrow">Keynote speaker${times(k) ? ` · ${esc(times(k))}` : ''}</div>
+        <h2>${esc(k.title || k.name)}</h2>
+        ${k.title ? `<p class="keynote-name">${esc(k.name)}</p>` : ''}
+        ${k.role ? `<p class="keynote-role">${esc(k.role)}</p>` : ''}
+        ${k.bio ? `<button type="button" class="button secondary on-dark" data-open-keynote>About ${esc(k.name.split(' ')[0])}</button>` : ''}
       </div>
     </article>` : '';
-  const roundList = rounds.length ? `<div class="round-list"><h3>Workshop rounds</h3><ul>${rounds.map(r => `<li><strong>${esc(r.label)}</strong>${times(r) ? `: ${esc(times(r))}` : ''}${(r.phases || []).length ? ` <span class="muted">(${r.phases.map(p => PHASE_NAMES[p]).join(' and ')} staff)</span>` : ''}</li>`).join('')}</ul>
-    <p class="muted">Each workshop runs in every round. When you book, you choose a different workshop for each of your rounds.</p></div>` : '';
-  $('#programme-list').innerHTML = keynote + roundList + (workshops.length ? `<h3 class="workshops-heading">Workshops</h3><div class="programme-cards">${workshops.map(x => `<article class="programme-card">
-      ${photoHtml(x)}
-      <div>
-        <h4>${esc(x.title)}</h4>
-        <p class="session-meta">${sessionMeta(x)}</p>
-        <div class="food-tags">${audienceTag(x)}</div>
-        <div class="programme-text">${textHtml(x.description)}</div>
-        ${x.speakerBio ? `<details class="speaker-bio"><summary>About ${esc(x.speakerName || 'the speaker')}</summary>${textHtml(x.speakerBio)}</details>` : ''}
-      </div>
-    </article>`).join('')}</div>` : '');
+  $('#workshop-count').textContent = workshops.length ? String(workshops.length) : 'our';
+  $('#workshop-grid').innerHTML = workshops.map(w => `<button type="button" class="workshop-tile" data-open-workshop="${esc(w.id)}" aria-haspopup="dialog">
+      <span class="workshop-tile-photo">${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="" loading="lazy">` : `<span class="workshop-tile-initials">${esc((w.speakerName || w.title).split(' ').map(x => x[0]).slice(0,2).join(''))}</span>`}</span>
+      <span class="workshop-tile-body">
+        <span class="workshop-tile-title">${esc(w.title)}</span>
+        ${w.speakerName ? `<span class="workshop-tile-speaker">${esc(w.speakerName)}</span>` : ''}
+        <span class="tile-tags">${audienceTag(w)}${w.warning ? '<span class="tag warning-tag">Allergy warning</span>' : ''}</span>
+      </span>
+    </button>`).join('');
 }
+
+// ---------- Lightbox ----------
+const dialog = $('#workshop-dialog');
+let dialogReturn = null;
+function openDialog(html){
+  dialogReturn = document.activeElement;
+  $('#dialog-body').innerHTML = html;
+  dialog.showModal();
+  dialog.scrollTop = 0;
+  $('#dialog-close').focus();
+}
+function workshopHtml(w){
+  const runs = (eduhub.sessions || []).filter(x => x.workshopId === w.id);
+  return `<div class="lightbox-head">
+      ${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="Photo of ${esc(w.speakerName || '')}">` : ''}
+      <div>
+        <h2 id="dialog-title">${esc(w.title)}</h2>
+        ${w.speakerName ? `<p class="lightbox-speaker"><strong>${esc(w.speakerName)}</strong>${w.speakerRole ? `<span>${esc(w.speakerRole)}</span>` : ''}</p>` : ''}
+        ${audienceTag(w)}
+      </div>
+    </div>
+    ${w.warning ? `<p class="notice error warning-notice" role="note">${esc(w.warning)}</p>` : ''}
+    <div class="programme-text">${textHtml(w.description)}</div>
+    ${runs.length || w.room ? `<div class="lightbox-facts">
+      ${w.room ? `<p><strong>Room:</strong> ${esc(w.room)}</p>` : ''}
+      ${runs.length ? `<p><strong>Runs in:</strong></p><ul>${runs.map(x => `<li>${esc(slotLabel(x))}${(x.roundPhases || []).length ? ` <span class="muted">(${x.roundPhases.map(p => PHASE_NAMES[p]).join(' and ')} staff)</span>` : ''}${x.placesLeft === 0 ? ' <span class="status-pill waiting">Full</span>' : ''}</li>`).join('')}</ul>` : ''}
+    </div>` : ''}
+    ${w.speakerBio ? `<h3>About ${esc(w.speakerName || 'the speaker')}</h3><div class="programme-text">${textHtml(w.speakerBio)}</div>` : ''}`;
+}
+function keynoteHtml(k){
+  return `<div class="lightbox-head">
+      ${photoSrc(k) ? `<img src="${esc(photoSrc(k))}" alt="Photo of ${esc(k.name)}">` : ''}
+      <div><h2 id="dialog-title">${esc(k.title || k.name)}</h2>
+        <p class="lightbox-speaker"><strong>${esc(k.name)}</strong>${k.role ? `<span>${esc(k.role)}</span>` : ''}</p>
+        ${times(k) ? `<span class="tag">Keynote, ${esc(times(k))}</span>` : ''}</div>
+    </div>
+    <div class="programme-text">${textHtml(k.bio)}</div>`;
+}
+document.addEventListener('click', e => {
+  const w = e.target.closest('[data-open-workshop]');
+  if(w){
+    e.preventDefault();
+    const item = (eduhub.workshops || []).find(x => x.id === w.dataset.openWorkshop);
+    if(item) openDialog(workshopHtml(item));
+    return;
+  }
+  if(e.target.closest('[data-open-keynote]')) openDialog(keynoteHtml(eduhub.keynote || {}));
+});
+$('#dialog-close').addEventListener('click', () => dialog.close());
+dialog.addEventListener('click', e => { if(e.target === dialog) dialog.close(); });
+dialog.addEventListener('close', () => dialogReturn?.focus());
 
 function render(){
   const e = eduhub;
@@ -183,7 +291,8 @@ function render(){
   $('#edu-title').textContent = e.title || 'EduHub 2027: Better Together';
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
-  $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');
+  $('#edu-date').textContent = $('#side-date').textContent = $('#chip-date').textContent = fmtDate(e.date || '2027-01-05');
+  $('#chip-venue').textContent = e.venue || 'Babington Academy';
   $('#edu-time').textContent = e.time || 'To be confirmed';
   $('#side-time').textContent = e.time || 'Time to be confirmed';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';
@@ -213,8 +322,10 @@ function render(){
       return list.length ? `<optgroup label="${esc(n)}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>` : '';
     }).join('');
   }
+  renderDay();
   renderProgramme();
   renderSessionChoices();
+  renderYourDay();
   renderFood();
   $('#dietary-field').classList.toggle('hidden', e.askDietary === false);
   $('#accessibility-field').classList.toggle('hidden', e.askAccessibility === false);
@@ -356,7 +467,11 @@ form.addEventListener('submit', async ev => {
   }
 });
 
-form.schoolId.addEventListener('change', renderSessionChoices);
+form.schoolId.addEventListener('change', () => {
+  renderSessionChoices(); renderYourDay();
+  const phase = currentPhase();
+  if(phase && (eduhub.agenda || []).some(a => (a.groups || []).includes(phase))){ dayPhase = phase; renderDay(); }
+});
 
 async function reloadData(full = true){
   try{

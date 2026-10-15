@@ -411,7 +411,8 @@ cf.addEventListener('submit',async e=>{
 // ---------- EduHub sessions: keynote, rounds, workshops, schools ----------
 const PHASES=[['primary','Primary'],['secondary','Secondary'],['central','Central Trust']];
 const AUDIENCES=[['all','Open to all'],['educators','All educators'],['leaders','Anyone who leads a team']];
-const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), roundBuilder=$('#round-builder'), workshopBuilder=$('#workshop-builder');
+const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), roundBuilder=$('#round-builder'), workshopBuilder=$('#workshop-builder'), agendaBuilder=$('#agenda-builder');
+const AGENDA_KINDS=[['general','General'],['arrival','Arrival'],['keynote','Keynote'],['workshop','Workshop'],['break','Break'],['lunch','Lunch'],['awards','Awards']];
 let programmeDirty=false;
 const markProgrammeDirty=()=>{programmeDirty=true;$('#programme-dirty').textContent='You have unsaved changes.'};
 pf.addEventListener('input',markProgrammeDirty);pf.addEventListener('change',markProgrammeDirty);
@@ -466,6 +467,8 @@ function renderProgrammeForm(){
   if(!roundBuilder.children.length) roundBuilder.innerHTML='<p class="empty small" data-empty>No rounds yet.</p>';
   workshopBuilder.innerHTML='';(e.workshops||[]).forEach(w=>addWorkshopRow(w));
   if(!workshopBuilder.children.length) workshopBuilder.innerHTML='<p class="empty small" data-empty>No workshops yet. Add them one by one, or fill them in from the workshop booklet.</p>';
+  agendaBuilder.innerHTML='';(e.agenda||[]).forEach(a=>addAgendaRow(a));
+  if(!agendaBuilder.children.length) agendaBuilder.innerHTML='<p class="empty small" data-empty>No timeline yet. Add lines one by one, or fill it in from the workshop booklet.</p>';
   schoolBuilder.innerHTML='';(e.schools||[]).forEach(x=>addSchoolRow(x));
   if(!schoolBuilder.children.length) schoolBuilder.innerHTML='<p class="empty small" data-empty>No schools or teams added yet.</p>';
   programmeDirty=false;$('#programme-dirty').textContent='';
@@ -475,6 +478,40 @@ function renderKeynote(k){
   photoPicker($('#keynote-photo-cell'),k);
 }
 const readKeynote=()=>({...Object.fromEntries($$('[data-k]',pf).map(el=>[el.dataset.k,el.value.trim()])),...readPhoto($('#keynote-photo-cell'))});
+
+function roundOptions(selected){
+  return `<option value="">Not linked</option>`+readRounds().map(r=>`<option value="${escapeHtml(r.id)}" ${r.id===selected?'selected':''}>${escapeHtml(r.label)}</option>`).join('');
+}
+function addAgendaRow(a={}){
+  agendaBuilder.querySelector('[data-empty]')?.remove();
+  const uid=`a${Math.random().toString(36).slice(2,8)}`;
+  const row=document.createElement('div');row.className='agenda-row';row.dataset.id=a.id||'';
+  row.innerHTML=`<div class="agenda-grid">
+      <div class="field"><label for="${uid}-s">Starts</label><input id="${uid}-s" type="time" data-a="startTime" value="${escapeHtml(a.startTime||'')}"></div>
+      <div class="field"><label for="${uid}-e">Finishes</label><input id="${uid}-e" type="time" data-a="endTime" value="${escapeHtml(a.endTime||'')}"></div>
+      <div class="field agenda-title"><label for="${uid}-t">What happens</label><input id="${uid}-t" data-a="title" value="${escapeHtml(a.title||'')}" maxlength="150"></div>
+      <div class="field"><label for="${uid}-k">Type</label><select id="${uid}-k" data-a="kind">${AGENDA_KINDS.map(([v,n])=>`<option value="${v}" ${(a.kind||'general')===v?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field"><label for="${uid}-l">Where</label><input id="${uid}-l" data-a="location" value="${escapeHtml(a.location||'')}" maxlength="120"></div>
+      <div class="field" data-round-field><label for="${uid}-r">Workshop round</label><select id="${uid}-r" data-a="roundId" data-selected="${escapeHtml(a.roundId||'')}">${roundOptions(a.roundId)}</select></div>
+      <div class="field agenda-detail"><label for="${uid}-d">Extra detail <span class="optional">(optional)</span></label><input id="${uid}-d" data-a="detail" value="${escapeHtml(a.detail||'')}" maxlength="400"></div>
+    </div>
+    <div class="food-row-footer"><div class="suitable-row"><span class="muted small">For:</span> ${PHASES.map(([p,n])=>`<label class="allergen-check"><input type="checkbox" data-agenda-group="${p}" ${!(a.groups||[]).length||a.groups.includes(p)?'checked':''}> <span>${n}</span></label>`).join('')}</div>
+      <button type="button" class="danger small-button" data-remove-agenda>Remove</button></div>`;
+  const kind=row.querySelector('[data-a=kind]');
+  const toggle=()=>row.querySelector('[data-round-field]').classList.toggle('hidden',kind.value!=='workshop');
+  kind.addEventListener('change',toggle);toggle();
+  row.querySelector('[data-remove-agenda]').onclick=()=>{row.remove();markProgrammeDirty()};
+  agendaBuilder.appendChild(row);return row;
+}
+function refreshAgendaRounds(){
+  $$('[data-a=roundId]',agendaBuilder).forEach(sel=>{const v=sel.value||sel.dataset.selected;sel.innerHTML=roundOptions(v);sel.value=readRounds().some(r=>r.id===v)?v:''});
+}
+const readAgenda=()=>$$('.agenda-row',agendaBuilder).map(r=>{
+  const v=f=>r.querySelector(`[data-a="${f}"]`).value.trim();
+  const groups=$$('[data-agenda-group]:checked',r).map(i=>i.dataset.agendaGroup);
+  return {id:r.dataset.id,startTime:v('startTime'),endTime:v('endTime'),title:v('title'),kind:v('kind'),location:v('location'),detail:v('detail'),roundId:v('kind')==='workshop'?v('roundId'):'',groups:groups.length===PHASES.length?[]:groups};
+}).filter(a=>a.title);
+$('#add-agenda').addEventListener('click',()=>{addAgendaRow().querySelector('input').focus();markProgrammeDirty()});
 
 function addRoundRow(r={}){
   roundBuilder.querySelector('[data-empty]')?.remove();
@@ -498,6 +535,7 @@ const readRounds=()=>$$('.round-row',roundBuilder).map(r=>{
 // A workshop saved with no rounds listed runs in every round.
 function refreshRoundTicks(){
   const rounds=readRounds();
+  if(typeof refreshAgendaRounds==='function'&&agendaBuilder) refreshAgendaRounds();
   $$('.workshop-row',workshopBuilder).forEach(row=>{
     const box=row.querySelector('[data-round-ticks]');
     let current, all=false;
@@ -519,6 +557,7 @@ function addWorkshopRow(w={}){
         <div class="field"><label for="${uid}-n">Speaker name</label><input id="${uid}-n" data-w="speakerName" value="${escapeHtml(w.speakerName||'')}" maxlength="120"></div>
         <div class="field"><label for="${uid}-ro">Speaker role <span class="optional">(optional)</span></label><input id="${uid}-ro" data-w="speakerRole" value="${escapeHtml(w.speakerRole||'')}" maxlength="150"></div>
         <div class="field full"><label for="${uid}-d">Description</label><textarea id="${uid}-d" data-w="description" rows="5" maxlength="4000">${escapeHtml(w.description||'')}</textarea><span class="field-help">Start a line with "- " to show it as a bullet point.</span></div>
+        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session will involve the use of nuts."></div>
         <div class="field full"><label for="${uid}-b">About the speaker <span class="optional">(optional)</span></label><textarea id="${uid}-b" data-w="speakerBio" rows="3" maxlength="2500">${escapeHtml(w.speakerBio||'')}</textarea></div>
         <div class="field"><label for="${uid}-a">Recommended audience</label><select id="${uid}-a" data-w="recommended">${AUDIENCES.map(([v,n])=>`<option value="${v}" ${(w.recommended||'all')===v?'selected':''}>${n}</option>`).join('')}</select></div>
         <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-w="room" value="${escapeHtml(w.room||'')}" maxlength="100"></div>
@@ -547,7 +586,7 @@ function readWorkshops(){
   return $$('.workshop-row',workshopBuilder).map(r=>{
     const v=f=>r.querySelector(`[data-w="${f}"]`).value.trim();
     const ticked=$$('[data-round]:checked',r).map(i=>i.dataset.round);
-    return {id:r.dataset.id,title:v('title'),speakerName:v('speakerName'),speakerRole:v('speakerRole'),description:v('description'),speakerBio:v('speakerBio'),
+    return {id:r.dataset.id,title:v('title'),speakerName:v('speakerName'),speakerRole:v('speakerRole'),description:v('description'),warning:v('warning'),speakerBio:v('speakerBio'),
       recommended:v('recommended'),room:v('room'),capacity:Number(v('capacity'))||0,adminNotes:v('adminNotes'),
       rounds:ticked.length===roundCount?[]:ticked,...readPhoto(r.querySelector('[data-photo-holder]'))};
   });
@@ -581,12 +620,21 @@ $('#load-booklet').addEventListener('click',()=>{
   const current=readRounds(), sameRounds=current.length===B.rounds.length&&current.every((r,i)=>r.startTime===B.rounds[i].startTime&&r.endTime===B.rounds[i].endTime);
   let needRounds=!current.length;
   if(current.length&&!sameRounds) needRounds=confirm(`Replace the ${current.length} round${current.length===1?'':'s'} already here with the four rounds from the booklet?\n\n${B.rounds.map(r=>`${r.label}: ${r.startTime} to ${r.endTime}`).join('\n')}\n\nPress Cancel to keep the rounds you have.`);
-  const needKeynote=!$('#k-name').value.trim();
-  if(!toAdd.length&&!needRounds&&!needKeynote){message('Everything from the workshop booklet is already here.');return}
-  if(!confirm(`Fill in from the workshop booklet?\n\n${[needKeynote?'The keynote (Graham Allcott)':'',needRounds?`${B.rounds.length} workshop rounds`:'',toAdd.length?`${toAdd.length} workshops with speaker photos`:''].filter(Boolean).join('\n')}\n\nPlease check the details, add rooms, then press Save sessions.`)) return;
+  const needKeynote=!$('#k-name').value.trim(), needAgenda=!readAgenda().length;
+  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&!r.querySelector('[data-w=warning]').value.trim())).length;
+  if(!toAdd.length&&!needRounds&&!needKeynote&&!needAgenda&&!missingWarnings){message('Everything from the workshop booklet is already here.');return}
+  if(!confirm(`Fill in from the workshop booklet?\n\n${[needKeynote?'The keynote (Graham Allcott)':'',needAgenda?'The structure of the day':'',needRounds?`${B.rounds.length} workshop rounds`:'',toAdd.length?`${toAdd.length} workshops with speaker photos`:'',missingWarnings?`${missingWarnings} allergy warning${missingWarnings===1?'':'s'}`:''].filter(Boolean).join('\n')}\n\nPlease check the details, add rooms, then press Save sessions.`)) return;
   if(needKeynote) renderKeynote(B.keynote);
   if(needRounds){roundBuilder.innerHTML='';B.rounds.forEach(r=>addRoundRow(r))}
+  if(needAgenda){agendaBuilder.innerHTML='';B.agenda.forEach(a=>addAgendaRow(a))}
   toAdd.forEach(w=>addWorkshopRow(w));
+  // Copy across any booklet warning missing from a workshop already here.
+  let warned=0;
+  for(const w of B.workshops.filter(x=>x.warning)){
+    const row=$$('.workshop-row',workshopBuilder).find(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase());
+    const box=row?.querySelector('[data-w=warning]');
+    if(box&&!box.value.trim()){box.value=w.warning;warned++}
+  }
   markProgrammeDirty();
   message('Details added from the workshop booklet. They are not saved yet. Please check them, add rooms, then press Save sessions.','notice warn');
 });
@@ -605,7 +653,7 @@ pf.addEventListener('submit',async e=>{
   if(noGroup){message(`Please tick at least one group for ${noGroup.querySelector('[data-r=label]').value||'each round'}.`,'notice error');return}
   const btn=pf.querySelector('button[type=submit]');btn.disabled=true;
   try{
-    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',keynote:readKeynote(),rounds,workshops:workshops.filter(x=>x.title),schools:readSchools(),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
+    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',keynote:readKeynote(),agenda:readAgenda(),rounds,workshops:workshops.filter(x=>x.title),schools:readSchools(),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
     programmeDirty=false;await refresh({keepProgrammeForm:false});message('Sessions saved.');
   }catch(err){message(`Sessions were not saved: ${err.message}`,'notice error')}
   finally{btn.disabled=false}

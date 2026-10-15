@@ -280,11 +280,12 @@ await test("saving sessions does not touch event details, and the reverse", asyn
   const r = await call("eduhub", { method: "POST", auth: true, body: { section: "programme", title: "HACKED", bookingStatus: "closed", requireSessionChoice: true,
     schools: [{ name: "Example Primary", phase: "primary" }, { name: "Example Academy", phase: "secondary" }, { name: "Trust Central Team", phase: "central" }],
     keynote: { name: "Graham Allcott", role: "Author", startTime: "09:00", endTime: "10:00", photoPath: "/assets/speakers/graham-allcott.jpg" },
+    agenda: [{ startTime: "09:00", endTime: "10:00", title: "Keynote", kind: "keynote" }, { startTime: "10:30", title: "Workshop", kind: "workshop", roundId: "round-1", groups: ["secondary"] }, { title: "" }],
     rounds: ROUNDS,
     workshops: [
       { id: "botheredness", title: "Botheredness", speakerName: "Hywel Roberts", photoId, room: "S12", capacity: 1, recommended: "educators", description: "Story", adminNotes: "secret note" },
       { id: "curious", title: "Curious Schools", speakerName: "Dave Harris", photoPath: "/assets/speakers/dave-harris.jpg", room: "S14" },
-      { id: "breathe", title: "Breathe Better", room: "Hall" },
+      { id: "breathe", title: "Breathe Better", room: "Hall", warning: "Allergy warning: uses nuts." },
       { id: "inclusive", title: "Inclusive Leadership", recommended: "leaders", rounds: ["round-1", "round-4"], photoPath: "/../../etc/passwd" }
     ] } });
   assert.equal(r.status, 200, JSON.stringify(r.data));
@@ -300,7 +301,9 @@ await test("saving sessions does not touch event details, and the reverse", asyn
 await test("public data shows workshops, rounds and keynote but not admin notes", async () => {
   const e = (await call("public-data")).data.eduhub;
   assert.equal(e.workshops.length, 4); assert.equal(e.rounds.length, 4); assert.equal(e.keynote.startTime, "09:00");
+  assert.equal(e.agenda.length, 2); assert.equal(e.agenda[1].roundId, "round-1"); assert.deepEqual(e.agenda[1].groups, ["secondary"]);
   assert.doesNotMatch(JSON.stringify(e), /secret note/);
+  assert.equal(e.workshops.find(w => w.id === "breathe").warning, "Allergy warning: uses nuts.");
 });
 await test("sessions saved by version 5.1 are converted into rounds and workshops", async () => {
   const u = await import("../netlify/functions/_utils.mjs");

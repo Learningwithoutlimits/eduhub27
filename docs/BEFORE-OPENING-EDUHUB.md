@@ -64,6 +64,8 @@ When the menu is confirmed, ask for an updated PDF if anything changes, and repl
 - [ ] Each round has the right groups ticked. The starting point is primaries in rounds 2 and 3, and secondaries and central staff in rounds 1 and 4. **Please confirm where central staff should go.**
 - [ ] Every workshop has a room and, where the room is small, a number of places per round. "Sleep Better, Feel Calmer" is set to 25, as the booklet says.
 - [ ] Check the two placeholder titles: "Inclusive Leadership" (Mandy Coalter) and "Hollie's Story" (Nick Gazzard). The booklet gives no titles for these.
+- [ ] Check the structure of the day. It follows the "Structure of the day" document. Registration is shown in the Sports Block for everyone, although the old table gave primaries a different location ("Main School and then to the theatre").
+- [ ] Check the nut warning on "10 Things I Love About Food" with Lex, and whether any other workshop needs a warning.
 - [ ] Add Charles's workshop (row 12 of the booklet) when the details arrive.
 - [ ] Speakers have agreed to their photo and biography being shown on the public EduHub page.
 - [ ] Workshop registers now include dietary needs, so the food tasting workshop can plan. The DPO should be aware that workshop leaders may see this.

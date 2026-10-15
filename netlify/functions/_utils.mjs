@@ -71,11 +71,11 @@ export const PHASES = ["primary","secondary","central"];
 export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Central Trust"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",schools:[],rounds:[],workshops:[],keynote:{},requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
-export const PROGRAMME_FIELDS = ["schools","rounds","workshops","keynote","requireSessionChoice","sessions"];
+export const PROGRAMME_FIELDS = ["schools","rounds","workshops","keynote","agenda","requireSessionChoice","sessions"];
 
 // Recommended audience is a guide shown to staff. It does not limit booking.
 export const AUDIENCES = { all: "Open to all", educators: "All educators", leaders: "Anyone who leads a team" };
@@ -112,6 +112,7 @@ export function normaliseWorkshop(w, i=0){
     speakerBio: clean(w.speakerBio,2500),
     ...photoFields(w),
     description: clean(w.description,4000),
+    warning: clean(w.warning,300),
     recommended: AUDIENCES[w.recommended] ? w.recommended : "all",
     room: clean(w.room,100),
     capacity: Math.max(0, Math.floor(Number(w.capacity) || 0)),
@@ -124,6 +125,19 @@ export function normaliseKeynote(k){
   return { name: clean(k.name,120), role: clean(k.role,150), title: clean(k.title,150), bio: clean(k.bio,3000),
     startTime: isTime(k.startTime) ? k.startTime : "", endTime: isTime(k.endTime) ? k.endTime : "", ...photoFields(k) };
 }
+// One line of the structure of the day. groups: who it applies to (empty
+// means everyone). A "workshop" line can point at a round, so each person's
+// timeline can show the workshop they chose for it.
+export const AGENDA_KINDS = ["general","arrival","keynote","workshop","break","lunch","awards"];
+export function normaliseAgendaItem(a, i=0){
+  if(!a || typeof a!=="object") return null;
+  const title=clean(a.title,150); if(!title) return null;
+  return { id: cleanId(a.id, `item-${i+1}`), startTime: isTime(a.startTime) ? a.startTime : "", endTime: isTime(a.endTime) ? a.endTime : "",
+    title, detail: clean(a.detail,400), location: clean(a.location,120),
+    groups: Array.isArray(a.groups) ? PHASES.filter(p => a.groups.includes(p)) : [],
+    kind: AGENDA_KINDS.includes(a.kind) ? a.kind : "general", roundId: cleanId(a.roundId, "") };
+}
+
 // Versions 5.1 and 5.2 stored a flat list of sessions, each with its own
 // time. Turn those into rounds (one per distinct time) and workshops.
 function legacySessionsToProgramme(list){
@@ -217,6 +231,9 @@ export function normaliseEduhub(raw){
     schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
     ...programme,
     keynote: normaliseKeynote(e.keynote),
+    agenda: uniqueIds((Array.isArray(e.agenda)?e.agenda:[]).map(normaliseAgendaItem).filter(Boolean))
+      .map(a => ({ ...a, roundId: rounds.some(r => r.id === a.roundId) ? a.roundId : "" }))
+      .sort((a,b)=>(a.startTime||"99").localeCompare(b.startTime||"99")),
     sessions: programmeSessions(programme.rounds, programme.workshops),
     requireSessionChoice: e.requireSessionChoice !== false,
     updatedAt: e.updatedAt || ""

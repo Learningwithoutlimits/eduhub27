@@ -31,6 +31,10 @@
       <span class="tag internal">LwLAT staff only</span>
       <h1 id="edu-title">EduHub 2027: Better Together</h1>
       <p id="edu-description">Our annual Trust-wide event for Learning Without Limits Academy Trust staff.</p>
+      <ul class="hero-chips" aria-label="Key details">
+        <li id="chip-date">Tuesday 5 January 2027</li>
+        <li id="chip-venue">Babington Academy</li>
+      </ul>
       <div class="hero-actions">
         <a class="button dark" href="#booking" id="hero-cta">Bookings Open Soon</a>
       </div>
@@ -65,15 +69,30 @@
   </div>
 </section>
 
-<section class="section hidden" id="programme">
+<section class="section day-section hidden" id="day">
   <div class="container">
     <div class="section-head">
       <div>
-        <div class="eyebrow teal">Programme</div>
-        <h2>Keynote and workshops</h2>
+        <div class="eyebrow teal">Structure of the day</div>
+        <h2>Your day at EduHub</h2>
       </div>
+      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="Show the day for"></div>
     </div>
-    <div id="programme-list" class="programme-list"></div>
+    <ol class="timeline" id="day-timeline"></ol>
+  </div>
+</section>
+
+<section class="section programme-section hidden" id="programme">
+  <div class="container">
+    <div id="keynote-feature"></div>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow teal">Workshops</div>
+        <h2>Choose from <span id="workshop-count">our</span> workshops</h2>
+      </div>
+      <p class="muted">Select a workshop to read more about it.</p>
+    </div>
+    <div class="workshop-grid" id="workshop-grid"></div>
   </div>
 </section>
 
@@ -182,6 +201,10 @@
           </div>
           <span class="tag internal">Trust staff only</span>
         </div>
+        <div class="panel your-day hidden" id="your-day">
+          <div class="eyebrow teal">Your day</div>
+          <ol class="timeline compact" id="your-day-timeline"></ol>
+        </div>
       </aside>
     </div>
   </div>
@@ -194,6 +217,13 @@
     <div>Winning hearts and inspiring minds to learn without limits.</div>
   </div>
 </footer>
+
+<dialog class="lightbox" id="workshop-dialog" aria-labelledby="dialog-title">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" type="button" id="dialog-close" aria-label="Close">&times;</button>
+    <div id="dialog-body"></div>
+  </div>
+</dialog>
 
 <script type="module" src="/assets/eduhub.js"></script>
 </body>
