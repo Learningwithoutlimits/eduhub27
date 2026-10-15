@@ -15,6 +15,8 @@ export default async request => {
    if(!BOOKING_STATUSES.includes(body.bookingStatus)) return json({error:"Please choose a booking status."},400);
    if(body.privacyNoticeUrl && !/^https:\/\//i.test(body.privacyNoticeUrl)) return json({error:"The privacy notice link must start with https://"},400);
    if(body.recognitionUrl && !/^https:\/\//i.test(body.recognitionUrl)) return json({error:"The recognition award link must start with https://"},400);
+   const badDomain=(Array.isArray(body.staffDomains)?body.staffDomains:[]).map(d=>String(d).trim().replace(/^@+/,"")).find(d=>d&&!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(d));
+   if(badDomain) return json({error:`"${badDomain}" does not look like an email ending. Use the part after the @, for example lwlat.org.uk.`},400);
  }else{
    const rounds=Array.isArray(body.rounds)?body.rounds:[];
    const badTime=rounds.find(r=>r?.startTime && r?.endTime && r.endTime<=r.startTime);

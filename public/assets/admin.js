@@ -91,6 +91,7 @@ window.addEventListener('beforeunload',e=>{if(eduhubDirty||programmeDirty){e.pre
 function renderEduhubForm(){
   const e=data.eduhub||{};
   for(const k of ['title','date','time','venue','description','capacity','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl']) ef.elements[k].value=e[k]??'';
+  ef.elements.staffDomains.value=(e.staffDomains||['lwlat.org.uk']).join('\n');
   for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) ef.elements[k].checked=Boolean(e[k]);
   const link=e.speakerCode?`${location.origin}/eduhub/speakers/?code=${e.speakerCode}`:'';
   $('#speaker-link').value=link||'Save the EduHub settings once to create the link.';
@@ -184,6 +185,7 @@ ef.addEventListener('submit',async e=>{
   e.preventDefault();
   const obj=Object.fromEntries(['title','date','time','venue','description','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl'].map(k=>[k,ef.elements[k].value.trim()]));
   obj.section='details';
+  obj.staffDomains=ef.elements.staffDomains.value.split(/[\s,;]+/).map(d=>d.trim().replace(/^@+/,'')).filter(Boolean);
   obj.capacity=Number(ef.elements.capacity.value)||0;
   for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) obj[k]=ef.elements[k].checked;
   if(replaceSpeakerLink){obj.newSpeakerCode=true;replaceSpeakerLink=false}

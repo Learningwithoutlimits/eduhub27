@@ -1,7 +1,7 @@
 import { allergenSummary } from "../../public/assets/allergens.js";
 import { json, readJSON, updateJSON, clean, isEmail, STAFF_DOMAIN, normaliseEduhub, eduhubEffectiveStatus,
   courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID,
-  slotKey, slotLabel, sessionPlacesTaken, sessionOpenTo, PHASE_NAMES, speakerAccess, todayUK, ATTENDEE_ROLES } from "./_utils.mjs";
+  slotKey, slotLabel, sessionPlacesTaken, sessionOpenTo, PHASE_NAMES, speakerAccess, todayUK, ATTENDEE_ROLES, isStaffEmail, domainList } from "./_utils.mjs";
 import { sendConfirmation, ticketUrl, siteOrigin } from "./_tickets.mjs";
 
 const NO_FOOD = "no-food";
@@ -77,7 +77,7 @@ export default async request => {
    const status=eduhubEffectiveStatus(eduhub);
    if(status==="coming-soon") return json({error:"EduHub bookings have not opened yet."},403);
    if(status!=="open") return json({error:"EduHub bookings are now closed."},403);
-   if(b.role==="staff" && !b.email.endsWith(STAFF_DOMAIN)) return json({error:`Members of staff need to use their ${STAFF_DOMAIN} email address. Governors and trustees can choose their role at the top of the form.`},400);
+   if(b.role==="staff" && !isStaffEmail(b.email,eduhub)) return json({error:`Members of staff need to use their ${domainList(eduhub)} email address. Governors and trustees can choose their role at the top of the form.`},400);
    if(raw.consent!==true && raw.consent!=="true" && raw.consent!=="on") return json({error:"Please confirm that you have read how we will use your information."},400);
    if(!eduhub.askDietary) b.dietary="";
    if(!eduhub.askAccessibility) b.accessibility="";

@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.8: more staff email addresses
+
+### New
+- **Staff email addresses** under EduHub 2027 → Event details. Members of staff can book with any listed email ending. @lwlat.org.uk is always accepted, and @wykencroft.coventry.school.uk is included from the start. The form's guidance and error messages list the accepted endings.
+
 ## Version 5.7: "Who are you?" and the Recognition Awards lightbox
 
 ### New

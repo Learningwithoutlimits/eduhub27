@@ -490,6 +490,28 @@ await test("admin can send a test email, check in from the list, and export chec
   assert.match(csv, /"Checked in","Email sent"/);
 });
 
+console.log("Staff email addresses");
+await test("Wyken Croft staff addresses are accepted from the start", async () => {
+  const u = await import("../netlify/functions/_utils.mjs");
+  assert.deepEqual(u.normaliseEduhub({}).staffDomains, ["lwlat.org.uk", "wykencroft.coventry.school.uk"]);
+  assert.equal(u.isStaffEmail("a.teacher@wykencroft.coventry.school.uk", u.normaliseEduhub({})), true);
+  assert.equal(u.isStaffEmail("a@coventry.school.uk", u.normaliseEduhub({})), false);
+});
+await test("admins can add a school's email ending for staff bookings", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", ...prog, requireSessionChoice: false } });
+  const bad = await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, staffDomains: ["not a domain"] }) });
+  assert.equal(bad.status, 400);
+  const before = await call("book", { method: "POST", body: staff(700, { email: "teacher@school.example.sch.uk", schoolId: school("Example Primary"), foodChoiceId: menu[0].id }) });
+  assert.equal(before.status, 400);
+  const r = await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, staffDomains: ["@School.Example.sch.uk"] }) });
+  assert.deepEqual(r.data.eduhub.staffDomains, ["lwlat.org.uk", "school.example.sch.uk"]);
+  const ok = await call("book", { method: "POST", body: staff(700, { email: "teacher@school.example.sch.uk", schoolId: school("Example Primary"), foodChoiceId: menu[0].id }) });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  const lookalike = await call("book", { method: "POST", body: staff(701, { email: "x@evilschool.example.sch.uk.attacker.com", schoolId: school("Example Primary"), foodChoiceId: menu[0].id }) });
+  assert.equal(lookalike.status, 400); assert.match(lookalike.data.error, /@lwlat\.org\.uk or @school\.example\.sch\.uk/);
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, staffDomains: [] }) });
+});
+
 console.log("Speakers, governors and trustees");
 let speakerCode;
 await test("speaker link code is created by the server and never public", async () => {
