@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EduHub 2027 | Learning Without Limits Learning Hub</title>
+<meta name="description" content="EduHub 2027: Better Together. The annual conference for Learning Without Limits Academy Trust staff.">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body class="eduhub-page">
+<div class="preview-banner hidden" id="preview-banner" role="note">
+  <strong>Preview</strong>
+  <span>This is how the EduHub booking page will look when bookings open. Nothing entered here will be sent.</span>
+</div>
+
+<header class="site-header">
+  <div class="container nav">
+    <a class="brand brand-lockup" href="/"><img src="/assets/lwlat-logo.png" alt="Learning Without Limits Academy Trust"><span>Learning Hub</span></a>
+    <nav class="nav-links">
+      <a href="/">Learning Hub</a>
+      <a href="/#professional-learning">Professional Learning</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="eduhub-full-hero">
+  <div class="container eduhub-full-hero-grid">
+    <div>
+      <div class="eyebrow">Learning Without Limits Academy Trust</div>
+      <span class="tag internal">LwLAT staff only</span>
+      <h1 id="edu-title">EduHub 2027: Better Together</h1>
+      <p id="edu-description">Our annual Trust-wide event for Learning Without Limits Academy Trust staff.</p>
+      <div class="hero-actions">
+        <a class="button dark" href="#booking" id="hero-cta">Bookings Open Soon</a>
+      </div>
+    </div>
+    <div class="eduhub-logo-panel">
+      <img src="/assets/eduhub-logo.png" alt="EduHub 2027 logo">
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container eduhub-information-grid">
+    <article class="panel eduhub-event-info">
+      <div class="eyebrow teal">Event information</div>
+      <h2>EduHub 2027</h2>
+      <div class="eduhub-facts">
+        <div><strong>Date</strong><span id="edu-date">Tuesday 5 January 2027</span></div>
+        <div><strong>Time</strong><span id="edu-time">To be confirmed</span></div>
+        <div><strong>Venue</strong><span id="edu-venue">Babington Academy</span></div>
+        <div><strong>Who can attend</strong><span>Learning Without Limits Academy Trust staff</span></div>
+      </div>
+      <div class="notice warn">EduHub 2027 is an internal Trust event. You will need your <strong>@lwlat.org.uk</strong> email address to book.</div>
+    </article>
+
+    <aside class="panel">
+      <div class="eyebrow teal">Bookings</div>
+      <h2 id="status-heading">Bookings open soon</h2>
+      <p id="status-text">Bookings for EduHub 2027 have not opened yet. Please check back soon.</p>
+      <p id="status-deadline" class="muted hidden"></p>
+      <p id="status-contact" class="muted hidden"></p>
+    </aside>
+  </div>
+</section>
+
+<section class="section hidden" id="programme">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow teal">Programme</div>
+        <h2>Sessions on the day</h2>
+      </div>
+      <p class="muted">When you book, you will be offered the sessions for your school's phase.</p>
+    </div>
+    <div id="programme-list" class="programme-list"></div>
+  </div>
+</section>
+
+<section class="section" id="booking">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow teal">Staff registration</div>
+        <h2>Book your place</h2>
+      </div>
+      <p class="muted" id="booking-intro">Fields marked optional can be left blank.</p>
+    </div>
+
+    <div id="booking-closed" class="form-shell hidden">
+      <p id="booking-closed-text">Bookings for EduHub 2027 have not opened yet.</p>
+    </div>
+
+    <div class="eduhub-booking-layout" id="booking-area">
+      <div>
+        <div id="form-message" aria-live="polite"></div>
+        <form id="eduhub-form" class="form-shell form-grid" novalidate>
+          <div class="hp-field" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input id="firstName" name="firstName" required autocomplete="given-name" maxlength="80">
+          </div>
+          <div class="field">
+            <label for="lastName">Surname</label>
+            <input id="lastName" name="lastName" required autocomplete="family-name" maxlength="80">
+          </div>
+          <div class="field full">
+            <label for="email">Trust email address</label>
+            <input id="email" name="email" type="email" required autocomplete="email" maxlength="160" aria-describedby="email-help" placeholder="firstname.surname@lwlat.org.uk">
+            <span class="field-help" id="email-help">Please use your @lwlat.org.uk email address.</span>
+          </div>
+          <div class="field" id="organisation-field">
+            <label for="organisation">School or team</label>
+            <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
+          </div>
+          <div class="field hidden" id="school-field">
+            <label for="schoolId">School or team</label>
+            <select id="schoolId" name="schoolId"></select>
+          </div>
+          <div class="field">
+            <label for="jobTitle">Job title <span class="optional">(optional)</span></label>
+            <input id="jobTitle" name="jobTitle" autocomplete="organization-title" maxlength="120">
+          </div>
+          <div class="field">
+            <label for="telephone">Telephone <span class="optional">(optional)</span></label>
+            <input id="telephone" name="telephone" type="tel" autocomplete="tel" maxlength="40">
+          </div>
+
+          <fieldset class="field full food-fieldset hidden" id="sessions-field">
+            <legend>Choose your sessions</legend>
+            <p class="field-help" id="sessions-help">Choose one session in each time slot.</p>
+            <div id="session-options"></div>
+          </fieldset>
+
+          <fieldset class="field full food-fieldset hidden" id="food-field">
+            <legend>Food choice</legend>
+            <p class="field-help">Please choose one option. The allergens in each option are listed beneath its name.</p>
+            <div id="food-options" class="food-options"></div>
+            <div class="food-allergen-link">
+              <strong>Need to check allergens?</strong>
+              <a href="/documents/EduHub-2027-Allergen-Matrix.pdf" target="_blank" rel="noopener">View the EduHub 2027 Food Allergen Matrix (PDF, opens in a new tab)</a>
+            </div>
+          </fieldset>
+
+          <div class="field full" id="dietary-field">
+            <label for="dietary">Dietary requirements or allergies <span class="optional">(optional)</span></label>
+            <textarea id="dietary" name="dietary" maxlength="600" rows="3" aria-describedby="dietary-help"></textarea>
+            <span class="field-help" id="dietary-help">Please tell us about any food allergy or intolerance, even if your chosen option does not list it.</span>
+          </div>
+
+          <div class="field full" id="accessibility-field">
+            <label for="accessibility">Accessibility requirements <span class="optional">(optional)</span></label>
+            <textarea id="accessibility" name="accessibility" maxlength="600" rows="2"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="notes">Anything else we should know? <span class="optional">(optional)</span></label>
+            <textarea id="notes" name="notes" maxlength="1000" rows="3"></textarea>
+          </div>
+
+          <div class="field full privacy-box">
+            <p id="privacy-text">We will use the details on this form to organise EduHub 2027. Your food choice and any dietary or allergy information will be shared with the event caterer. Accessibility information will only be shared with the people who need it to support you on the day.</p>
+            <label class="check-label" for="consent"><input type="checkbox" id="consent" name="consent" required> I confirm that these details are correct and that I have read how my information will be used.</label>
+          </div>
+
+          <div class="field full">
+            <button class="button" type="submit" id="submit-button">Book my place</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="eduhub-booking-sidebar">
+        <div class="panel">
+          <div class="eyebrow teal">Your booking</div>
+          <h3 id="side-title">EduHub 2027</h3>
+          <div class="meta preview-meta-stack">
+            <span id="side-date">Tuesday 5 January 2027</span>
+            <span id="side-time">Time to be confirmed</span>
+            <span id="side-venue">Babington Academy</span>
+            <span id="side-places" class="hidden"></span>
+          </div>
+          <span class="tag internal">Trust staff only</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-row">
+    <img src="/assets/lwlat-logo.png" alt="Learning Without Limits Academy Trust">
+    <div>Winning hearts and inspiring minds to learn without limits.</div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/eduhub.js"></script>
+</body>
+</html>
