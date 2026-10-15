@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 import { ALLERGEN_CODES, SUITABLE_CODES } from "../../public/assets/allergens.js";
+import { WORKSHOP_BOOKLET_2027 } from "../../public/assets/workshop-booklet.js";
 
 export const json = (data, status=200, headers={}) => new Response(JSON.stringify(data), {
   status, headers: {"content-type":"application/json; charset=utf-8", "cache-control":"no-store", ...headers}
@@ -123,6 +124,13 @@ export function normaliseWorkshop(w, i=0){
     adminNotes: clean(w.adminNotes,1000)
   };
 }
+// Safety warnings from the workshop booklet (such as allergens in the food
+// tasting) always show, even on workshops saved before warnings existed.
+// An administrator can change the wording but cannot leave it blank.
+function bookletWarning(w){
+  const match = WORKSHOP_BOOKLET_2027.workshops.find(b => b.warning && (b.id === w.id || b.title.toLowerCase() === w.title.toLowerCase()));
+  return match ? match.warning : "";
+}
 export function normaliseKeynote(k){
   k = k && typeof k === "object" ? k : {};
   return { name: clean(k.name,120), role: clean(k.role,150), title: clean(k.title,150), bio: clean(k.bio,3000),
@@ -213,7 +221,7 @@ export function normaliseEduhub(raw){
   const rounds = uniqueIds(rawRounds.map(normaliseRound).filter(Boolean));
   const roundIds = new Set(rounds.map(r => r.id));
   const workshops = uniqueIds(rawWorkshops.map(normaliseWorkshop).filter(Boolean))
-    .map(w => ({ ...w, rounds: w.rounds.filter(id => roundIds.has(id)) }));
+    .map(w => ({ ...w, rounds: w.rounds.filter(id => roundIds.has(id)), warning: w.warning || bookletWarning(w) }));
   const programme = { rounds, workshops };
   return {
     title: clean(e.title, 150) || defaults.eduhub.title,

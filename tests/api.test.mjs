@@ -310,6 +310,17 @@ await test("sessions saved by version 5.1 are converted into rounds and workshop
   const e = u.normaliseEduhub({ sessions: [{ title: "Old A", startTime: "10:00", endTime: "11:00" }, { title: "Old B", startTime: "10:00", endTime: "11:00" }, { title: "Old C", startTime: "11:30" }] });
   assert.equal(e.rounds.length, 2); assert.equal(e.workshops.length, 3); assert.equal(e.sessions.length, 3);
 });
+await test("the food workshop's allergy warning shows even on workshops saved without one", async () => {
+  const u = await import("../netlify/functions/_utils.mjs");
+  const e = u.normaliseEduhub({ rounds: [{ label: "Round 1" }], workshops: [{ id: "ten-things-food", title: "10 Things I Love About Food" }, { title: "Something else" }] });
+  assert.match(e.workshops[0].warning, /variety of allergens, including nuts/);
+  assert.match(e.sessions[0].warning, /variety of allergens/);
+  assert.equal(e.workshops[1].warning, "");
+  const byTitle = u.normaliseEduhub({ rounds: [{ label: "R" }], workshops: [{ id: "abc", title: "10 things I love about food", warning: "" }] });
+  assert.match(byTitle.workshops[0].warning, /nuts/);
+  const custom = u.normaliseEduhub({ rounds: [{ label: "R" }], workshops: [{ id: "ten-things-food", title: "10 Things I Love About Food", warning: "Contains nuts and sesame." }] });
+  assert.equal(custom.workshops[0].warning, "Contains nuts and sesame.");
+});
 await test("a round that finishes before it starts is refused", async () => {
   const r = await call("eduhub", { method: "POST", auth: true, body: { section: "programme", rounds: [{ label: "Backwards", startTime: "11:00", endTime: "10:00" }] } });
   assert.equal(r.status, 400);

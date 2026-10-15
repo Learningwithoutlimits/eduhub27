@@ -15,7 +15,7 @@
 - Workshop **tiles** showing only the speaker photo, title, speaker name and recommended audience. Selecting a tile opens a **lightbox** with the description, speaker biography, room and round times.
 - The booking form uses the same compact tiles, with a "More about this workshop" link to the lightbox.
 - Keynote banner with an "About Graham" lightbox.
-- A **warning** field for each workshop, shown in strong Trust red: a band across the tile photo with the full wording beneath, a red box in the lightbox, and a red strip on the booking form. "10 Things I Love About Food" carries a warning that the tasting food may contain a variety of allergens, including nuts.
+- A **warning** field for each workshop (warnings from the workshop booklet always apply, including on workshops saved before warnings existed), shown in strong Trust red: a band across the tile photo with the full wording beneath, a red box in the lightbox, and a red strip on the booking form. "10 Things I Love About Food" carries a warning that the tasting food may contain a variety of allergens, including nuts.
 
 ## Version 5.3: workshop rounds, keynote and the workshop booklet
 
