@@ -1,4 +1,5 @@
 import { foodOptionsHtml } from './food-options.js';
+import { celebrate } from './celebrate.js';
 
 const $ = s => document.querySelector(s);
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -189,31 +190,82 @@ function timelineHtml(items, personal){
         ${where ? `<span class="timeline-where">${esc(where)}</span>` : ''}
         ${a.detail && !personal ? `<span class="timeline-detail">${esc(a.detail)}</span>` : ''}
         ${personal && a.kind === 'workshop' && !chosen ? '<span class="timeline-detail">Choose your workshop below</span>' : ''}
+        ${a.kind === 'awards' && !personal && eduhub.recognitionUrl ? '<button type="button" class="link-button" data-open-awards>&#9733; Nominate a colleague</button>' : ''}
       </div>
     </li>`;
   }).join('');
 }
+// ---------- "Who are you?" ----------
+const WHO = [
+  { key:'primary', label:'Primary school staff', phase:'primary', role:'staff' },
+  { key:'secondary', label:'Secondary school staff', phase:'secondary', role:'staff' },
+  { key:'central', label:'Central Trust staff', phase:'central', role:'staff' },
+  { key:'gov-primary', label:'Governor of a primary school', phase:'primary', role:'governor' },
+  { key:'gov-secondary', label:'Governor of a secondary school', phase:'secondary', role:'governor' },
+  { key:'trustee', label:'Trustee', phase:'central', role:'trustee' }
+];
+let who = null;
+try{ who = WHO.find(w => w.key === localStorage.getItem('eduhub-who')) || null; }catch{}
+let whoAsked = false;
+const whoOptions = () => WHO.filter(w => (w.role === 'staff' || eduhub.allowGovernors !== false) && (eduhub.agenda || []).some(a => !(a.groups || []).length || a.groups.includes(w.phase)));
+
+function openWho(){
+  $('#who-options').innerHTML = whoOptions().map(w => `<button type="button" class="who-option who-${esc(w.role)}" data-who="${esc(w.key)}" aria-pressed="${who?.key === w.key}">
+      <span class="who-icon" aria-hidden="true">${w.role === 'trustee' ? 'T' : w.role === 'governor' ? 'G' : w.phase[0].toUpperCase()}</span>
+      <span class="who-label">${esc(w.label)}</span>
+    </button>`).join('');
+  openModal($('#who-dialog'));
+  ($('#who-options [aria-pressed="true"]') || $('#who-options button'))?.focus();
+}
+function chooseWho(key){
+  who = WHO.find(w => w.key === key) || null;
+  try{ localStorage.setItem('eduhub-who', key); }catch{}
+  $('#who-dialog').close();
+  if(!who) return;
+  dayPhase = who.phase;
+  // Carry the choice into the booking form.
+  const radio = form.querySelector(`[name=role][value="${who.role}"]`);
+  if(radio && !radio.checked && !$('#role-field').classList.contains('hidden')){ radio.checked = true; applyRole(); }
+  renderDay();
+  $('#day').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+$('#who-options').addEventListener('click', e => { const b = e.target.closest('[data-who]'); if(b) chooseWho(b.dataset.who); });
+
 function renderDay(){
   const agenda = eduhub.agenda || [];
   $('#day').classList.toggle('hidden', !agenda.length);
   if(!agenda.length) return;
   const grouped = agenda.some(a => (a.groups || []).length);
-  const phases = grouped ? Object.keys(PHASE_NAMES).filter(p => agenda.some(a => (a.groups || []).includes(p))) : [];
-  if(grouped && !phases.includes(dayPhase)) dayPhase = phases[0];
-  $('#day-tabs').innerHTML = grouped ? phases.map(p => `<button type="button" role="tab" class="day-tab" aria-selected="${p === dayPhase}" data-phase="${p}">${esc(PHASE_NAMES[p])} staff</button>`).join('') : '';
-  $('#day-timeline').innerHTML = timelineHtml(agendaFor(grouped ? dayPhase : ''), false);
+  if(!grouped){
+    $('#day-who').innerHTML = '';
+    $('#day-timeline').innerHTML = timelineHtml(agendaFor(''), false);
+    return;
+  }
+  if(who) dayPhase = who.phase;
+  $('#day-who').innerHTML = who
+    ? `<div class="who-chip"><span>Showing the day for</span><strong>${esc(who.label)}</strong><button type="button" class="button secondary small-button" data-open-who>Change</button></div>`
+    : '';
+  $('#day-timeline').innerHTML = who
+    ? timelineHtml(agendaFor(dayPhase), false)
+    : `<li class="who-prompt"><p><strong>Your day depends on who you are.</strong> Primary, secondary and central staff, governors and trustees each have a slightly different timetable.</p><button type="button" class="button" data-open-who>Show me my day</button></li>`;
+  if(!who && !whoAsked){ whoAsked = true; setTimeout(openWho, 400); }
 }
-$('#day-tabs').addEventListener('click', e => {
-  const tab = e.target.closest('[data-phase]'); if(!tab) return;
-  dayPhase = tab.dataset.phase; renderDay();
-  $(`#day-tabs [data-phase="${dayPhase}"]`)?.focus();
-});
-$('#day-tabs').addEventListener('keydown', e => {
-  if(!['ArrowLeft','ArrowRight'].includes(e.key)) return;
-  const tabs = [...$('#day-tabs').querySelectorAll('[data-phase]')]; const i = tabs.findIndex(t => t.dataset.phase === dayPhase);
-  dayPhase = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length].dataset.phase; renderDay();
-  $(`#day-tabs [data-phase="${dayPhase}"]`)?.focus();
-});
+document.addEventListener('click', e => { if(e.target.closest('[data-open-who]')) openWho(); });
+
+// ---------- Recognition awards lightbox ----------
+let stopCelebration = () => {};
+function openAwards(){
+  if(!eduhub.recognitionUrl) return;
+  const awards = (eduhub.agenda || []).find(a => a.kind === 'awards');
+  $('#awards-when').textContent = awards ? `${awards.title}${awards.startTime ? `, ${awards.startTime}${awards.endTime ? ` to ${awards.endTime}` : ''}` : ''}${awards.location ? `, ${awards.location}` : ''}` : 'LwLAT Better Together Recognition Awards 2027';
+  $('#awards-link').href = eduhub.recognitionUrl;
+  openModal($('#awards-dialog'));
+  stopCelebration();
+  requestAnimationFrame(() => { stopCelebration = celebrate($('#celebrate-canvas'), { sparklers: [{ x: 0.12, y: 0.42 }, { x: 0.88, y: 0.42 }] }); });
+}
+$('#awards-dialog').addEventListener('close', () => stopCelebration());
+document.addEventListener('click', e => { if(e.target.closest('[data-open-awards]')){ e.preventDefault(); openAwards(); } });
+
 function renderYourDay(){
   const phase = currentPhase();
   const agenda = eduhub.agenda || [];
@@ -249,7 +301,10 @@ function renderProgramme(){
     </button>`).join('');
 }
 
-// ---------- Lightbox ----------
+// ---------- Lightboxes ----------
+function openModal(d){ if(!d.open) d.showModal(); }
+document.addEventListener('click', e => { if(e.target.closest('[data-close-dialog]')) e.target.closest('dialog')?.close(); });
+for(const id of ['#who-dialog','#awards-dialog']) $(id).addEventListener('click', e => { if(e.target === e.currentTarget) e.currentTarget.close(); });
 const dialog = $('#workshop-dialog');
 let dialogReturn = null;
 function openDialog(html){
@@ -437,9 +492,10 @@ function showConfirmation(data, body){
       <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
       <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
     ${eduhub.recognitionUrl ? `<div class="recognition-box">
-      <h3>Recognising colleagues</h3>
-      <p>Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
+      <h3>LwLAT Better Together Recognition Awards 2027</h3>
+      <p>Do you know a colleague whose work deserves recognition? You can nominate them using a short form.</p>
       <a class="button" href="${esc(eduhub.recognitionUrl)}" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
+      <button type="button" class="link-button" data-open-awards>Find out about the awards</button>
     </div>` : ''}
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
@@ -448,6 +504,7 @@ function showConfirmation(data, body){
     </div>
   </div>`;
   $('#print-confirmation').addEventListener('click', () => window.print());
+  if(!data.waitingList) setTimeout(openAwards, 700);
   if(data.preview){
     $('.confirmation').insertAdjacentHTML('beforeend', '<p><button class="button secondary" type="button" id="back-to-form">Back to the form</button></p>');
     $('#back-to-form').addEventListener('click', () => { $('#form-message').innerHTML = ''; form.classList.remove('hidden'); form.scrollIntoView({behavior:'smooth'}); });
@@ -503,14 +560,17 @@ function applyRole(){
   $('#organisation-field').classList.toggle('hidden', role === 'trustee' || schools);
   if(role === 'governor' && !schools) $('#organisation-field label').textContent = 'School you govern';
   renderSessionChoices(); renderYourDay();
-  if(role === 'trustee'){ dayPhase = 'central'; renderDay(); }
+  if(role === 'trustee' && who?.key !== 'trustee'){ who = WHO.find(w => w.key === 'trustee'); renderDay(); }
 }
 form.addEventListener('change', e => { if(e.target.name === 'role') applyRole(); });
 
 form.schoolId.addEventListener('change', () => {
   renderSessionChoices(); renderYourDay();
   const phase = currentPhase();
-  if(phase && (eduhub.agenda || []).some(a => (a.groups || []).includes(phase))){ dayPhase = phase; renderDay(); }
+  if(phase && who && who.phase !== phase){
+    const match = WHO.find(w => w.phase === phase && w.role === currentRole());
+    if(match){ who = match; try{ localStorage.setItem('eduhub-who', match.key); }catch{} renderDay(); }
+  }
 });
 
 async function reloadData(full = true){
