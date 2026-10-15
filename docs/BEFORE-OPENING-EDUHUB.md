@@ -9,7 +9,7 @@ The booking form collects the following:
 | Information | Required? | Who sees it |
 | --- | --- | --- |
 | First name, surname, @lwlat.org.uk email, school or team | Yes | Event administrators |
-| Session choices | Yes, when sessions exist | Administrators, and session leads through the register |
+| Workshop choices | Yes, when workshops exist | Administrators, and workshop leaders through the register |
 | Job title, telephone | Optional | Event administrators |
 | Food choice | Yes, when food choices exist | Administrators and caterer |
 | Dietary requirements or allergies | Optional (admin can switch the question off) | Administrators and caterer |
@@ -58,12 +58,15 @@ Points in the matrix to raise with the caterer:
 
 When the menu is confirmed, ask for an updated PDF if anything changes, and replace `public/documents/EduHub-2027-Allergen-Matrix.pdf` with it.
 
-## 3. Schools and sessions
+## 3. Schools, rounds and workshops
 
-- [ ] Every school and central team is in the list with the right phase (an all-through school may need two entries, one for each phase)
-- [ ] Every session has a time, room, description and the right phases ticked
-- [ ] Speakers have agreed to their photo being shown on the public EduHub page
-- [ ] Places set for rooms with a limited capacity
+- [ ] Every school and central team is in the list with the right phase. The phase decides which two rounds each person is offered.
+- [ ] Each round has the right groups ticked. The starting point is primaries in rounds 2 and 3, and secondaries and central staff in rounds 1 and 4. **Please confirm where central staff should go.**
+- [ ] Every workshop has a room and, where the room is small, a number of places per round. "Sleep Better, Feel Calmer" is set to 25, as the booklet says.
+- [ ] Check the two placeholder titles: "Inclusive Leadership" (Mandy Coalter) and "Hollie's Story" (Nick Gazzard). The booklet gives no titles for these.
+- [ ] Add Charles's workshop (row 12 of the booklet) when the details arrive.
+- [ ] Speakers have agreed to their photo and biography being shown on the public EduHub page.
+- [ ] Workshop registers now include dietary needs, so the food tasting workshop can plan. The DPO should be aware that workshop leaders may see this.
 
 ## 4. Event details
 

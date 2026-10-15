@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 5.3: workshop rounds, keynote and the workshop booklet
+
+### Changed
+- EduHub sessions are now **workshops** that run in **rounds**. Each workshop is entered once and runs in every round, or only the rounds ticked. Places are per round.
+- Each round lists which groups attend (primary, secondary, central Trust). The phase of the school someone chooses decides their rounds. Staff choose one workshop in each of their rounds and cannot choose the same workshop twice.
+- The recommended audience (open to all, all educators, anyone who leads a team) is shown as a guide. It does not limit booking.
+- Sessions saved in version 5.1 or 5.2 are converted into rounds and workshops automatically.
+
+### New
+- A keynote section, shown on the EduHub page with photo, timing and biography. Not bookable.
+- **Fill in from the workshop booklet**: loads the keynote, the four rounds with their times (10:30, 11:20, 12:10 and 12:55) and twelve workshops with speaker photos from the supplied booklet. Nothing is saved until an administrator presses Save.
+- Workshops have an "About the speaker" section and private admin notes. Descriptions support bullet points.
+- The EduHub page shows the full programme: keynote, rounds and every workshop.
+- Workshop registers now include dietary needs, for workshops such as the food tasting.
+
 ## Version 5.2: confirmation emails and QR check-in
 
 ### New
