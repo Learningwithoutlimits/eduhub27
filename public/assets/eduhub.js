@@ -64,68 +64,115 @@ function currentPhase(){
 }
 const openTo = (x, phase) => !phase || !(x.roundPhases || []).length || x.roundPhases.includes(phase);
 
-// Stops the same workshop being chosen in two rounds.
-function lockRepeats(){
-  const chosen = [...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.dataset.workshop).filter(Boolean);
-  form.querySelectorAll('[name^=session-slot]').forEach(input => {
-    if(!input.dataset.workshop || input.dataset.full === '1') return;
-    const taken = !input.checked && chosen.includes(input.dataset.workshop);
-    input.disabled = taken;
-    input.closest('.session-option')?.classList.toggle('is-taken', taken);
-  });
+// ---------- Workshop choices, one round at a time ----------
+// choices: round id -> chosen session id ('' means "no workshop" when optional).
+const choices = {};
+let editingRound = null;
+let lastSlots = [];
+
+function choiceTile(x, takenIn){
+  const full = x.placesLeft === 0;
+  const blocked = full || Boolean(takenIn);
+  return `<label class="choice-tile${blocked ? ' is-blocked' : ''}${x.warning ? ' has-warning' : ''}">
+    <input type="radio" name="round-choice" value="${esc(x.id)}" data-round="${esc(x.roundId || '')}" ${blocked ? 'disabled' : ''} ${choices[x.roundId] === x.id ? 'checked' : ''}>
+    <span class="choice-tile-photo">${photoHtml(x)}</span>
+    <span class="choice-tile-body">
+      <span class="choice-tile-title">${esc(x.title)}</span>
+      ${x.speakerName ? `<span class="choice-tile-speaker">${esc(x.speakerName)}</span>` : ''}
+      ${audienceTag(x)}
+      ${x.warning ? `<span class="choice-warning"><span aria-hidden="true">&#9888;</span> ${esc(x.warning)}</span>` : ''}
+      ${full ? '<span class="status-pill waiting">Full in this round</span>' : takenIn ? `<span class="taken-note">Already chosen for ${esc(takenIn)}</span>` : x.placesLeft ? `<span class="places-left">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
+      ${x.workshopId ? `<a href="#" class="info-link" data-open-workshop="${esc(x.workshopId)}">More about this workshop</a>` : ''}
+    </span>
+  </label>`;
 }
 
-function renderSessionChoices(){
+function renderSessionChoices(focusStep){
   const sessions = eduhub.sessions || [];
   const field = $('#sessions-field');
   field.classList.toggle('hidden', !sessions.length);
   if(!sessions.length) return;
-  const picked = new Set([...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value));
   const phase = currentPhase();
   if(phase === null){
+    lastSlots = [];
     $('#sessions-help').textContent = '';
     $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see your workshop times and choices.</p>';
     return;
   }
   const eligible = sessions.filter(x => openTo(x, phase));
   const slots = slotsOf(eligible);
+  lastSlots = slots;
+  // Forget choices that no longer apply, for example after changing school.
+  for(const key of Object.keys(choices)){
+    const slot = slots.find(sl => sl.key === key);
+    if(!slot || (choices[key] && !slot.items.some(x => x.id === choices[key]))) delete choices[key];
+  }
   const who = currentRole() === 'trustee' ? 'Trustees join the central Trust staff, who attend' : currentRole() === 'governor' ? `Governors of ${PHASE_NAMES[phase]?.toLowerCase()} schools join ${PHASE_NAMES[phase]?.toLowerCase()} staff, who attend` : `${PHASE_NAMES[phase]} staff attend`;
-  $('#sessions-help').textContent = `${phase ? `${who} ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}${eduhub.requireSessionChoice ? 'Please choose one workshop for each round.' : 'You can choose one workshop for each round.'} You cannot choose the same workshop twice. Select "More about this workshop" for full details.`;
+  $('#sessions-help').textContent = `${phase ? `${who} ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}Choose your workshop for each round in turn. You cannot choose the same workshop twice.`;
   if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no workshops to choose from for your school yet.</p>'; return; }
-  $('#session-options').innerHTML = slots.map((slot, i) => `
-    <div class="session-slot" role="radiogroup" aria-labelledby="slot-${i}">
-      <p class="food-group" id="slot-${i}">${esc(slot.label)}</p>
-      <div class="food-options">
-      ${slot.items.map(x => {
-        const full = x.placesLeft === 0;
-        return `<label class="food-option session-option ${full ? 'is-full' : ''}">
-          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" data-workshop="${esc(x.workshopId || '')}" data-round="${esc(x.roundId || '')}" data-full="${full ? 1 : 0}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
-          ${photoHtml(x)}
-          <span class="food-option-body">
-            <span class="food-name">${esc(x.title)}</span>
-            ${x.speakerName ? `<span class="session-meta"><span>${esc(x.speakerName)}</span></span>` : ''}
-            <span class="food-tags">${audienceTag(x)}</span>
-            ${x.warning ? `<span class="choice-warning"><span aria-hidden="true">&#9888;</span> ${esc(x.warning)}</span>` : ''}
-            ${x.workshopId ? `<a href="#" class="info-link" data-open-workshop="${esc(x.workshopId)}">More about this workshop</a>` : ''}
-            ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
-            <span class="taken-note">Already chosen for another round</span>
-          </span>
-        </label>`;}).join('')}
-      ${eduhub.requireSessionChoice ? '' : `<label class="food-option"><input type="radio" name="session-slot-${i}" value="" ${slot.items.some(x => picked.has(x.id)) ? '' : 'checked'}><span class="food-option-body"><span class="food-name">No workshop in this round</span></span></label>`}
-      </div>
-    </div>`).join('');
-  lockRepeats();
+  const active = editingRound && slots.some(sl => sl.key === editingRound) ? editingRound : slots.find(sl => !(sl.key in choices))?.key;
+  const titleOf = id => (eduhub.sessions || []).find(x => x.id === id);
+  const labelOfRound = key => slots.find(sl => sl.key === key)?.items[0]?.roundLabel || 'another round';
+  $('#session-options').innerHTML = `<ol class="round-steps">${slots.map((slot, i) => {
+    const step = `Step ${i + 1} of ${slots.length}`;
+    if(slot.key === active){
+      const takenBy = {};
+      for(const [key, id] of Object.entries(choices)) if(key !== slot.key && id) takenBy[titleOf(id)?.workshopId] = labelOfRound(key);
+      return `<li class="round-step is-active"><fieldset>
+        <legend id="step-${i}" tabindex="-1"><span class="step-count">${step}</span> Choose your workshop for <strong>${esc(slot.label)}</strong></legend>
+        <div class="choice-grid">
+          ${slot.items.map(x => choiceTile(x, takenBy[x.workshopId])).join('')}
+          ${eduhub.requireSessionChoice ? '' : `<label class="choice-tile choice-none"><input type="radio" name="round-choice" value="" data-round="${esc(slot.key)}" ${choices[slot.key] === '' ? 'checked' : ''}><span class="choice-tile-body"><span class="choice-tile-title">No workshop in this round</span></span></label>`}
+        </div>
+      </fieldset></li>`;
+    }
+    if(slot.key in choices){
+      const chosen = titleOf(choices[slot.key]);
+      return `<li class="round-step is-done" id="step-${i}" tabindex="-1">
+        <span class="step-tick" aria-hidden="true">&#10003;</span>
+        <span class="step-summary"><span class="step-count">${esc(slot.label)}</span>
+          <strong>${chosen ? esc(chosen.title) : 'No workshop'}</strong>${chosen?.speakerName ? ` <span class="muted">with ${esc(chosen.speakerName)}</span>` : ''}</span>
+        <button type="button" class="button secondary small-button" data-change-round="${esc(slot.key)}">Change<span class="visually-hidden"> ${esc(slot.label)}</span></button>
+      </li>`;
+    }
+    return `<li class="round-step is-pending"><span class="step-count">${step}</span> ${esc(slot.label)}<span class="muted">Choose after ${esc(slots[i - 1]?.label || 'the step above')}</span></li>`;
+  }).join('')}</ol>
+  ${!active ? '<p class="notice all-chosen">All your workshops are chosen. You can change any of them above.</p>' : ''}`;
+  if(focusStep !== undefined){
+    const target = $(`#step-${focusStep}`) || $('.all-chosen');
+    target?.scrollIntoView({behavior:'smooth', block:'center'});
+    target?.focus({preventScroll:true});
+  }
 }
-form.addEventListener('change', e => { if(e.target.name?.startsWith('session-slot')){ lockRepeats(); renderYourDay(); } });
+$('#session-options').addEventListener('change', e => {
+  if(e.target.name !== 'round-choice') return;
+  choices[e.target.dataset.round] = e.target.value;
+  editingRound = null;
+  const next = lastSlots.findIndex(sl => !(sl.key in choices));
+  renderSessionChoices(next === -1 ? lastSlots.length : next);
+  renderYourDay();
+});
+$('#session-options').addEventListener('click', e => {
+  const tile = e.target.closest('.choice-tile');
+  if(tile && !e.target.closest('[data-open-workshop]') && editingRound){
+    const input = tile.querySelector('input');
+    if(input?.checked && choices[input.dataset.round] === input.value){
+      editingRound = null;
+      const next = lastSlots.findIndex(sl => !(sl.key in choices));
+      setTimeout(() => renderSessionChoices(next === -1 ? lastSlots.length : next));
+      return;
+    }
+  }
+  const btn = e.target.closest('[data-change-round]'); if(!btn) return;
+  editingRound = btn.dataset.changeRound;
+  renderSessionChoices(lastSlots.findIndex(sl => sl.key === editingRound));
+});
 
 // ---------- Structure of the day ----------
 const KIND_LABEL = { arrival:'Arrival', keynote:'Keynote', workshop:'Workshop', break:'Break', lunch:'Lunch', awards:'Awards', general:'' };
 let dayPhase = '';
 const agendaFor = phase => (eduhub.agenda || []).filter(a => !phase || !(a.groups || []).length || a.groups.includes(phase));
-const chosenFor = roundId => {
-  const input = [...form.querySelectorAll('[name^=session-slot]:checked')].find(i => i.dataset.round === roundId);
-  return input ? (eduhub.sessions || []).find(x => x.id === input.value) : null;
-};
+const chosenFor = roundId => choices[roundId] ? (eduhub.sessions || []).find(x => x.id === choices[roundId]) : null;
 function timelineHtml(items, personal){
   return items.map(a => {
     const chosen = personal && a.roundId ? chosenFor(a.roundId) : null;
@@ -331,9 +378,8 @@ function validate(){
   if(role !== 'trustee' && usesSchools && !form.schoolId.value) flag(form.schoolId, role === 'governor' ? 'Please choose the school you govern.' : 'Please choose your school or team.');
   if(role !== 'trustee' && !usesSchools && !form.organisation.value.trim()) flag(form.organisation, role === 'governor' ? 'Please enter the school you govern.' : 'Please enter your school or team.');
   if(eduhub.requireSessionChoice && currentPhase() !== null){
-    for(const group of form.querySelectorAll('.session-slot')){
-      const open = group.querySelector('input:not([disabled])');
-      if(open && !group.querySelector('input:checked')) flag(open, `Please choose a session for ${group.querySelector('.food-group').textContent}.`);
+    for(const slot of lastSlots){
+      if(!choices[slot.key]) flag($('#session-options'), `Please choose a workshop for ${slot.label}.`);
     }
   }
   const email = form.email.value.trim().toLowerCase();
@@ -372,8 +418,9 @@ function calendarLink(){
 function showConfirmation(data, body){
   const food = form.querySelector('[name=foodChoiceId]:checked')?.closest('.food-option')?.querySelector('.food-name')?.textContent;
   form.classList.add('hidden');
-  const cal = calendarLink();
-  $('#form-message').innerHTML = `<div class="form-shell confirmation" role="status" tabindex="-1">
+  const cal = data.preview ? '' : calendarLink();
+  const previewNote = data.preview ? `<p class="notice warn"><strong>Preview.</strong> This is what people will see after booking. Nothing has been sent or saved. In the live form, a QR code ticket appears here too.</p>` : '';
+  $('#form-message').innerHTML = `<div class="form-shell confirmation" role="status" tabindex="-1">${previewNote}
     <div class="eyebrow teal">${data.waitingList ? 'Waiting list' : 'Booking confirmed'}</div>
     <h2>${data.waitingList ? 'You are on the waiting list' : 'Thank you, your place is booked'}</h2>
     ${data.waitingList ? '<p>EduHub 2027 is currently full. We will contact you if a place becomes available.</p>' : `<p>We look forward to seeing you at ${esc(eduhub.venue || 'Babington Academy')}.</p>`}
@@ -401,6 +448,10 @@ function showConfirmation(data, body){
     </div>
   </div>`;
   $('#print-confirmation').addEventListener('click', () => window.print());
+  if(data.preview){
+    $('.confirmation').insertAdjacentHTML('beforeend', '<p><button class="button secondary" type="button" id="back-to-form">Back to the form</button></p>');
+    $('#back-to-form').addEventListener('click', () => { $('#form-message').innerHTML = ''; form.classList.remove('hidden'); form.scrollIntoView({behavior:'smooth'}); });
+  }
   $('.confirmation').focus();
 }
 
@@ -409,14 +460,17 @@ form.addEventListener('submit', async ev => {
   $('#form-message').innerHTML = '';
   if(!validate()) return;
   if(preview){
-    showMessage('<p><strong>Preview only.</strong> The form is complete and would be accepted. Nothing has been sent or saved.</p>', 'warn');
+    // Show the real confirmation screen, clearly marked, without saving anything.
+    const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+    body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
+    showConfirmation({ reference: 'EH27-PREVIEW', waitingList: false, ticketUrl: '', emailSent: false, preview: true }, body);
     return;
   }
   const button = $('#submit-button');
   button.disabled = true;
   button.textContent = 'Sending your booking';
-  const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => !k.startsWith('session-slot')));
-  body.sessionIds = [...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value).filter(Boolean);
+  const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+  body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
   if((eduhub.schools || []).length && currentRole() !== 'trustee') body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
   body.itemType = 'eduhub';
   body.itemId = 'eduhub-2027';

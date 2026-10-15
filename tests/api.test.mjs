@@ -301,7 +301,10 @@ await test("saving sessions does not touch event details, and the reverse", asyn
 await test("public data shows workshops, rounds and keynote but not admin notes", async () => {
   const e = (await call("public-data")).data.eduhub;
   assert.equal(e.workshops.length, 4); assert.equal(e.rounds.length, 4); assert.equal(e.keynote.startTime, "09:00");
-  assert.equal(e.agenda.length, 2); assert.equal(e.agenda[1].roundId, "round-1"); assert.deepEqual(e.agenda[1].groups, ["secondary"]);
+  assert.equal(e.agenda.length, 2); assert.equal(e.agenda[1].roundId, "round-1");
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", ...prog, showAgenda: false } });
+  assert.equal((await call("public-data")).data.eduhub.agenda.length, 0);
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", ...prog, showAgenda: true } }); assert.deepEqual(e.agenda[1].groups, ["secondary"]);
   assert.doesNotMatch(JSON.stringify(e), /secret note/);
   assert.equal(e.workshops.find(w => w.id === "breathe").warning, "Allergy warning: uses nuts.");
 });
@@ -320,6 +323,13 @@ await test("the food workshop's allergy warning shows even on workshops saved wi
   assert.match(byTitle.workshops[0].warning, /nuts/);
   const custom = u.normaliseEduhub({ rounds: [{ label: "R" }], workshops: [{ id: "ten-things-food", title: "10 Things I Love About Food", warning: "Contains nuts and sesame." }] });
   assert.equal(custom.workshops[0].warning, "Contains nuts and sesame.");
+});
+await test("the booklet's structure of the day shows until admins save their own, and can be hidden", async () => {
+  const u = await import("../netlify/functions/_utils.mjs");
+  const e = u.normaliseEduhub({ rounds: [{ id: "round-1", label: "Round 1" }], workshops: [{ title: "A" }], agenda: [] });
+  assert.equal(e.agenda.length, 15); assert.equal(e.agenda[0].title, "Registration");
+  assert.equal(e.agenda.find(a => a.kind === "workshop").roundId, "round-1");
+  assert.equal(u.normaliseEduhub({ showAgenda: false }).showAgenda, false);
 });
 await test("a round that finishes before it starts is refused", async () => {
   const r = await call("eduhub", { method: "POST", auth: true, body: { section: "programme", rounds: [{ label: "Backwards", startTime: "11:00", endTime: "10:00" }] } });

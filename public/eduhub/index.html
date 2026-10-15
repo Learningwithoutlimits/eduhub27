@@ -45,6 +45,20 @@
   </div>
 </section>
 
+<section class="section day-section hidden" id="day">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow teal">Structure of the day</div>
+        <h2>How the day works</h2>
+        <p class="muted day-intro">Choose your group to see your day. Your school decides which two workshop rounds you attend.</p>
+      </div>
+      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="Show the day for"></div>
+    </div>
+    <ol class="timeline" id="day-timeline"></ol>
+  </div>
+</section>
+
 <section class="section">
   <div class="container eduhub-information-grid">
     <article class="panel eduhub-event-info">
@@ -66,19 +80,6 @@
       <p id="status-deadline" class="muted hidden"></p>
       <p id="status-contact" class="muted hidden"></p>
     </aside>
-  </div>
-</section>
-
-<section class="section day-section hidden" id="day">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow teal">Structure of the day</div>
-        <h2>Your day at EduHub</h2>
-      </div>
-      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="Show the day for"></div>
-    </div>
-    <ol class="timeline" id="day-timeline"></ol>
   </div>
 </section>
 
@@ -158,7 +159,7 @@
           <fieldset class="field full food-fieldset hidden" id="sessions-field">
             <legend>Choose your workshops</legend>
             <p class="field-help" id="sessions-help">Choose one workshop for each round.</p>
-            <div id="session-options"></div>
+            <div id="session-options" tabindex="-1"></div>
           </fieldset>
 
           <fieldset class="field full food-fieldset hidden" id="food-field">

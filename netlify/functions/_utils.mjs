@@ -75,11 +75,11 @@ export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Cen
 export const ATTENDEE_ROLES = {staff:"Member of staff",governor:"Governor",trustee:"Trustee"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
-export const PROGRAMME_FIELDS = ["schools","rounds","workshops","keynote","agenda","requireSessionChoice","sessions"];
+export const PROGRAMME_FIELDS = ["schools","rounds","workshops","keynote","agenda","showAgenda","requireSessionChoice","sessions"];
 
 // Recommended audience is a guide shown to staff. It does not limit booking.
 export const AUDIENCES = { all: "Open to all", educators: "All educators", leaders: "Anyone who leads a team" };
@@ -245,8 +245,13 @@ export function normaliseEduhub(raw){
     schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
     ...programme,
     keynote: normaliseKeynote(e.keynote),
-    agenda: uniqueIds((Array.isArray(e.agenda)?e.agenda:[]).map(normaliseAgendaItem).filter(Boolean))
-      .map(a => ({ ...a, roundId: rounds.some(r => r.id === a.roundId) ? a.roundId : "" }))
+    showAgenda: e.showAgenda !== false,
+    // Until an administrator saves their own timeline, use the structure of
+    // the day from the booklet, so staff always see it.
+    agenda: uniqueIds((Array.isArray(e.agenda) && e.agenda.length ? e.agenda : WORKSHOP_BOOKLET_2027.agenda).map(normaliseAgendaItem).filter(Boolean))
+      // A workshop line links to its round, or failing that to the round that starts at the same time.
+      .map(a => ({ ...a, roundId: rounds.some(r => r.id === a.roundId) ? a.roundId
+        : a.kind === "workshop" && a.startTime ? (rounds.find(r => r.startTime === a.startTime)?.id || "") : "" }))
       .sort((a,b)=>(a.startTime||"99").localeCompare(b.startTime||"99")),
     sessions: programmeSessions(programme.rounds, programme.workshops),
     requireSessionChoice: e.requireSessionChoice !== false,
