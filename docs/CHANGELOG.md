@@ -10,6 +10,7 @@
 - Admin shows email status and check-in status for every booking, with Check in, Resend email and View ticket buttons, and a test email button on the Overview page.
 - Exports include check-in times and email status. Session registers mark who checked in.
 - Set-up instructions for IT in `docs/EMAIL-SETUP-FOR-IT.md`.
+- A reminder to nominate a colleague for a recognition award, with a button to the Microsoft Form, on the EduHub confirmation screen and in the confirmation email. The link is set under **EduHub 2027 → Event details** and can be changed or removed.
 
 ## Version 5.1: EduHub sessions
 

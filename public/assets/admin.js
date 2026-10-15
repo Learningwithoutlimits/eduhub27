@@ -89,7 +89,7 @@ window.addEventListener('beforeunload',e=>{if(eduhubDirty||programmeDirty){e.pre
 
 function renderEduhubForm(){
   const e=data.eduhub||{};
-  for(const k of ['title','date','time','venue','description','capacity','bookingDeadline','contactEmail','privacyNoticeUrl']) ef.elements[k].value=e[k]??'';
+  for(const k of ['title','date','time','venue','description','capacity','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl']) ef.elements[k].value=e[k]??'';
   for(const k of ['askDietary','askAccessibility','allowNoFood']) ef.elements[k].checked=Boolean(e[k]);
   $$('[name=bookingStatus]',ef).forEach(r=>r.checked=r.value===(e.bookingStatus||'coming-soon'));
   const live=$('#eduhub-live-status');
@@ -176,7 +176,7 @@ $('#load-matrix-menu').addEventListener('click',()=>{
 
 ef.addEventListener('submit',async e=>{
   e.preventDefault();
-  const obj=Object.fromEntries(['title','date','time','venue','description','bookingDeadline','contactEmail','privacyNoticeUrl'].map(k=>[k,ef.elements[k].value.trim()]));
+  const obj=Object.fromEntries(['title','date','time','venue','description','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl'].map(k=>[k,ef.elements[k].value.trim()]));
   obj.section='details';
   obj.capacity=Number(ef.elements.capacity.value)||0;
   for(const k of ['askDietary','askAccessibility','allowNoFood']) obj[k]=ef.elements[k].checked;

@@ -14,6 +14,7 @@ export default async request => {
    if(!String(body.title||"").trim()) return json({error:"An event title is required."},400);
    if(!BOOKING_STATUSES.includes(body.bookingStatus)) return json({error:"Please choose a booking status."},400);
    if(body.privacyNoticeUrl && !/^https:\/\//i.test(body.privacyNoticeUrl)) return json({error:"The privacy notice link must start with https://"},400);
+   if(body.recognitionUrl && !/^https:\/\//i.test(body.recognitionUrl)) return json({error:"The recognition award link must start with https://"},400);
  }else{
    const sessions=Array.isArray(body.sessions)?body.sessions:[];
    const badTime=sessions.find(s=>String(s?.title||"").trim() && s.startTime && s.endTime && s.endTime<=s.startTime);

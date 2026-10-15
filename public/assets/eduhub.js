@@ -272,6 +272,11 @@ function showConfirmation(data, body){
       <img class="ticket-qr" src="/api/qr?${esc(data.ticketUrl.split('?')[1] || '')}" width="220" height="220" alt="QR code for your booking">
       <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
       <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
+    ${eduhub.recognitionUrl ? `<div class="recognition-box">
+      <h3>Recognising colleagues</h3>
+      <p>Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
+      <a class="button" href="${esc(eduhub.recognitionUrl)}" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
+    </div>` : ''}
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
       ${cal && !data.waitingList ? `<a class="button" href="${cal}" download="EduHub-2027.ics">Add to my calendar</a>` : ''}

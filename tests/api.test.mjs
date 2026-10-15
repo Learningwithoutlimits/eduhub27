@@ -353,6 +353,13 @@ await test("sessions not required: slots can be left empty", async () => {
 });
 
 console.log("Tickets, check-in and email");
+await test("recognition award link: on by default, must be https, can be removed", async () => {
+  assert.equal((await call("public-data")).data.eduhub.recognitionUrl, "https://forms.cloud.microsoft/e/PsKimNCMdT");
+  assert.equal((await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, recognitionUrl: "javascript:alert(1)" }) })).status, 400);
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, recognitionUrl: "" }) });
+  assert.equal((await call("public-data")).data.eduhub.recognitionUrl, "");
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, recognitionUrl: "https://forms.cloud.microsoft/e/PsKimNCMdT" }) });
+});
 let ticketBooking, ticketPath;
 await test("booking sends an email with an inline QR code and returns a ticket link", async () => {
   await call("eduhub", { method: "POST", auth: true, body: { section: "programme", requireSessionChoice: false, schools: prog.schools, sessions: prog.sessions } });
@@ -370,6 +377,7 @@ await test("booking sends an email with an inline QR code and returns a ticket l
   assert.match(m.msg.subject, /EH27-/);
   assert.match(m.msg.body.content, /cid:ticketqr/); assert.match(m.msg.body.content, /Keynote/); assert.match(m.msg.body.content, /Dear Test/);
   assert.match(m.msg.body.content, /mailto:eduhub@lwlat\.org\.uk/);
+  assert.match(m.msg.body.content, /forms\.cloud\.microsoft\/e\/PsKimNCMdT/);
   const png = Buffer.from(m.msg.attachments[0].contentBytes, "base64");
   assert.equal(png.subarray(0, 4).toString("hex"), "89504e47"); assert.equal(m.msg.attachments[0].isInline, true);
   ticketBooking = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "test.person500@lwlat.org.uk");

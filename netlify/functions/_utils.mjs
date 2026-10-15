@@ -71,7 +71,7 @@ export const PHASES = ["primary","secondary","central"];
 export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Central Trust"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",schools:[],sessions:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",schools:[],sessions:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
@@ -150,6 +150,7 @@ export function normaliseEduhub(raw){
     askAccessibility: e.askAccessibility !== false,
     allowNoFood: Boolean(e.allowNoFood),
     privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
+    recognitionUrl: /^https:\/\//i.test(String(e.recognitionUrl||"")) ? clean(e.recognitionUrl, 300) : "",
     contactEmail: isEmail(e.contactEmail) ? clean(e.contactEmail, 120).toLowerCase() : "",
     schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
     sessions: uniqueIds((Array.isArray(e.sessions)?e.sessions:[]).map(normaliseSession).filter(Boolean))

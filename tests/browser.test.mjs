@@ -182,6 +182,7 @@ await step("member of staff books a place with a food choice", async () => {
   assert.match(text, /EH27-[A-Z2-9]{6}/);
   assert.match(text, /Tuna Mayo Sandwich/);
   assert.match(text, /Early reading, Room P1/);
+  assert.equal(await staffPage.getAttribute(".recognition-box a", "href"), "https://forms.cloud.microsoft/e/PsKimNCMdT");
   assert.ok(await staffPage.isVisible("a[download='EduHub-2027.ics']"));
   await snap("05-eduhub-confirmation", staffPage);
 });
@@ -189,7 +190,7 @@ await step("member of staff books a place with a food choice", async () => {
 await step("confirmation shows a QR ticket; the ticket page works for staff and door staff", async () => {
   const qr = staffPage.locator(".confirmation .ticket-qr");
   await qr.waitFor();
-  assert.ok(await qr.evaluate(img => img.complete && img.naturalWidth > 100), "QR image should load");
+  await staffPage.waitForFunction(() => { const img = document.querySelector(".confirmation .ticket-qr"); return img && img.complete && img.naturalWidth > 100; }, null, { timeout: 15000 });
   const href = await staffPage.getAttribute(".confirmation a[href*='/ticket/']", "href");
   // A member of staff (not signed in) sees their ticket and QR code only.
   const outsider = await browser.newContext();
