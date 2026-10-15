@@ -91,7 +91,12 @@ window.addEventListener('beforeunload',e=>{if(eduhubDirty||programmeDirty){e.pre
 function renderEduhubForm(){
   const e=data.eduhub||{};
   for(const k of ['title','date','time','venue','description','capacity','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl']) ef.elements[k].value=e[k]??'';
-  for(const k of ['askDietary','askAccessibility','allowNoFood']) ef.elements[k].checked=Boolean(e[k]);
+  for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) ef.elements[k].checked=Boolean(e[k]);
+  const link=e.speakerCode?`${location.origin}/eduhub/speakers/?code=${e.speakerCode}`:'';
+  $('#speaker-link').value=link||'Save the EduHub settings once to create the link.';
+  $('#copy-speaker-link').disabled=!link;$('#open-speaker-link').classList.toggle('hidden',!link);$('#open-speaker-link').href=link||'#';
+  const speakers=data.bookings.filter(b=>b.itemId===EDUHUB_ID&&b.role==='speaker'&&statusOf(b)!=='cancelled');
+  $('#speaker-count').textContent=speakers.length?`${speakers.length} speaker lunch booking${speakers.length===1?'':'s'} so far.`:'No speaker lunch bookings yet.';
   $$('[name=bookingStatus]',ef).forEach(r=>r.checked=r.value===(e.bookingStatus||'coming-soon'));
   const live=$('#eduhub-live-status');
   live.textContent=`Live now: ${EDUHUB_STATUS_TEXT[e.effectiveStatus]||''}${e.bookingStatus==='open'&&e.effectiveStatus==='closed'?' The booking deadline or event date has passed.':''}`;
@@ -180,7 +185,8 @@ ef.addEventListener('submit',async e=>{
   const obj=Object.fromEntries(['title','date','time','venue','description','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl'].map(k=>[k,ef.elements[k].value.trim()]));
   obj.section='details';
   obj.capacity=Number(ef.elements.capacity.value)||0;
-  for(const k of ['askDietary','askAccessibility','allowNoFood']) obj[k]=ef.elements[k].checked;
+  for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) obj[k]=ef.elements[k].checked;
+  if(replaceSpeakerLink){obj.newSpeakerCode=true;replaceSpeakerLink=false}
   obj.bookingStatus=$('[name=bookingStatus]:checked',ef)?.value||'coming-soon';
   obj.foodChoices=readFoodChoices();
   if(!obj.title){message('Please enter an event title.','notice error');return}
@@ -199,6 +205,15 @@ ef.addEventListener('submit',async e=>{
   catch(err){message(`EduHub settings were not saved: ${err.message}`,'notice error')}
   finally{btn.disabled=false}
 });
+let replaceSpeakerLink=false;
+$('#copy-speaker-link').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText($('#speaker-link').value);message('Speaker link copied. Paste it into your email to speakers.')}
+  catch{$('#speaker-link').select();message('Press Ctrl+C (or Cmd+C on a Mac) to copy the selected link.','notice warn')}
+});
+$('#new-speaker-link').addEventListener('click',()=>{
+  if(!confirm('Replace the speaker link? The old link will stop working straight away, so you will need to send the new one to any speakers who have not booked yet. Any other changes on this page will be saved too.')) return;
+  replaceSpeakerLink=true;ef.requestSubmit();
+});
 $('#preview-eduhub').addEventListener('click',()=>{
   if(eduhubDirty) alert('The preview shows the saved settings. Save your changes first to see them in the preview.');
   window.open('/eduhub/?preview=1','_blank','noopener');
@@ -214,7 +229,7 @@ function renderCatering(){
   const dietary=confirmed.filter(b=>String(b.dietary||'').trim());
   const access=confirmed.filter(b=>String(b.accessibility||'').trim()).length;
   $('#catering-summary').innerHTML=`
-    <div class="stat-grid three"><div class="stat"><span>Confirmed places</span><strong>${confirmed.length}</strong></div><div class="stat"><span>With dietary needs or allergies</span><strong>${dietary.length}</strong></div><div class="stat"><span>With accessibility needs</span><strong>${access}</strong></div></div>
+    <div class="stat-grid three"><div class="stat"><span>Confirmed places${confirmed.some(b=>b.role==='speaker')?` (including ${confirmed.filter(b=>b.role==='speaker').length} speakers)`:''}</span><strong>${confirmed.length}</strong></div><div class="stat"><span>With dietary needs or allergies</span><strong>${dietary.length}</strong></div><div class="stat"><span>With accessibility needs</span><strong>${access}</strong></div></div>
     <div class="table-wrap"><table class="compact"><thead><tr><th>Food choice</th><th>Number</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td><strong>${v}</strong></td></tr>`).join('')}</tbody></table></div>
     ${dietary.length?`<h3>Dietary requirements and allergies</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Name</th><th>School or team</th><th>Food choice</th><th>Details</th></tr></thead><tbody>${dietary.map(b=>`<tr><td>${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}</td><td>${escapeHtml(b.organisation)}</td><td>${escapeHtml(b.foodChoice||'')}</td><td>${escapeHtml(b.dietary)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
 }
@@ -249,8 +264,8 @@ function renderBookings(){
     const needs=[(b.sessions||[]).length?`<strong>Sessions:</strong> ${b.sessions.map(x=>`${escapeHtml(x.time)} ${escapeHtml(x.title)}`).join('<br>')}`:'',b.foodChoice?`<strong>Food:</strong> ${escapeHtml(b.foodChoice)}`:'',b.foodAllergens?`<span class="muted">Contains: ${escapeHtml(b.foodAllergens)}</span>`:'',b.dietary?`<strong>Dietary:</strong> ${escapeHtml(b.dietary)}`:'',b.accessibility?`<strong>Access:</strong> ${escapeHtml(b.accessibility)}`:'',b.notes?`<strong>Notes:</strong> ${escapeHtml(b.notes)}`:'',b.adminNotes?`<strong>Admin:</strong> ${escapeHtml(b.adminNotes)}`:''].filter(Boolean).join('<br>');
     return `<tr class="${st==='cancelled'?'row-cancelled':''}"><td>${new Date(b.createdAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}${b.reference?`<br><span class="muted">${escapeHtml(b.reference)}</span>`:''}</td>
       <td><strong>${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}</strong><br>${escapeHtml(b.jobTitle||'')}${b.jobTitle?'<br>':''}${escapeHtml(b.organisation)}${b.phaseName?` <span class="muted">(${escapeHtml(b.phaseName)})</span>`:''}<br><a href="mailto:${escapeHtml(b.email)}">${escapeHtml(b.email)}</a>${b.telephone?`<br>${escapeHtml(b.telephone)}`:''}</td>
-      <td>${escapeHtml(b.itemTitle)}</td><td class="needs-cell">${needs||'<span class="muted">None given</span>'}</td>
-      <td><span class="status-pill ${st}">${STATUS_LABEL[st]}</span>${b.checkedInAt?`<br><span class="status-pill checkin-pill">Checked in ${new Date(b.checkedInAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
+      <td>${escapeHtml(b.itemTitle)}${b.leading?`<br><span class="muted">Leading: ${escapeHtml(b.leading)}</span>`:''}</td><td class="needs-cell">${needs||'<span class="muted">None given</span>'}</td>
+      <td>${b.role==='speaker'?'<span class="status-pill speaker">Speaker</span><br>':b.role==='governor'?'<span class="status-pill governor">Governor</span><br>':b.role==='trustee'?'<span class="status-pill governor">Trustee</span><br>':''}<span class="status-pill ${st}">${STATUS_LABEL[st]}</span>${b.checkedInAt?`<br><span class="status-pill checkin-pill">Checked in ${new Date(b.checkedInAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
         <br><span class="small ${b.emailSentAt?'email-ok':b.emailError?'email-fail':'muted'}" title="${escapeHtml(b.emailError||'')}">${b.emailSentAt?'Email sent':b.emailError?'Email failed':'No email sent'}</span></td>
       <td><div class="actions">
         <button class="ghost" data-booking-edit="${escapeHtml(b.id)}">Edit</button>
@@ -410,6 +425,8 @@ cf.addEventListener('submit',async e=>{
 });
 // ---------- EduHub sessions: keynote, rounds, workshops, schools ----------
 const PHASES=[['primary','Primary'],['secondary','Secondary'],['central','Central Trust']];
+// Earlier booklet wording, replaced automatically by the booklet button.
+const OLD_BOOKLET_WARNINGS=['Allergy warning: this session includes tasting food and will involve the use of nuts.'];
 const AUDIENCES=[['all','Open to all'],['educators','All educators'],['leaders','Anyone who leads a team']];
 const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), roundBuilder=$('#round-builder'), workshopBuilder=$('#workshop-builder'), agendaBuilder=$('#agenda-builder');
 const AGENDA_KINDS=[['general','General'],['arrival','Arrival'],['keynote','Keynote'],['workshop','Workshop'],['break','Break'],['lunch','Lunch'],['awards','Awards']];
@@ -557,7 +574,7 @@ function addWorkshopRow(w={}){
         <div class="field"><label for="${uid}-n">Speaker name</label><input id="${uid}-n" data-w="speakerName" value="${escapeHtml(w.speakerName||'')}" maxlength="120"></div>
         <div class="field"><label for="${uid}-ro">Speaker role <span class="optional">(optional)</span></label><input id="${uid}-ro" data-w="speakerRole" value="${escapeHtml(w.speakerRole||'')}" maxlength="150"></div>
         <div class="field full"><label for="${uid}-d">Description</label><textarea id="${uid}-d" data-w="description" rows="5" maxlength="4000">${escapeHtml(w.description||'')}</textarea><span class="field-help">Start a line with "- " to show it as a bullet point.</span></div>
-        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session will involve the use of nuts."></div>
+        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session may contain a variety of allergens."></div>
         <div class="field full"><label for="${uid}-b">About the speaker <span class="optional">(optional)</span></label><textarea id="${uid}-b" data-w="speakerBio" rows="3" maxlength="2500">${escapeHtml(w.speakerBio||'')}</textarea></div>
         <div class="field"><label for="${uid}-a">Recommended audience</label><select id="${uid}-a" data-w="recommended">${AUDIENCES.map(([v,n])=>`<option value="${v}" ${(w.recommended||'all')===v?'selected':''}>${n}</option>`).join('')}</select></div>
         <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-w="room" value="${escapeHtml(w.room||'')}" maxlength="100"></div>
@@ -621,7 +638,7 @@ $('#load-booklet').addEventListener('click',()=>{
   let needRounds=!current.length;
   if(current.length&&!sameRounds) needRounds=confirm(`Replace the ${current.length} round${current.length===1?'':'s'} already here with the four rounds from the booklet?\n\n${B.rounds.map(r=>`${r.label}: ${r.startTime} to ${r.endTime}`).join('\n')}\n\nPress Cancel to keep the rounds you have.`);
   const needKeynote=!$('#k-name').value.trim(), needAgenda=!readAgenda().length;
-  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&!r.querySelector('[data-w=warning]').value.trim())).length;
+  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>{const v=r.querySelector('[data-w=warning]').value.trim();return r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&(!v||(OLD_BOOKLET_WARNINGS.includes(v)&&v!==w.warning))})).length;
   if(!toAdd.length&&!needRounds&&!needKeynote&&!needAgenda&&!missingWarnings){message('Everything from the workshop booklet is already here.');return}
   if(!confirm(`Fill in from the workshop booklet?\n\n${[needKeynote?'The keynote (Graham Allcott)':'',needAgenda?'The structure of the day':'',needRounds?`${B.rounds.length} workshop rounds`:'',toAdd.length?`${toAdd.length} workshops with speaker photos`:'',missingWarnings?`${missingWarnings} allergy warning${missingWarnings===1?'':'s'}`:''].filter(Boolean).join('\n')}\n\nPlease check the details, add rooms, then press Save sessions.`)) return;
   if(needKeynote) renderKeynote(B.keynote);
@@ -633,7 +650,7 @@ $('#load-booklet').addEventListener('click',()=>{
   for(const w of B.workshops.filter(x=>x.warning)){
     const row=$$('.workshop-row',workshopBuilder).find(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase());
     const box=row?.querySelector('[data-w=warning]');
-    if(box&&!box.value.trim()){box.value=w.warning;warned++}
+    if(box&&(!box.value.trim()||OLD_BOOKLET_WARNINGS.includes(box.value.trim()))&&box.value.trim()!==w.warning){box.value=w.warning;warned++}
   }
   markProgrammeDirty();
   message('Details added from the workshop booklet. They are not saved yet. Please check them, add rooms, then press Save sessions.','notice warn');

@@ -102,6 +102,13 @@ To stop bookings, choose **Closed** and save. Bookings also close by themselves 
 - **EduHub sessions → Session numbers** shows how full each session is. **Register (CSV)** gives a printable list for each room.
 - After the event, export what you need to keep, then delete bookings in line with the retention period agreed with the DPO.
 
+## Speaker lunches
+
+1. In admin, open **EduHub 2027** and scroll to **Speaker lunch bookings**.
+2. Tick **Speaker lunch bookings are open** and press **Save EduHub settings**.
+3. Press **Copy link** and paste the link into your email to speakers.
+4. If the link is ever shared too widely, press **Replace the link**. The old one stops working at once.
+
 ## Confirmation emails
 
 Send `EMAIL-SETUP-FOR-IT.md` to your IT team. When they have finished, the admin Overview page says emails are switched on. Send yourself a test email from there.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 5.5: speaker lunches, governors and trustees
+
+### New
+- **Speaker lunch form** at `/eduhub/speakers/`, opened through a private link from admin (EduHub 2027 → Speaker lunch bookings). Speakers can use any email address and choose the session they are leading, their lunch, dietary and accessibility needs. They get a confirmation, a QR ticket and an email. Speaker bookings do not use up staff places, are marked as speakers in admin, and appear in the catering summary and the caterer's list. The form has its own open or closed switch, and the link can be replaced at any time.
+- **Governors and trustees** can book EduHub. The form asks "I am booking as" (member of staff, governor or trustee). Governors and trustees can use any email address. Governors choose the school they govern, which decides their workshop rounds. Trustees choose no school and follow the central Trust rounds. A switch in admin turns this on or off.
+- Bookings, exports and workshop registers show whether each person is staff, a governor, a trustee or a speaker.
+
 ## Version 5.4: a more visual EduHub page
 
 ### New
@@ -8,7 +15,7 @@
 - Workshop **tiles** showing only the speaker photo, title, speaker name and recommended audience. Selecting a tile opens a **lightbox** with the description, speaker biography, room and round times.
 - The booking form uses the same compact tiles, with a "More about this workshop" link to the lightbox.
 - Keynote banner with an "About Graham" lightbox.
-- A **warning** field for each workshop, shown on the tile, in the lightbox and on the booking form. "10 Things I Love About Food" carries a warning that the session will involve the use of nuts.
+- A **warning** field for each workshop, shown in strong Trust red: a band across the tile photo with the full wording beneath, a red box in the lightbox, and a red strip on the booking form. "10 Things I Love About Food" carries a warning that the tasting food may contain a variety of allergens, including nuts.
 
 ## Version 5.3: workshop rounds, keynote and the workshop booklet
 

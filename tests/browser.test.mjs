@@ -174,9 +174,10 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   assert.equal(await staffPage.locator("#workshop-dialog[open]").count(), 0);
   // The food workshop carries its nut warning on the tile and in the lightbox.
   const food = staffPage.locator(".workshop-tile", { hasText: "10 Things I Love About Food" });
-  assert.match(await food.textContent(), /Allergy warning/);
+  assert.match(await food.textContent(), /Allergy warning/); assert.match(await food.textContent(), /variety of allergens, including nuts/);
+  assert.equal(await food.evaluate(el => getComputedStyle(el.querySelector(".tile-warning-band")).backgroundColor), "rgb(205, 22, 63)");
   await food.click();
-  assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /use of nuts/);
+  assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /variety of allergens, including nuts/);
   await staffPage.click("#dialog-close");
 });
 
@@ -264,13 +265,62 @@ await step("second and third bookings fill the event, then the waiting list", as
   assert.match(await staffPage.textContent(".confirmation"), /waiting list/);
 });
 
+await step("a governor books with their own email and gets their school's rounds", async () => {
+  await staffPage.goto(BASE + "/eduhub/");
+  await staffPage.waitForSelector(".food-option");
+  await staffPage.check('[name=role][value=governor]');
+  assert.equal(await staffPage.textContent("#school-label"), "School you govern");
+  await fillStaff(staffPage, "Gwen", "Governor", "gwen@example.org", "Another Primary School");
+  assert.match(await staffPage.textContent("#sessions-help"), /Governors of primary schools/);
+  await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
+  await staffPage.click("#submit-button");
+  await staffPage.waitForSelector(".confirmation");
+});
+
+await step("a trustee books without choosing a school", async () => {
+  await staffPage.goto(BASE + "/eduhub/");
+  await staffPage.waitForSelector(".food-option");
+  await staffPage.check('[name=role][value=trustee]');
+  assert.ok(await staffPage.isHidden("#school-field"));
+  await staffPage.fill("#firstName", "Toby"); await staffPage.fill("#lastName", "Trustee"); await staffPage.fill("#email", "toby@example.org");
+  await staffPage.waitForSelector(".session-slot");
+  assert.match(await staffPage.textContent("#session-options"), /Round 1/);
+  for (const slot of await staffPage.locator(".session-slot").all()) await slot.locator("input:not([disabled])").first().check();
+  await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
+  await staffPage.click("#submit-button");
+  await staffPage.waitForSelector(".confirmation");
+});
+
+await step("speakers book lunch through the private link", async () => {
+  await page.click("[data-view=eduhub]");
+  await page.check("[name=speakerBookingOpen]");
+  await page.click("#eduhub-form button[type=submit]");
+  await page.waitForFunction(() => document.querySelector("#speaker-link").value.includes("/eduhub/speakers/?code="));
+  const link = await page.inputValue("#speaker-link");
+  const outsider = await browser.newContext();
+  const sp = await outsider.newPage();
+  await sp.goto(BASE + "/eduhub/speakers/?code=wrong");
+  await sp.waitForSelector("#sp-closed:not(.hidden)");
+  assert.match(await sp.textContent("#sp-closed"), /not valid/);
+  await sp.goto(link.replace(/^https?:\/\/[^/]+/, BASE));
+  await sp.waitForSelector("#speaker-form:not(.hidden)");
+  await sp.fill("#firstName", "Hywel"); await sp.fill("#lastName", "Roberts"); await sp.fill("#email", "hywel@independentthinking.example");
+  await sp.selectOption("#leading", { index: 2 });
+  await sp.locator(".food-option").nth(1).locator("input").check(); await sp.check("#consent");
+  await snap("09-speaker-form", sp);
+  await sp.click("#submit-button");
+  await sp.waitForSelector(".confirmation");
+  assert.match(await sp.textContent(".confirmation"), /EHS-/);
+  await outsider.close();
+});
+
 await step("admin sees food, allergens and catering totals", async () => {
   await page.reload();
   await page.waitForSelector("#admin-view:not(.hidden)");
-  assert.equal((await page.textContent("#stat-eduhub-bookings")).trim(), "3");
+  assert.equal((await page.textContent("#stat-eduhub-bookings")).trim(), "6");
   await page.click("[data-view=eduhub]");
   const summary = await page.textContent("#catering-summary");
-  assert.match(summary, /Confirmed places\s*2/);
+  assert.match(summary, /including 1 speakers/);
   assert.match(summary, /Mild lactose intolerance/);
   await snap("06-admin-catering");
   await page.click("[data-view=bookings]");
@@ -284,8 +334,8 @@ await step("admin sees food, allergens and catering totals", async () => {
 });
 
 await step("admin gives the waiting-list person a place and edits a food choice", async () => {
-  await page.click("[data-booking-action=confirm]");
-  await page.waitForFunction(() => !document.querySelector("#bookings-table").textContent.includes("Waiting list"));
+  await page.locator("tr", { hasText: "Jo Smith" }).locator("[data-booking-action=confirm]").click();
+  await page.waitForFunction(() => ![...document.querySelectorAll("#bookings-table tr")].find(r => r.textContent.includes("Jo Smith"))?.textContent.includes("Waiting list"));
   await page.locator("tr", { hasText: "Alex" }).locator("[data-booking-edit]").click();
   await page.selectOption("#b-food", { label: "Egg and Cress Sandwich" });
   await page.fill("#b-admin-notes", "Changed by email");

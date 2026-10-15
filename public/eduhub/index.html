@@ -116,6 +116,15 @@
         <form id="eduhub-form" class="form-shell form-grid" novalidate>
           <div class="hp-field" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
 
+          <fieldset class="field full role-fieldset" id="role-field">
+            <legend>I am booking as</legend>
+            <div class="role-options">
+              <label class="role-option"><input type="radio" name="role" value="staff" checked> <span>A member of staff</span></label>
+              <label class="role-option"><input type="radio" name="role" value="governor"> <span>A governor</span></label>
+              <label class="role-option"><input type="radio" name="role" value="trustee"> <span>A trustee</span></label>
+            </div>
+          </fieldset>
+
           <div class="field">
             <label for="firstName">First name</label>
             <input id="firstName" name="firstName" required autocomplete="given-name" maxlength="80">
@@ -125,7 +134,7 @@
             <input id="lastName" name="lastName" required autocomplete="family-name" maxlength="80">
           </div>
           <div class="field full">
-            <label for="email">Trust email address</label>
+            <label for="email" id="email-label">Trust email address</label>
             <input id="email" name="email" type="email" required autocomplete="email" maxlength="160" aria-describedby="email-help" placeholder="firstname.surname@lwlat.org.uk">
             <span class="field-help" id="email-help">Please use your @lwlat.org.uk email address.</span>
           </div>
@@ -134,7 +143,7 @@
             <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
           </div>
           <div class="field hidden" id="school-field">
-            <label for="schoolId">School or team</label>
+            <label for="schoolId" id="school-label">School or team</label>
             <select id="schoolId" name="schoolId"></select>
           </div>
           <div class="field">

@@ -12,7 +12,7 @@ export default async () => {
    const closed=courseBookingClosedReason(c);
    return {...out,bookable:!closed,closedReason:closed,placesLeft:placesLeft(c.id,c.capacity)};
  });
- const {updatedAt,...publicEduhub}=eduhub;
+ const {updatedAt,speakerCode,...publicEduhub}=eduhub;
  publicEduhub.sessions=eduhub.sessions.map(x=>({...x,placesLeft:x.capacity>0?Math.max(0,x.capacity-sessionPlacesTaken(bookings,x.id)):null}));
  publicEduhub.workshops=eduhub.workshops.map(({adminNotes,...w})=>w);
  return json({courses:published,eduhub:{...publicEduhub,effectiveStatus:eduhubEffectiveStatus(eduhub),placesLeft:placesLeft(EDUHUB_ID,eduhub.capacity)}});

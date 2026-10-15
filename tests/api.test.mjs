@@ -469,6 +469,66 @@ await test("admin can send a test email, check in from the list, and export chec
   assert.match(csv, /"Checked in","Email sent"/);
 });
 
+console.log("Speakers, governors and trustees");
+let speakerCode;
+await test("speaker link code is created by the server and never public", async () => {
+  const d = await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, capacity: 0, speakerBookingOpen: true, speakerCode: "chosen-by-browser" }) });
+  speakerCode = d.data.eduhub.speakerCode;
+  assert.match(speakerCode, /^[A-Za-z0-9]{16,20}$/);
+  assert.doesNotMatch(JSON.stringify((await call("public-data")).data), new RegExp(speakerCode));
+  const again = await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, speakerBookingOpen: true }) });
+  assert.equal(again.data.eduhub.speakerCode, speakerCode);
+  const fresh = await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, speakerBookingOpen: true, newSpeakerCode: true }) });
+  assert.notEqual(fresh.data.eduhub.speakerCode, speakerCode);
+  speakerCode = fresh.data.eduhub.speakerCode;
+});
+const speaker = extra => call("book", { method: "POST", body: { itemType: "eduhub-speaker", firstName: "Sam", lastName: "Speaker", email: "sam@speakers.example", leading: "Botheredness (Hywel Roberts)", foodChoiceId: menu[1].id, consent: true, code: speakerCode, ...extra } });
+await test("speaker access check and link validation", async () => {
+  assert.deepEqual((await call(`speaker-access?code=${speakerCode}`)).data, { valid: true, open: true });
+  assert.equal((await call("speaker-access?code=wrong")).data.valid, false);
+  assert.equal((await speaker({ code: "wrong" })).status, 403);
+  assert.equal((await speaker({ leading: "Made up session" })).status, 400);
+});
+await test("speaker books lunch with any email, outside staff capacity", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, capacity: 1, speakerBookingOpen: true }) });
+  const r = await speaker({});
+  assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.waitingList, false); assert.match(r.data.reference, /^EHS-/);
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "sam@speakers.example");
+  assert.equal(b.role, "speaker"); assert.equal(b.leading, "Botheredness (Hywel Roberts)"); assert.equal(b.foodChoice, "Tuna Mayo Sandwich");
+  assert.deepEqual(b.sessionIds, undefined);
+  const csv = await (await fetch(BASE + "/api/export-bookings?item=eduhub&view=catering", { headers: { cookie } })).text();
+  assert.match(csv, /"Speaker","Sam","Speaker"/);
+  assert.match(mails.at(-1).msg.subject, /lunch booking/); assert.doesNotMatch(mails.at(-1).msg.body.content, /recognition award/);
+});
+await test("speaker bookings close with the switch", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, capacity: 0, speakerBookingOpen: false }) });
+  assert.equal((await call(`speaker-access?code=${speakerCode}`)).data.open, false);
+  assert.equal((await speaker({ email: "late@speakers.example" })).status, 403);
+});
+await test("governor books with any email and gets their school's rounds", async () => {
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", requireSessionChoice: true, schools: prog.schools, rounds: prog.rounds, workshops: prog.workshops, keynote: prog.keynote } });
+  const gov = extra => call("book", { method: "POST", body: { itemType: "eduhub", role: "governor", firstName: "Gwen", lastName: "Governor", email: "gwen@example.org", foodChoiceId: menu[0].id, consent: true, ...extra } });
+  assert.equal((await gov({ schoolId: school("Example Primary"), sessionIds: [sid("Curious Schools", "round-1"), sid("Breathe Better", "round-4")] })).status, 400);
+  const r = await gov({ schoolId: school("Example Primary"), sessionIds: [sid("Curious Schools", "round-2"), sid("Breathe Better", "round-3")] });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "gwen@example.org");
+  assert.equal(b.role, "governor"); assert.equal(b.roleName, "Governor"); assert.equal(b.organisation, "Example Primary");
+});
+await test("trustee needs no school and follows the central rounds", async () => {
+  const r = await call("book", { method: "POST", body: { itemType: "eduhub", role: "trustee", firstName: "Toby", lastName: "Trustee", email: "toby@example.org", foodChoiceId: menu[0].id, consent: true, sessionIds: [sid("Inclusive Leadership", "round-1"), sid("Curious Schools", "round-4")] } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "toby@example.org");
+  assert.equal(b.organisation, "Board of Trustees"); assert.equal(b.phase, "central");
+});
+await test("staff still need a Trust email, and governors can be switched off", async () => {
+  const st = await call("book", { method: "POST", body: staff(600, { email: "someone@gmail.com", role: "staff", schoolId: school("Example Primary"), foodChoiceId: menu[0].id }) });
+  assert.equal(st.status, 400); assert.match(st.data.error, /governors and trustees/i);
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, allowGovernors: false }) });
+  const off = await call("book", { method: "POST", body: { itemType: "eduhub", role: "governor", firstName: "No", lastName: "Entry", email: "no@example.org", schoolId: school("Example Primary"), foodChoiceId: menu[0].id, consent: true } });
+  assert.equal(off.status, 403);
+  await call("eduhub", { method: "POST", auth: true, body: settings({ foodChoices: menu, allowGovernors: true }) });
+});
+
 console.log("Sign-in protection");
 await test("repeated wrong passwords lead to a temporary lockout", async () => {
   let last;

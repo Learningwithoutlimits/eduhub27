@@ -77,7 +77,7 @@ function eventFacts(b, eduhub, course){
   if(b.itemId === EDUHUB_ID){
     return [
       ["Date", esc(fmtDate(eduhub.date))], ["Time", esc(eduhub.time)], ["Venue", esc(eduhub.venue)],
-      ["School or team", esc(b.organisation)],
+      [b.role === "speaker" ? "Leading" : "School or team", esc(b.role === "speaker" ? b.leading : b.organisation)],
       ["Sessions", (b.sessions || []).map(s => `${esc(s.time)}: ${esc(s.title)}${s.room ? `, ${esc(s.room)}` : ""}`).join("<br>")],
       ["Food choice", esc(b.foodChoice)]
     ];
@@ -93,7 +93,7 @@ export function confirmationEmail(b, { eduhub, course, url }){
   const waiting = Boolean(b.waitingList);
   const title = b.itemTitle || "your booking";
   const contact = b.itemId === EDUHUB_ID ? eduhub.contactEmail : "";
-  const subject = waiting ? `Waiting list: ${title} (${b.reference})` : `Your booking for ${title} (${b.reference})`;
+  const subject = waiting ? `Waiting list: ${title} (${b.reference})` : b.role === "speaker" ? `Your lunch booking for ${title} (${b.reference})` : `Your booking for ${title} (${b.reference})`;
   const facts = [["Booking reference", `<strong>${esc(b.reference)}</strong>`], ...eventFacts(b, eduhub, course)].map(([l, v]) => row(l, v)).join("");
   const ticket = waiting || !url ? "" : `
     <h2 style="font-size:18px;margin:28px 0 8px;color:#009189">Your ticket</h2>
@@ -108,10 +108,12 @@ export function confirmationEmail(b, { eduhub, course, url }){
     <p style="margin:0 0 12px">Dear ${esc(b.firstName)},</p>
     ${waiting
       ? `<p style="margin:0 0 12px">Thank you for your interest in <strong>${esc(title)}</strong>. All places are currently taken, so you have been added to the waiting list. We will email you again if a place becomes available.</p>`
-      : `<p style="margin:0 0 12px">Thank you for booking your place at <strong>${esc(title)}</strong>. Your booking is confirmed.</p>`}
+      : b.role === "speaker"
+        ? `<p style="margin:0 0 12px">Thank you for booking your lunch for <strong>${esc(title)}</strong>. We are delighted that you are joining us and look forward to welcoming you on the day.</p>`
+        : `<p style="margin:0 0 12px">Thank you for booking your place at <strong>${esc(title)}</strong>. Your booking is confirmed.</p>`}
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:15px">${facts}</table>
     ${ticket}
-    ${b.itemId === EDUHUB_ID && eduhub.recognitionUrl ? `
+    ${b.itemId === EDUHUB_ID && b.role !== "speaker" && eduhub.recognitionUrl ? `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;background:#eef7f6;border-radius:8px"><tr><td style="padding:18px 20px">
       <p style="margin:0 0 6px;font-weight:bold;color:#009189">Recognising colleagues</p>
       <p style="margin:0 0 12px">Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
