@@ -136,7 +136,7 @@ function renderSessionChoices(){
             <span class="food-name">${esc(x.title)}</span>
             ${x.speakerName ? `<span class="session-meta"><span>${esc(x.speakerName)}</span></span>` : ''}
             <span class="food-tags">${audienceTag(x)}</span>
-            ${x.warning ? `<span class="choice-warning">${esc(x.warning)}</span>` : ''}
+            ${x.warning ? `<span class="choice-warning"><span aria-hidden="true">&#9888;</span> ${esc(x.warning)}</span>` : ''}
             ${x.workshopId ? `<a href="#" class="info-link" data-open-workshop="${esc(x.workshopId)}">More about this workshop</a>` : ''}
             ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
             <span class="taken-note">Already chosen for another round</span>
@@ -222,12 +222,13 @@ function renderProgramme(){
       </div>
     </article>` : '';
   $('#workshop-count').textContent = workshops.length ? String(workshops.length) : 'our';
-  $('#workshop-grid').innerHTML = workshops.map(w => `<button type="button" class="workshop-tile" data-open-workshop="${esc(w.id)}" aria-haspopup="dialog">
-      <span class="workshop-tile-photo">${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="" loading="lazy">` : `<span class="workshop-tile-initials">${esc((w.speakerName || w.title).split(' ').map(x => x[0]).slice(0,2).join(''))}</span>`}</span>
+  $('#workshop-grid').innerHTML = workshops.map(w => `<button type="button" class="workshop-tile${w.warning ? ' has-warning' : ''}" data-open-workshop="${esc(w.id)}" aria-haspopup="dialog">
+      <span class="workshop-tile-photo">${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="" loading="lazy">` : `<span class="workshop-tile-initials">${esc((w.speakerName || w.title).split(' ').map(x => x[0]).slice(0,2).join(''))}</span>`}${w.warning ? '<span class="tile-warning-band"><span aria-hidden="true">&#9888;</span> Allergy warning</span>' : ''}</span>
       <span class="workshop-tile-body">
         <span class="workshop-tile-title">${esc(w.title)}</span>
         ${w.speakerName ? `<span class="workshop-tile-speaker">${esc(w.speakerName)}</span>` : ''}
-        <span class="tile-tags">${audienceTag(w)}${w.warning ? '<span class="tag warning-tag">Allergy warning</span>' : ''}</span>
+        ${w.warning ? `<span class="tile-warning-text">${esc(w.warning)}</span>` : ''}
+        <span class="tile-tags">${audienceTag(w)}</span>
       </span>
     </button>`).join('');
 }
@@ -252,7 +253,7 @@ function workshopHtml(w){
         ${audienceTag(w)}
       </div>
     </div>
-    ${w.warning ? `<p class="notice error warning-notice" role="note">${esc(w.warning)}</p>` : ''}
+    ${w.warning ? `<p class="warning-notice" role="note"><span aria-hidden="true">&#9888;</span> ${esc(w.warning)}</p>` : ''}
     <div class="programme-text">${textHtml(w.description)}</div>
     ${runs.length || w.room ? `<div class="lightbox-facts">
       ${w.room ? `<p><strong>Room:</strong> ${esc(w.room)}</p>` : ''}

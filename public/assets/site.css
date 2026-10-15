@@ -328,3 +328,11 @@ table.compact{min-width:0}
 .tag.warning-tag{background:#fde8ed;color:#971238}
 .warning-notice{margin:12px 0}
 .choice-warning{font-size:.88rem;font-weight:700;color:#971238}
+
+/* v5.4.1: allergy warnings in strong red */
+.workshop-tile-photo{position:relative}
+.tile-warning-band{position:absolute;left:0;right:0;bottom:0;background:var(--red);color:#fff;font-weight:800;font-size:.86rem;letter-spacing:.04em;text-transform:uppercase;padding:8px 12px;text-align:center}
+.tile-warning-text{color:var(--red);font-weight:800;font-size:.9rem;line-height:1.35}
+.workshop-tile.has-warning{box-shadow:0 0 0 3px var(--red),0 11px 32px rgba(28,63,65,.09)}
+.warning-notice{background:var(--red);color:#fff;font-weight:800;border-radius:14px;padding:14px 16px;margin:12px 0;font-size:1.02rem}
+.choice-warning{display:block;background:var(--red);color:#fff;font-weight:800;font-size:.88rem;border-radius:10px;padding:7px 10px;margin:2px 0}

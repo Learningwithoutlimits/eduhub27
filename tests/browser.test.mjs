@@ -174,7 +174,8 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   assert.equal(await staffPage.locator("#workshop-dialog[open]").count(), 0);
   // The food workshop carries its nut warning on the tile and in the lightbox.
   const food = staffPage.locator(".workshop-tile", { hasText: "10 Things I Love About Food" });
-  assert.match(await food.textContent(), /Allergy warning/);
+  assert.match(await food.textContent(), /Allergy warning/); assert.match(await food.textContent(), /use of nuts/);
+  assert.equal(await food.evaluate(el => getComputedStyle(el.querySelector(".tile-warning-band")).backgroundColor), "rgb(205, 22, 63)");
   await food.click();
   assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /use of nuts/);
   await staffPage.click("#dialog-close");
