@@ -455,3 +455,21 @@ table.compact{min-width:0}
 .awards-button:hover{filter:brightness(1.08)}
 .awards-card .button.secondary{background:transparent;color:#fbf3e2;border-color:rgba(251,243,226,.7)}
 .awards-card .lightbox-close{background:rgba(255,255,255,.12);color:#fbf3e2}
+
+/* Nomination box on the confirmation screen, matching the awards lightbox. */
+.recognition-box{position:relative;overflow:hidden;border-left:0;border:1px solid rgba(240,196,98,.75);border-radius:18px;padding:22px 24px;color:#fbf3e2;
+  background:
+    linear-gradient(rgba(28,17,6,.55),rgba(28,17,6,.55)),
+    url("/assets/awards-backdrop.jpg") left center/cover no-repeat,
+    radial-gradient(circle at 10% 30%, rgba(255,214,120,.5) 0 4%, transparent 4.6%),
+    radial-gradient(circle at 22% 75%, rgba(255,220,140,.4) 0 3%, transparent 3.6%),
+    radial-gradient(ellipse at 8% 50%, rgba(236,172,60,.7), transparent 50%),
+    linear-gradient(135deg,#3a2408,#24160a 55%,#140c05);
+  box-shadow:0 0 0 5px rgba(240,196,98,.12)}
+.recognition-box h3{color:#ffe3a1;margin:0 0 6px}
+.recognition-box p{color:#fbf3e2}
+.recognition-box .button{background:linear-gradient(135deg,#f6cf6b,#c98a1a);color:#2a1806;border:0;box-shadow:0 8px 22px rgba(201,138,26,.4)}
+.recognition-box .link-button{color:#ffe3a1}
+.kind-awards .link-button{color:#8a5a00}
+.kind-awards .timeline-dot{background:#c98a1a;box-shadow:0 0 0 2px #c98a1a}
+.kind-awards .timeline-kind{color:#8a5a00}
