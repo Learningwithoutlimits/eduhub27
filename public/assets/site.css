@@ -202,3 +202,24 @@ table.compact{min-width:0}
 .email-test-row{grid-template-columns:2fr 1fr;margin-top:12px}
 .actions a.button{padding:7px 11px;font-size:.82rem}
 .door-mode .ticket-qr,.door-mode .ticket-hint{display:none}
+
+.recognition-box{margin:18px 0;padding:18px 20px;border-radius:14px;background:#f3eef7;border-left:5px solid var(--purple)}
+.recognition-box h3{margin:0 0 6px;color:var(--purple)}
+.recognition-box p{margin:0 0 12px}
+.recognition-box .button{background:var(--purple)}
+
+.round-row{grid-template-columns:2fr 1fr 1fr auto}
+.round-groups{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+@media(max-width:700px){.round-row{grid-template-columns:1fr}}
+
+.keynote-card{display:flex;gap:22px;align-items:flex-start;background:#fff;border-radius:22px;padding:24px;box-shadow:var(--shadow);margin-bottom:26px;border-top:6px solid var(--teal)}
+.keynote-card .speaker-img{width:140px;height:140px;border-radius:50%;object-fit:cover;flex:none}
+.keynote-card h3{margin:.2em 0;font-size:1.6rem}
+.round-list{background:#eef7f6;border-radius:18px;padding:18px 22px;margin-bottom:26px}
+.round-list h3{margin:0 0 8px}.round-list ul{margin:0 0 8px;padding-left:20px}.round-list p{margin:0}
+.workshops-heading{margin:0 0 14px}
+.programme-text p{margin:6px 0}.programme-text ul{margin:6px 0;padding-left:20px}
+.speaker-bio{margin-top:8px;font-size:.92rem}.speaker-bio summary{cursor:pointer;font-weight:700;color:var(--teal)}
+.session-option .taken-note{display:none;font-size:.85rem;color:#795400;font-weight:700}
+.session-option.is-taken{opacity:.55;cursor:not-allowed}.session-option.is-taken .taken-note{display:block}
+@media(max-width:700px){.keynote-card{flex-direction:column}.keynote-card .speaker-img{width:110px;height:110px}}

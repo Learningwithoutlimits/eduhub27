@@ -111,6 +111,12 @@ export function confirmationEmail(b, { eduhub, course, url }){
       : `<p style="margin:0 0 12px">Thank you for booking your place at <strong>${esc(title)}</strong>. Your booking is confirmed.</p>`}
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:15px">${facts}</table>
     ${ticket}
+    ${b.itemId === EDUHUB_ID && eduhub.recognitionUrl ? `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;background:#eef7f6;border-radius:8px"><tr><td style="padding:18px 20px">
+      <p style="margin:0 0 6px;font-weight:bold;color:#009189">Recognising colleagues</p>
+      <p style="margin:0 0 12px">Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
+      <a href="${esc(eduhub.recognitionUrl)}" style="display:inline-block;background:#009189;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 18px;border-radius:999px">Nominate a colleague</a>
+    </td></tr></table>` : ""}
     <p style="margin:24px 0 0">If you need to change or cancel your booking, please ${contact ? `email <a href="mailto:${esc(contact)}" style="color:#009189">${esc(contact)}</a>` : "reply to this email"} and quote your booking reference.</p>
     <p style="margin:24px 0 0">Kind regards,<br>Learning Without Limits Academy Trust</p>
   </td></tr>

@@ -1,7 +1,7 @@
 import { allergenSummary } from "../../public/assets/allergens.js";
 import { json, readJSON, updateJSON, clean, isEmail, STAFF_DOMAIN, normaliseEduhub, eduhubEffectiveStatus,
   courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID,
-  slotKey, slotLabel, sessionPlacesTaken, PHASE_NAMES } from "./_utils.mjs";
+  slotKey, slotLabel, sessionPlacesTaken, sessionOpenTo, PHASE_NAMES } from "./_utils.mjs";
 import { sendConfirmation, ticketUrl, siteOrigin } from "./_tickets.mjs";
 
 const NO_FOOD = "no-food";
@@ -61,14 +61,15 @@ export default async request => {
        extra={foodChoiceId:choice.id,foodChoice:choice.name,foodAllergens:allergenSummary(choice)};
      }
    }
-   // Sessions: one per time slot, only those aimed at the person's phase.
-   const wanted=[...new Set((Array.isArray(raw.sessionIds)?raw.sessionIds:[]).map(x=>clean(x,60)))];
-   const eligible=eduhub.sessions.filter(x=>!b.phase||x.audiences.includes(b.phase));
+   // Workshops: one per round, and the same workshop only once.
+   const wanted=[...new Set((Array.isArray(raw.sessionIds)?raw.sessionIds:[]).map(x=>clean(x,140)))];
+   const eligible=eduhub.sessions.filter(x=>sessionOpenTo(x,b.phase));
    const chosen=[];
    for(const id of wanted){
      const session=eligible.find(x=>x.id===id);
-     if(!session) return json({error:"One of the sessions you chose is not available to you. Please check your choices."},400);
-     if(chosen.some(x=>slotKey(x)===slotKey(session))) return json({error:`Please choose only one session for ${slotLabel(session)}.`},400);
+     if(!session) return json({error:"One of the workshops you chose is not in one of your rounds. Please check your choices."},400);
+     if(chosen.some(x=>slotKey(x)===slotKey(session))) return json({error:`Please choose only one workshop for ${slotLabel(session)}.`},400);
+     if(session.workshopId && chosen.some(x=>x.workshopId===session.workshopId)) return json({error:`You have chosen "${session.title}" more than once. Please choose a different workshop for one of the rounds.`},400);
      chosen.push(session);
    }
    if(eduhub.requireSessionChoice){
@@ -76,11 +77,11 @@ export default async request => {
      const missing=slots.filter(k=>!chosen.some(x=>slotKey(x)===k));
      if(missing.length){
        const first=eligible.find(x=>slotKey(x)===missing[0]);
-       return json({error:`Please choose a session for ${slotLabel(first)}.`},400);
+       return json({error:`Please choose a workshop for ${slotLabel(first)}.`},400);
      }
    }
    extra.sessionIds=chosen.map(x=>x.id);
-   extra.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room}));
+   extra.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room,speaker:x.speakerName||""}));
    if(b.phase) extra.phaseName=PHASE_NAMES[b.phase];
  } else {
    const courses=await readJSON("courses",[]);

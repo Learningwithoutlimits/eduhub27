@@ -26,8 +26,8 @@ export default async request => {
    if(!session) return new Response("Session not found",{status:404});
    rows=rows.filter(b=>b.itemId===EDUHUB_ID&&activeBooking(b)&&!b.waitingList&&Array.isArray(b.sessionIds)&&b.sessionIds.includes(session.id))
      .sort((a,b)=>String(a.lastName).localeCompare(String(b.lastName)));
-   headers=["Session","Time","Room or area","Reference","First name","Surname","School or team","Phase","Accessibility requirements","Attended"];
-   lines=rows.map(b=>[session.title,slotLabel(session),session.room,b.reference,b.firstName,b.lastName,b.organisation,b.phaseName,b.accessibility,b.checkedInAt?"Checked in at event":""]);
+   headers=["Workshop","Round and time","Room or area","Reference","First name","Surname","School or team","Dietary requirements or allergies","Accessibility requirements","Arrived at event"];
+   lines=rows.map(b=>[session.title,slotLabel(session),session.room,b.reference,b.firstName,b.lastName,b.organisation,b.dietary,b.accessibility,b.checkedInAt?"Yes":""]);
    label=`register-${session.id}`;
  }else if(view==="catering"){
    // For the caterer: confirmed places only, food and dietary details, no contact details.

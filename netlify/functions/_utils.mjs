@@ -71,41 +71,94 @@ export const PHASES = ["primary","secondary","central"];
 export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Central Trust"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",schools:[],sessions:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",schools:[],rounds:[],workshops:[],keynote:{},requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
-export const PROGRAMME_FIELDS = ["schools","sessions","requireSessionChoice"];
+export const PROGRAMME_FIELDS = ["schools","rounds","workshops","keynote","requireSessionChoice","sessions"];
+
+// Recommended audience is a guide shown to staff. It does not limit booking.
+export const AUDIENCES = { all: "Open to all", educators: "All educators", leaders: "Anyone who leads a team" };
 
 function uniqueIds(items){
   const seen=new Set();
   return items.map(c=>{ let id=c.id, n=2; while(seen.has(id)) id=`${c.id}-${n++}`; seen.add(id); return {...c,id}; });
 }
+const cleanId = (v, fallback) => (String(v||"").toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,50)) || fallback;
+const photoFields = x => ({
+  photoId: /^[a-f0-9-]{36}$/.test(String(x.photoId||"")) ? x.photoId : "",
+  photoPath: /^\/assets\/speakers\/[a-z0-9-]+\.(jpg|png)$/.test(String(x.photoPath||"")) ? x.photoPath : ""
+});
 export function normaliseSchool(s, i=0){
   if(!s || typeof s!=="object") return null;
   const name=clean(s.name,120); if(!name) return null;
   return { id: clean(s.id,60) || `${slug(name)}-${i+1}`, name, phase: PHASES.includes(s.phase) ? s.phase : "primary" };
 }
-export function normaliseSession(s, i=0){
-  if(!s || typeof s!=="object") return null;
-  const title=clean(s.title,150); if(!title) return null;
-  const audiences=Array.isArray(s.audiences)?PHASES.filter(p=>s.audiences.includes(p)):[];
+export function normaliseRound(r, i=0){
+  if(!r || typeof r!=="object") return null;
+  // phases: which school groups attend this round. Empty means everyone.
+  return { id: cleanId(r.id, `round-${i+1}`), label: clean(r.label,60) || `Round ${i+1}`,
+    startTime: isTime(r.startTime) ? r.startTime : "", endTime: isTime(r.endTime) ? r.endTime : "",
+    phases: Array.isArray(r.phases) ? PHASES.filter(p => r.phases.includes(p)) : [] };
+}
+export function normaliseWorkshop(w, i=0){
+  if(!w || typeof w!=="object") return null;
+  const title=clean(w.title,150); if(!title) return null;
   return {
-    id: clean(s.id,60) || `${slug(title)}-${i+1}`,
+    id: cleanId(w.id, `${slug(title).slice(0,40)}-${i+1}`),
     title,
-    startTime: isTime(s.startTime) ? s.startTime : "",
-    endTime: isTime(s.endTime) ? s.endTime : "",
-    room: clean(s.room,100),
-    speakerName: clean(s.speakerName,120),
-    speakerRole: clean(s.speakerRole,150),
-    photoId: /^[a-f0-9-]{36}$/.test(String(s.photoId||"")) ? s.photoId : "",
-    description: clean(s.description,1200),
-    audiences: audiences.length ? audiences : [...PHASES],
-    capacity: Math.max(0, Math.floor(Number(s.capacity) || 0))
+    speakerName: clean(w.speakerName,120),
+    speakerRole: clean(w.speakerRole,150),
+    speakerBio: clean(w.speakerBio,2500),
+    ...photoFields(w),
+    description: clean(w.description,4000),
+    recommended: AUDIENCES[w.recommended] ? w.recommended : "all",
+    room: clean(w.room,100),
+    capacity: Math.max(0, Math.floor(Number(w.capacity) || 0)),
+    rounds: Array.isArray(w.rounds) ? w.rounds.map(x=>cleanId(x,"")).filter(Boolean) : [],
+    adminNotes: clean(w.adminNotes,1000)
   };
 }
-export const slotKey = s => `${s.startTime||""}-${s.endTime||""}`;
-export const slotLabel = s => s.startTime ? `${s.startTime}${s.endTime?` to ${s.endTime}`:""}` : "Time to be confirmed";
+export function normaliseKeynote(k){
+  k = k && typeof k === "object" ? k : {};
+  return { name: clean(k.name,120), role: clean(k.role,150), title: clean(k.title,150), bio: clean(k.bio,3000),
+    startTime: isTime(k.startTime) ? k.startTime : "", endTime: isTime(k.endTime) ? k.endTime : "", ...photoFields(k) };
+}
+// Versions 5.1 and 5.2 stored a flat list of sessions, each with its own
+// time. Turn those into rounds (one per distinct time) and workshops.
+function legacySessionsToProgramme(list){
+  const rounds=[], workshops=[];
+  for(const [i,s] of list.entries()){
+    if(!s || !String(s.title||"").trim()) continue;
+    const key=`${s.startTime||""}-${s.endTime||""}`;
+    let r=rounds.find(x=>x.key===key);
+    if(!r) rounds.push(r={key,id:`round-${rounds.length+1}`,label:`Round ${rounds.length+1}`,startTime:s.startTime,endTime:s.endTime});
+    workshops.push({...s,id:s.id||`session-${i+1}`,recommended:"all",rounds:[r.id]});
+  }
+  return { rounds: rounds.sort((a,b)=>(a.startTime||"99").localeCompare(b.startTime||"99")), workshops };
+}
+// Every workshop in every round it runs in, as one bookable "session".
+// A session id is "<workshop id>@<round id>".
+export function programmeSessions(rounds, workshops){
+  const out=[];
+  for(const r of rounds){
+    for(const w of workshops){
+      if(w.rounds.length && !w.rounds.includes(r.id)) continue;
+      const {rounds:_r, adminNotes:_n, ...rest}=w;
+      out.push({...rest, id:`${w.id}@${r.id}`, workshopId:w.id, roundId:r.id, roundLabel:r.label, roundPhases:r.phases, startTime:r.startTime, endTime:r.endTime});
+    }
+  }
+  return out;
+}
+// The rounds someone attends depend on their school's phase (primary,
+// secondary or central). Without a phase, every round is offered.
+export const sessionOpenTo = (s, phase) => !phase || !Array.isArray(s.roundPhases) || !s.roundPhases.length || s.roundPhases.includes(phase);
+export const slotKey = s => s.roundId || `${s.startTime||""}-${s.endTime||""}`;
+export const slotLabel = s => {
+  const times = s.startTime ? `${s.startTime}${s.endTime?` to ${s.endTime}`:""}` : "";
+  if(s.roundLabel) return times ? `${s.roundLabel}, ${times}` : s.roundLabel;
+  return times || "Time to be confirmed";
+};
 export const sessionPlacesTaken = (bookings, sessionId) =>
   bookings.filter(b => b.itemId === EDUHUB_ID && confirmedBooking(b) && Array.isArray(b.sessionIds) && b.sessionIds.includes(sessionId)).length;
 
@@ -136,6 +189,15 @@ export function normaliseFoodChoice(choice, index=0){
 export function normaliseEduhub(raw){
   const e = { ...defaults.eduhub, ...(raw && typeof raw === "object" ? raw : {}) };
   const foodChoices = uniqueIds((Array.isArray(e.foodChoices) ? e.foodChoices : []).map(normaliseFoodChoice).filter(Boolean));
+  let rawRounds = Array.isArray(e.rounds) ? e.rounds : [], rawWorkshops = Array.isArray(e.workshops) ? e.workshops : [];
+  if(!rawRounds.length && !rawWorkshops.length && Array.isArray(e.sessions) && e.sessions.length){
+    ({ rounds: rawRounds, workshops: rawWorkshops } = legacySessionsToProgramme(e.sessions));
+  }
+  const rounds = uniqueIds(rawRounds.map(normaliseRound).filter(Boolean));
+  const roundIds = new Set(rounds.map(r => r.id));
+  const workshops = uniqueIds(rawWorkshops.map(normaliseWorkshop).filter(Boolean))
+    .map(w => ({ ...w, rounds: w.rounds.filter(id => roundIds.has(id)) }));
+  const programme = { rounds, workshops };
   return {
     title: clean(e.title, 150) || defaults.eduhub.title,
     date: isDate(e.date) ? e.date : defaults.eduhub.date,
@@ -150,10 +212,12 @@ export function normaliseEduhub(raw){
     askAccessibility: e.askAccessibility !== false,
     allowNoFood: Boolean(e.allowNoFood),
     privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
+    recognitionUrl: /^https:\/\//i.test(String(e.recognitionUrl||"")) ? clean(e.recognitionUrl, 300) : "",
     contactEmail: isEmail(e.contactEmail) ? clean(e.contactEmail, 120).toLowerCase() : "",
     schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
-    sessions: uniqueIds((Array.isArray(e.sessions)?e.sessions:[]).map(normaliseSession).filter(Boolean))
-      .sort((a,b)=>(a.startTime||"99").localeCompare(b.startTime||"99")),
+    ...programme,
+    keynote: normaliseKeynote(e.keynote),
+    sessions: programmeSessions(programme.rounds, programme.workshops),
     requireSessionChoice: e.requireSessionChoice !== false,
     updatedAt: e.updatedAt || ""
   };

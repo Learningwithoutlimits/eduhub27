@@ -14,21 +14,34 @@ const form = $('#eduhub-form');
 let eduhub = {};
 
 const PHASE_NAMES = { primary:'Primary', secondary:'Secondary', central:'Central Trust' };
-const slotLabel = x => x.startTime ? `${x.startTime}${x.endTime ? ` to ${x.endTime}` : ''}` : 'Time to be confirmed';
+const AUDIENCES = { all:'Open to all', educators:'All educators', leaders:'Anyone who leads a team' };
+const times = x => x.startTime ? `${x.startTime}${x.endTime ? ` to ${x.endTime}` : ''}` : '';
+const slotLabel = x => x.roundLabel ? (times(x) ? `${x.roundLabel}, ${times(x)}` : x.roundLabel) : (times(x) || 'Time to be confirmed');
 function slotsOf(sessions){
   const slots = [];
   for(const x of sessions){
-    const key = `${x.startTime}-${x.endTime}`;
+    const key = x.roundId || `${x.startTime}-${x.endTime}`;
     let slot = slots.find(s => s.key === key);
     if(!slot) slots.push(slot = { key, label: slotLabel(x), items: [] });
     slot.items.push(x);
   }
   return slots;
 }
-const photoHtml = x => x.photoId
-  ? `<img class="speaker-img" src="/api/photo?id=${esc(x.photoId)}" alt="${esc(x.speakerName ? `Photo of ${x.speakerName}` : '')}" loading="lazy">`
+const photoSrc = x => x.photoId ? `/api/photo?id=${encodeURIComponent(x.photoId)}` : (x.photoPath || '');
+const photoHtml = (x, name = x.speakerName) => photoSrc(x)
+  ? `<img class="speaker-img" src="${esc(photoSrc(x))}" alt="${esc(name ? `Photo of ${name}` : '')}" loading="lazy">`
   : '';
 const sessionMeta = x => [x.speakerName ? `<span><strong>${esc(x.speakerName)}</strong>${x.speakerRole ? `, ${esc(x.speakerRole)}` : ''}</span>` : '', x.room ? `<span>Room: ${esc(x.room)}</span>` : ''].filter(Boolean).join('');
+// Turns plain text into paragraphs, with lines starting "- " as bullet points.
+function textHtml(text){
+  const out = []; let list = null;
+  for(const line of String(text || '').split('\n').map(l => l.trim()).filter(Boolean)){
+    if(line.startsWith('- ')){ if(!list){ list = []; out.push(list); } list.push(line.slice(2)); }
+    else { list = null; out.push(line); }
+  }
+  return out.map(x => Array.isArray(x) ? `<ul>${x.map(li => `<li>${esc(li)}</li>`).join('')}</ul>` : `<p>${esc(x)}</p>`).join('');
+}
+const audienceTag = x => x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
 
 const STATUS_COPY = {
   'coming-soon': { cta:'Bookings Open Soon', heading:'Bookings open soon', text:'Bookings for EduHub 2027 have not opened yet. Please check back soon.' },
@@ -81,6 +94,18 @@ function currentPhase(){
   if(!schools.length) return '';
   return schools.find(x => x.id === form.schoolId.value)?.phase || null;
 }
+const openTo = (x, phase) => !phase || !(x.roundPhases || []).length || x.roundPhases.includes(phase);
+
+// Stops the same workshop being chosen in two rounds.
+function lockRepeats(){
+  const chosen = [...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.dataset.workshop).filter(Boolean);
+  form.querySelectorAll('[name^=session-slot]').forEach(input => {
+    if(!input.dataset.workshop || input.dataset.full === '1') return;
+    const taken = !input.checked && chosen.includes(input.dataset.workshop);
+    input.disabled = taken;
+    input.closest('.session-option')?.classList.toggle('is-taken', taken);
+  });
+}
 
 function renderSessionChoices(){
   const sessions = eduhub.sessions || [];
@@ -91,53 +116,63 @@ function renderSessionChoices(){
   const phase = currentPhase();
   if(phase === null){
     $('#sessions-help').textContent = '';
-    $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see the sessions available to you.</p>';
+    $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see your workshop times and choices.</p>';
     return;
   }
-  const eligible = sessions.filter(x => !phase || x.audiences.includes(phase));
-  $('#sessions-help').textContent = eduhub.requireSessionChoice
-    ? `Choose one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`
-    : `You can choose up to one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`;
-  if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no sessions to choose from for your school yet.</p>'; return; }
-  $('#session-options').innerHTML = slotsOf(eligible).map((slot, i) => `
+  const eligible = sessions.filter(x => openTo(x, phase));
+  const slots = slotsOf(eligible);
+  $('#sessions-help').textContent = `${phase ? `${PHASE_NAMES[phase]} staff attend ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}${eduhub.requireSessionChoice ? 'Please choose one workshop for each round.' : 'You can choose one workshop for each round.'} You cannot choose the same workshop twice. Full details of every workshop are in the programme above.`;
+  if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no workshops to choose from for your school yet.</p>'; return; }
+  $('#session-options').innerHTML = slots.map((slot, i) => `
     <div class="session-slot" role="radiogroup" aria-labelledby="slot-${i}">
       <p class="food-group" id="slot-${i}">${esc(slot.label)}</p>
       <div class="food-options">
       ${slot.items.map(x => {
         const full = x.placesLeft === 0;
         return `<label class="food-option session-option ${full ? 'is-full' : ''}">
-          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
+          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" data-workshop="${esc(x.workshopId || '')}" data-full="${full ? 1 : 0}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
           ${photoHtml(x)}
           <span class="food-option-body">
             <span class="food-name">${esc(x.title)}</span>
             <span class="session-meta">${sessionMeta(x)}</span>
-            ${x.description ? `<span class="food-description">${esc(x.description)}</span>` : ''}
+            <span class="food-tags">${audienceTag(x)}</span>
             ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
+            <span class="taken-note">Already chosen for another round</span>
           </span>
         </label>`;}).join('')}
-      ${eduhub.requireSessionChoice ? '' : `<label class="food-option"><input type="radio" name="session-slot-${i}" value="" ${slot.items.some(x => picked.has(x.id)) ? '' : 'checked'}><span class="food-option-body"><span class="food-name">No session in this slot</span></span></label>`}
+      ${eduhub.requireSessionChoice ? '' : `<label class="food-option"><input type="radio" name="session-slot-${i}" value="" ${slot.items.some(x => picked.has(x.id)) ? '' : 'checked'}><span class="food-option-body"><span class="food-name">No workshop in this round</span></span></label>`}
       </div>
     </div>`).join('');
+  lockRepeats();
 }
+form.addEventListener('change', e => { if(e.target.name?.startsWith('session-slot')) lockRepeats(); });
 
 function renderProgramme(){
-  const sessions = eduhub.sessions || [];
-  $('#programme').classList.toggle('hidden', !sessions.length);
-  $('#programme-list').innerHTML = slotsOf(sessions).map(slot => `
-    <div class="programme-slot">
-      <h3>${esc(slot.label)}</h3>
-      <div class="programme-cards">
-        ${slot.items.map(x => `<article class="programme-card">
-          ${photoHtml(x)}
-          <div>
-            <h4>${esc(x.title)}</h4>
-            <p class="session-meta">${sessionMeta(x)}</p>
-            ${x.description ? `<p>${esc(x.description)}</p>` : ''}
-            <div class="food-tags">${x.audiences.map(a => `<span class="tag">${esc(PHASE_NAMES[a])}</span>`).join('')}</div>
-          </div>
-        </article>`).join('')}
+  const workshops = eduhub.workshops || [];
+  const k = eduhub.keynote || {};
+  const rounds = eduhub.rounds || [];
+  $('#programme').classList.toggle('hidden', !workshops.length && !k.name);
+  const keynote = k.name ? `<article class="keynote-card">
+      ${photoHtml(k, k.name)}
+      <div>
+        <div class="eyebrow teal">Keynote${times(k) ? `, ${esc(times(k))}` : ''}</div>
+        <h3>${esc(k.title || k.name)}</h3>
+        ${k.title ? `<p class="session-meta"><span><strong>${esc(k.name)}</strong>${k.role ? `, ${esc(k.role)}` : ''}</span></p>` : k.role ? `<p class="session-meta"><span>${esc(k.role)}</span></p>` : ''}
+        ${k.bio ? `<div class="programme-text">${textHtml(k.bio)}</div>` : ''}
       </div>
-    </div>`).join('');
+    </article>` : '';
+  const roundList = rounds.length ? `<div class="round-list"><h3>Workshop rounds</h3><ul>${rounds.map(r => `<li><strong>${esc(r.label)}</strong>${times(r) ? `: ${esc(times(r))}` : ''}${(r.phases || []).length ? ` <span class="muted">(${r.phases.map(p => PHASE_NAMES[p]).join(' and ')} staff)</span>` : ''}</li>`).join('')}</ul>
+    <p class="muted">Each workshop runs in every round. When you book, you choose a different workshop for each of your rounds.</p></div>` : '';
+  $('#programme-list').innerHTML = keynote + roundList + (workshops.length ? `<h3 class="workshops-heading">Workshops</h3><div class="programme-cards">${workshops.map(x => `<article class="programme-card">
+      ${photoHtml(x)}
+      <div>
+        <h4>${esc(x.title)}</h4>
+        <p class="session-meta">${sessionMeta(x)}</p>
+        <div class="food-tags">${audienceTag(x)}</div>
+        <div class="programme-text">${textHtml(x.description)}</div>
+        ${x.speakerBio ? `<details class="speaker-bio"><summary>About ${esc(x.speakerName || 'the speaker')}</summary>${textHtml(x.speakerBio)}</details>` : ''}
+      </div>
+    </article>`).join('')}</div>` : '');
 }
 
 function render(){
@@ -265,13 +300,18 @@ function showConfirmation(data, body){
       <div><dt>Name</dt><dd>${esc(body.firstName)} ${esc(body.lastName)}</dd></div>
       <div><dt>Email</dt><dd>${esc(body.email)}</dd></div>
       <div><dt>Date</dt><dd>${fmtDate(eduhub.date)}${eduhub.time ? `, ${esc(eduhub.time)}` : ''}</dd></div>
-      ${body.sessionIds.length ? `<div><dt>Sessions</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
+      ${body.sessionIds.length ? `<div><dt>Workshops</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
       ${food ? `<div><dt>Food choice</dt><dd>${esc(food)}</dd></div>` : ''}
     </dl>
     ${data.ticketUrl ? `<div class="ticket-inline"><h3>Your ticket</h3>
       <img class="ticket-qr" src="/api/qr?${esc(data.ticketUrl.split('?')[1] || '')}" width="220" height="220" alt="QR code for your booking">
       <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
       <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
+    ${eduhub.recognitionUrl ? `<div class="recognition-box">
+      <h3>Recognising colleagues</h3>
+      <p>Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
+      <a class="button" href="${esc(eduhub.recognitionUrl)}" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
+    </div>` : ''}
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
       ${cal && !data.waitingList ? `<a class="button" href="${cal}" download="EduHub-2027.ics">Add to my calendar</a>` : ''}

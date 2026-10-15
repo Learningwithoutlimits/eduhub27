@@ -14,10 +14,11 @@ export default async request => {
    if(!String(body.title||"").trim()) return json({error:"An event title is required."},400);
    if(!BOOKING_STATUSES.includes(body.bookingStatus)) return json({error:"Please choose a booking status."},400);
    if(body.privacyNoticeUrl && !/^https:\/\//i.test(body.privacyNoticeUrl)) return json({error:"The privacy notice link must start with https://"},400);
+   if(body.recognitionUrl && !/^https:\/\//i.test(body.recognitionUrl)) return json({error:"The recognition award link must start with https://"},400);
  }else{
-   const sessions=Array.isArray(body.sessions)?body.sessions:[];
-   const badTime=sessions.find(s=>String(s?.title||"").trim() && s.startTime && s.endTime && s.endTime<=s.startTime);
-   if(badTime) return json({error:`"${badTime.title}" finishes before it starts. Please check its times.`},400);
+   const rounds=Array.isArray(body.rounds)?body.rounds:[];
+   const badTime=rounds.find(r=>r?.startTime && r?.endTime && r.endTime<=r.startTime);
+   if(badTime) return json({error:`${badTime.label||"A round"} finishes before it starts. Please check its times.`},400);
  }
 
  try{
@@ -28,7 +29,9 @@ export default async request => {
      if(section==="details" && next.bookingStatus==="open" && current.bookingStatus!=="open" && !next.foodChoices.length && body.confirmNoFood!==true){
        return {result:{error:"There are no food choices yet. Add the menu before opening bookings."}};
      }
-     return {value:next,result:{eduhub:next}};
+     // Bookable sessions are worked out from rounds and workshops, so they are not stored.
+     const {sessions,...stored}=next;
+     return {value:stored,result:{eduhub:next}};
    });
    if(result.error) return json({error:result.error},400);
    return json({ok:true,eduhub:result.eduhub});
