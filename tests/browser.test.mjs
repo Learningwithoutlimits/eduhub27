@@ -24,12 +24,20 @@ page.on("pageerror", e => errors.push(e.message));
 page.on("console", m => m.type() === "error" && !m.text().includes("fonts.g") && errors.push(m.text()));
 process.on("exit", () => errors.length && console.log("  browser console:", [...new Set(errors)].join(" | ")));
 page.on("dialog", d => d.accept());
-// Picks the school and the first open workshop in every round.
-async function fillStaff(p, first, last, email, school){
+// Picks the school, then the first open workshop in each round in turn.
+async function chooseWorkshops(p, beforeEach){
+  for (let i = 0; i < 6 && await p.locator(".round-step.is-active").count(); i++){
+    if (beforeEach) await beforeEach(i);
+    // The page moves straight on to the next round, so click rather than check.
+    await p.locator(".round-step.is-active .choice-tile:not(.is-blocked)").first().click({ position: { x: 20, y: 20 } });
+    await p.waitForTimeout(150);
+  }
+}
+async function fillStaff(p, first, last, email, school, beforeEach){
   await p.fill("#firstName", first); await p.fill("#lastName", last); await p.fill("#email", email);
   await p.selectOption("#schoolId", { label: school });
-  await p.waitForSelector(".session-slot");
-  for (const slot of await p.locator(".session-slot").all()) await slot.locator("input:not([disabled])").first().check();
+  await p.waitForSelector(".round-step.is-active");
+  await chooseWorkshops(p, beforeEach);
 }
 const PNG_FILE = "/tmp/lwlat-test-speaker.png";
 fs.writeFileSync(PNG_FILE, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
@@ -99,8 +107,12 @@ await step("admin preview shows the menu with allergens and never submits", asyn
   await preview.check(".food-option >> nth=0"); await preview.check("#consent");
   let posted = false; preview.on("request", r => r.url().includes("/api/book") && (posted = true));
   await preview.click("#submit-button");
-  await preview.waitForSelector("#form-message .notice.warn");
+  await preview.waitForSelector(".confirmation");
+  assert.match(await preview.textContent(".confirmation"), /Nothing has been sent or saved/);
+  assert.match(await preview.textContent(".confirmation"), /Recognising colleagues/);
   assert.equal(posted, false);
+  await preview.click("#back-to-form");
+  assert.ok(await preview.isVisible("#eduhub-form"));
   await snap("03-eduhub-preview", preview);
   await preview.close();
 });
@@ -196,7 +208,12 @@ await step("member of staff books a place with a food choice", async () => {
   // Primary staff are offered rounds 2 and 3 only, and cannot repeat a workshop.
   const offered = await staffPage.textContent("#session-options");
   assert.match(offered, /Round 2/); assert.match(offered, /Round 3/); assert.doesNotMatch(offered, /Round 1|Round 4/);
-  assert.equal(await staffPage.locator(".session-slot").nth(1).locator(".session-option.is-taken").count(), 1);
+  // Rounds are chosen one at a time, and a workshop chosen once is blocked in the other round.
+  assert.equal(await staffPage.locator(".round-step.is-done").count(), 2);
+  await staffPage.locator("[data-change-round]").nth(1).click();
+  assert.match(await staffPage.locator(".round-step.is-active .choice-tile.is-blocked").first().textContent(), /Already chosen for Round 2/);
+  await staffPage.locator(".round-step.is-active .choice-tile input:checked").click();
+  await staffPage.waitForFunction(() => !document.querySelector(".round-step.is-active"));
   assert.match(await staffPage.textContent("#programme"), /Graham Allcott/);
   // "Your day" beside the form follows their school and fills in chosen workshops.
   assert.match(await staffPage.textContent("#your-day"), /Botheredness/);
@@ -256,8 +273,9 @@ await step("second and third bookings fill the event, then the waiting list", as
   for (const [n, first, school] of [[2, "Sam", "Another Primary School"], [3, "Jo", "Central Trust Team"]]) {
     await staffPage.goto(BASE + "/eduhub/");
     await staffPage.waitForSelector(".food-option");
-    await fillStaff(staffPage, first, "Smith", `${first.toLowerCase()}.smith@lwlat.org.uk`, school);
-    if (first === "Sam") assert.equal(await staffPage.locator(".session-option.is-full", { hasText: "Botheredness" }).count(), 1, "Botheredness should be full in round 2 only");
+    await fillStaff(staffPage, first, "Smith", `${first.toLowerCase()}.smith@lwlat.org.uk`, school, async step => {
+      if (first === "Sam" && step === 0) assert.match(await staffPage.locator(".round-step.is-active .choice-tile", { hasText: "Botheredness" }).textContent(), /Full in this round/);
+    });
     await staffPage.locator("#food-options .food-option").nth(n).locator("input").check(); await staffPage.check("#consent");
     await staffPage.click("#submit-button");
     await staffPage.waitForSelector(".confirmation");
@@ -283,9 +301,9 @@ await step("a trustee books without choosing a school", async () => {
   await staffPage.check('[name=role][value=trustee]');
   assert.ok(await staffPage.isHidden("#school-field"));
   await staffPage.fill("#firstName", "Toby"); await staffPage.fill("#lastName", "Trustee"); await staffPage.fill("#email", "toby@example.org");
-  await staffPage.waitForSelector(".session-slot");
+  await staffPage.waitForSelector(".round-step.is-active");
   assert.match(await staffPage.textContent("#session-options"), /Round 1/);
-  for (const slot of await staffPage.locator(".session-slot").all()) await slot.locator("input:not([disabled])").first().check();
+  await chooseWorkshops(staffPage);
   await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
   await staffPage.click("#submit-button");
   await staffPage.waitForSelector(".confirmation");

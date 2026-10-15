@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 5.6: workshops chosen one round at a time
+
+### Changed
+- Workshop choice is now a step-by-step picker. Only the first round is shown, as a grid of compact tiles. Choosing a workshop collapses that round into a summary with a **Change** button and opens the next round. Workshops already chosen are greyed out, and later rounds wait their turn, so nobody can pick two in one round by mistake.
+- The structure of the day appears straight after the page banner, so people see how the day works before booking. Until an administrator saves their own, the structure from the "Structure of the day" document is shown automatically. Admin has a tick box to hide it.
+- Workshop lines in the timeline link to the round that starts at the same time, so each person's "Your day" shows their chosen workshop and room.
+- In preview mode, completing the form shows the real confirmation screen, including the recognition award reminder, marked as a preview. Nothing is saved, and "Back to the form" returns to the form.
+
 ## Version 5.5: speaker lunches, governors and trustees
 
 ### New

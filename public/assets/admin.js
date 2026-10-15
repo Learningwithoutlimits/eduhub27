@@ -479,12 +479,14 @@ const readPhoto=holder=>({photoId:holder.dataset.photoId||'',photoPath:holder.da
 function renderProgrammeForm(){
   const e=data.eduhub||{};
   pf.elements.requireSessionChoice.checked=e.requireSessionChoice!==false;
+  pf.elements.showAgenda.checked=e.showAgenda!==false;
   renderKeynote(e.keynote||{});
   roundBuilder.innerHTML='';(e.rounds||[]).forEach(r=>addRoundRow(r));
   if(!roundBuilder.children.length) roundBuilder.innerHTML='<p class="empty small" data-empty>No rounds yet.</p>';
   workshopBuilder.innerHTML='';(e.workshops||[]).forEach(w=>addWorkshopRow(w));
   if(!workshopBuilder.children.length) workshopBuilder.innerHTML='<p class="empty small" data-empty>No workshops yet. Add them one by one, or fill them in from the workshop booklet.</p>';
   agendaBuilder.innerHTML='';(e.agenda||[]).forEach(a=>addAgendaRow(a));
+  refreshAgendaRounds();
   if(!agendaBuilder.children.length) agendaBuilder.innerHTML='<p class="empty small" data-empty>No timeline yet. Add lines one by one, or fill it in from the workshop booklet.</p>';
   schoolBuilder.innerHTML='';(e.schools||[]).forEach(x=>addSchoolRow(x));
   if(!schoolBuilder.children.length) schoolBuilder.innerHTML='<p class="empty small" data-empty>No schools or teams added yet.</p>';
@@ -521,7 +523,14 @@ function addAgendaRow(a={}){
   agendaBuilder.appendChild(row);return row;
 }
 function refreshAgendaRounds(){
-  $$('[data-a=roundId]',agendaBuilder).forEach(sel=>{const v=sel.value||sel.dataset.selected;sel.innerHTML=roundOptions(v);sel.value=readRounds().some(r=>r.id===v)?v:''});
+  const rounds=readRounds();
+  $$('[data-a=roundId]',agendaBuilder).forEach(sel=>{
+    const row=sel.closest('.agenda-row');
+    let v=sel.value||sel.dataset.selected;
+    // Link an unlinked workshop line to the round that starts at the same time.
+    if(!rounds.some(r=>r.id===v)&&row.querySelector('[data-a=kind]').value==='workshop') v=rounds.find(r=>r.startTime&&r.startTime===row.querySelector('[data-a=startTime]').value)?.id||'';
+    sel.innerHTML=roundOptions(v);sel.value=rounds.some(r=>r.id===v)?v:'';
+  });
 }
 const readAgenda=()=>$$('.agenda-row',agendaBuilder).map(r=>{
   const v=f=>r.querySelector(`[data-a="${f}"]`).value.trim();
@@ -670,7 +679,7 @@ pf.addEventListener('submit',async e=>{
   if(noGroup){message(`Please tick at least one group for ${noGroup.querySelector('[data-r=label]').value||'each round'}.`,'notice error');return}
   const btn=pf.querySelector('button[type=submit]');btn.disabled=true;
   try{
-    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',keynote:readKeynote(),agenda:readAgenda(),rounds,workshops:workshops.filter(x=>x.title),schools:readSchools(),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
+    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',keynote:readKeynote(),agenda:readAgenda(),showAgenda:pf.elements.showAgenda.checked,rounds,workshops:workshops.filter(x=>x.title),schools:readSchools(),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
     programmeDirty=false;await refresh({keepProgrammeForm:false});message('Sessions saved.');
   }catch(err){message(`Sessions were not saved: ${err.message}`,'notice error')}
   finally{btn.disabled=false}
