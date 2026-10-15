@@ -7,7 +7,8 @@ const fmtDate = value => value
   ? new Intl.DateTimeFormat('en-GB',{dateStyle:'full'}).format(new Date(value+'T12:00:00'))
   : 'Date to be confirmed';
 
-const STAFF_DOMAIN = '@lwlat.org.uk';
+const staffDomains = () => (eduhub.staffDomains && eduhub.staffDomains.length ? eduhub.staffDomains : ['lwlat.org.uk']).map(d => '@' + d);
+const domainText = () => { const d = staffDomains(); return d.length > 1 ? `${d.slice(0,-1).join(', ')} or ${d.at(-1)}` : d[0]; };
 const NO_FOOD = 'no-food';
 // ?preview=1 shows the finished form whatever the booking status, but never sends anything.
 const preview = new URLSearchParams(location.search).get('preview') === '1';
@@ -440,7 +441,7 @@ function validate(){
   const email = form.email.value.trim().toLowerCase();
   if(!email) flag(form.email, 'Please enter your Trust email address.');
   else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) flag(form.email, 'Please enter a valid email address.');
-  else if(role === 'staff' && !email.endsWith(STAFF_DOMAIN)) flag(form.email, `Please use your ${STAFF_DOMAIN} email address. If you are a governor or trustee, please choose that at the top of the form.`);
+  else if(role === 'staff' && !staffDomains().some(d => email.endsWith(d))) flag(form.email, `Please use your ${domainText()} email address. If you are a governor or trustee, please choose that at the top of the form.`);
   if(!$('#food-field').classList.contains('hidden') && !form.querySelector('[name=foodChoiceId]:checked')){
     flag(form.querySelector('[name=foodChoiceId]'), 'Please choose your food option.');
   }
@@ -553,7 +554,8 @@ function applyRole(){
   const role = currentRole();
   const schools = (eduhub.schools || []).length > 0;
   $('#email-label').textContent = role === 'staff' ? 'Trust email address' : 'Email address';
-  $('#email-help').textContent = role === 'staff' ? 'Please use your @lwlat.org.uk email address.' : 'Please use the email address you would like your confirmation sent to.';
+  $('#email-help').textContent = role === 'staff' ? `Please use your ${domainText()} email address.` : 'Please use the email address you would like your confirmation sent to.';
+  $('#staff-domains-note').textContent = domainText();
   form.email.placeholder = role === 'staff' ? 'firstname.surname@lwlat.org.uk' : '';
   $('#school-label').textContent = role === 'governor' ? 'School you govern' : 'School or team';
   $('#school-field').classList.toggle('hidden', role === 'trustee' || !schools);

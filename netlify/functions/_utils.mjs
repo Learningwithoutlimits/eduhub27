@@ -62,6 +62,15 @@ export const clean = (value, max=300) => String(value ?? "").replace(/[\u0000-\u
 export const isDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value||""));
 export const isEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||""));
 export const STAFF_DOMAIN = "@lwlat.org.uk";
+// Email endings that count as staff addresses. The Trust's own is always
+// included. Administrators add schools with their own email ending.
+const cleanDomain = d => String(d||"").trim().toLowerCase().replace(/^@+/,"");
+export function staffDomains(e){
+  const list = (Array.isArray(e?.staffDomains) ? e.staffDomains : []).map(cleanDomain).filter(d => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d));
+  return [...new Set(["lwlat.org.uk", ...list])];
+}
+export const isStaffEmail = (email, e) => staffDomains(e).some(d => String(email).toLowerCase().endsWith("@" + d));
+export const domainList = e => { const d = staffDomains(e).map(x => "@" + x); return d.length > 1 ? `${d.slice(0,-1).join(", ")} or ${d.at(-1)}` : d[0]; };
 
 // Today's date in the UK, as YYYY-MM-DD, for deadline checks.
 export const todayUK = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London"}).format(new Date());
@@ -75,7 +84,7 @@ export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Cen
 export const ATTENDEE_ROLES = {staff:"Member of staff",governor:"Governor",trustee:"Trustee"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,staffDomains:["wykencroft.coventry.school.uk"],showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
@@ -238,6 +247,7 @@ export function normaliseEduhub(raw){
     allowNoFood: Boolean(e.allowNoFood),
     privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
     speakerBookingOpen: Boolean(e.speakerBookingOpen),
+    staffDomains: staffDomains(e),
     allowGovernors: e.allowGovernors !== false,
     speakerCode: /^[A-Za-z0-9]{12,40}$/.test(String(e.speakerCode||"")) ? e.speakerCode : "",
     recognitionUrl: /^https:\/\//i.test(String(e.recognitionUrl||"")) ? clean(e.recognitionUrl, 300) : "",
