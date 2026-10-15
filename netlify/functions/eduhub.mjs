@@ -1,4 +1,4 @@
-import { json, updateJSON, requireAdmin, normaliseEduhub, BOOKING_STATUSES, PROGRAMME_FIELDS } from "./_utils.mjs";
+import { json, updateJSON, requireAdmin, normaliseEduhub, BOOKING_STATUSES, PROGRAMME_FIELDS, newSpeakerCode } from "./_utils.mjs";
 
 // Two admin screens save to the EduHub record: "EduHub 2027" (event details
 // and food) and "EduHub sessions" (schools and sessions). Each sends
@@ -24,7 +24,9 @@ export default async request => {
  try{
    const result=await updateJSON("eduhub",null,raw=>{
      const current=normaliseEduhub(raw);
-     const incoming=Object.fromEntries(Object.entries(body).filter(([k])=>section==="programme"?PROGRAMME_FIELDS.includes(k):!PROGRAMME_FIELDS.includes(k)));
+     const incoming=Object.fromEntries(Object.entries(body).filter(([k])=>k!=="speakerCode"&&(section==="programme"?PROGRAMME_FIELDS.includes(k):!PROGRAMME_FIELDS.includes(k))));
+     // The private speaker link code is made here, never sent in by the browser.
+     if(section==="details" && (body.newSpeakerCode===true || !current.speakerCode)) incoming.speakerCode=newSpeakerCode();
      const next=normaliseEduhub({...current,...incoming,updatedAt:new Date().toISOString()});
      if(section==="details" && next.bookingStatus==="open" && current.bookingStatus!=="open" && !next.foodChoices.length && body.confirmNoFood!==true){
        return {result:{error:"There are no food choices yet. Add the menu before opening bookings."}};

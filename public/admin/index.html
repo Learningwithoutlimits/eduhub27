@@ -63,7 +63,20 @@
   <div class="field full"><label for="eh-recognition">Recognition award nomination link <span class="optional">(optional)</span></label><input id="eh-recognition" name="recognitionUrl" type="url" placeholder="https://" maxlength="300"><span class="field-help">After booking, staff are reminded to nominate a colleague, with a button to this form. The reminder also appears in the confirmation email. Leave blank to hide it.</span></div>
   <div class="field full"><label class="check-label"><input type="checkbox" name="askDietary"> Ask for dietary requirements or allergies</label>
   <label class="check-label"><input type="checkbox" name="askAccessibility"> Ask for accessibility requirements</label>
-  <label class="check-label"><input type="checkbox" name="allowNoFood"> Offer an "I do not need food" option</label></div>
+  <label class="check-label"><input type="checkbox" name="allowNoFood"> Offer an "I do not need food" option</label>
+  <label class="check-label"><input type="checkbox" name="allowGovernors"> Governors and trustees can book (they choose their role on the form and can use any email address)</label></div>
+</div>
+
+<div class="panel field full">
+  <h2>Speaker lunch bookings</h2>
+  <p class="muted">A separate, private form for keynote and workshop speakers to book lunch. Speakers can use any email address, and their bookings do not use up staff places. They appear in the catering summary and the caterer's list, marked as speakers.</p>
+  <label class="check-label"><input type="checkbox" name="speakerBookingOpen"> Speaker lunch bookings are open</label>
+  <div class="field"><label for="speaker-link">Private link to send to speakers</label>
+    <div class="speaker-link-box"><input id="speaker-link" readonly value=""><button type="button" class="button secondary small-button" id="copy-speaker-link">Copy link</button><a class="button secondary small-button" id="open-speaker-link" href="#" target="_blank" rel="noopener">Open</a></div>
+    <span class="field-help" id="speaker-link-help">Anyone with this link can book a speaker lunch while bookings are open, so only send it to speakers.</span>
+  </div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="new-speaker-link">Replace the link</button></div>
+  <p class="muted" id="speaker-count"></p>
 </div>
 
 <div class="panel field full">

@@ -69,9 +69,12 @@ export const todayUK = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/L
 export const BOOKING_STATUSES = ["coming-soon","open","closed"];
 export const PHASES = ["primary","secondary","central"];
 export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Central Trust"};
+// Who someone is booking EduHub as. Trustees have no school, so they follow
+// the central Trust staff rounds.
+export const ATTENDEE_ROLES = {staff:"Member of staff",governor:"Governor",trustee:"Trustee"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
@@ -226,6 +229,9 @@ export function normaliseEduhub(raw){
     askAccessibility: e.askAccessibility !== false,
     allowNoFood: Boolean(e.allowNoFood),
     privacyNoticeUrl: /^https:\/\//i.test(String(e.privacyNoticeUrl||"")) ? clean(e.privacyNoticeUrl, 300) : "",
+    speakerBookingOpen: Boolean(e.speakerBookingOpen),
+    allowGovernors: e.allowGovernors !== false,
+    speakerCode: /^[A-Za-z0-9]{12,40}$/.test(String(e.speakerCode||"")) ? e.speakerCode : "",
     recognitionUrl: /^https:\/\//i.test(String(e.recognitionUrl||"")) ? clean(e.recognitionUrl, 300) : "",
     contactEmail: isEmail(e.contactEmail) ? clean(e.contactEmail, 120).toLowerCase() : "",
     schools: uniqueIds((Array.isArray(e.schools)?e.schools:[]).map(normaliseSchool).filter(Boolean)),
@@ -267,12 +273,19 @@ export function courseBookingClosedReason(c){
 export const EDUHUB_ID = "eduhub-2027";
 export const activeBooking = b => !b.cancelled && b.status !== "cancelled";
 export const confirmedBooking = b => activeBooking(b) && !b.waitingList;
+export const isSpeaker = b => b.role === "speaker";
+// Speakers' lunch bookings never use up staff places.
 export function placesTaken(bookings, itemId){
-  return bookings.filter(b => b.itemId === itemId && confirmedBooking(b)).length;
+  return bookings.filter(b => b.itemId === itemId && confirmedBooking(b) && !isSpeaker(b)).length;
 }
 export function bookingStatusOf(b){
   if(!activeBooking(b)) return "cancelled";
   return b.waitingList ? "waiting" : "booked";
+}
+export const newSpeakerCode = () => crypto.randomBytes(15).toString("base64url").replace(/[^A-Za-z0-9]/g,"").slice(0,20).padEnd(16,"x");
+export function speakerAccess(e, code){
+  if(!e.speakerCode || typeof code !== "string" || code.length !== e.speakerCode.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(code), Buffer.from(e.speakerCode));
 }
 export function makeReference(prefix){
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
