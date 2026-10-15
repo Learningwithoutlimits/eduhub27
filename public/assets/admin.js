@@ -410,6 +410,8 @@ cf.addEventListener('submit',async e=>{
 });
 // ---------- EduHub sessions: keynote, rounds, workshops, schools ----------
 const PHASES=[['primary','Primary'],['secondary','Secondary'],['central','Central Trust']];
+// Earlier booklet wording, replaced automatically by the booklet button.
+const OLD_BOOKLET_WARNINGS=['Allergy warning: this session includes tasting food and will involve the use of nuts.'];
 const AUDIENCES=[['all','Open to all'],['educators','All educators'],['leaders','Anyone who leads a team']];
 const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), roundBuilder=$('#round-builder'), workshopBuilder=$('#workshop-builder'), agendaBuilder=$('#agenda-builder');
 const AGENDA_KINDS=[['general','General'],['arrival','Arrival'],['keynote','Keynote'],['workshop','Workshop'],['break','Break'],['lunch','Lunch'],['awards','Awards']];
@@ -557,7 +559,7 @@ function addWorkshopRow(w={}){
         <div class="field"><label for="${uid}-n">Speaker name</label><input id="${uid}-n" data-w="speakerName" value="${escapeHtml(w.speakerName||'')}" maxlength="120"></div>
         <div class="field"><label for="${uid}-ro">Speaker role <span class="optional">(optional)</span></label><input id="${uid}-ro" data-w="speakerRole" value="${escapeHtml(w.speakerRole||'')}" maxlength="150"></div>
         <div class="field full"><label for="${uid}-d">Description</label><textarea id="${uid}-d" data-w="description" rows="5" maxlength="4000">${escapeHtml(w.description||'')}</textarea><span class="field-help">Start a line with "- " to show it as a bullet point.</span></div>
-        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session will involve the use of nuts."></div>
+        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session may contain a variety of allergens."></div>
         <div class="field full"><label for="${uid}-b">About the speaker <span class="optional">(optional)</span></label><textarea id="${uid}-b" data-w="speakerBio" rows="3" maxlength="2500">${escapeHtml(w.speakerBio||'')}</textarea></div>
         <div class="field"><label for="${uid}-a">Recommended audience</label><select id="${uid}-a" data-w="recommended">${AUDIENCES.map(([v,n])=>`<option value="${v}" ${(w.recommended||'all')===v?'selected':''}>${n}</option>`).join('')}</select></div>
         <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-w="room" value="${escapeHtml(w.room||'')}" maxlength="100"></div>
@@ -621,7 +623,7 @@ $('#load-booklet').addEventListener('click',()=>{
   let needRounds=!current.length;
   if(current.length&&!sameRounds) needRounds=confirm(`Replace the ${current.length} round${current.length===1?'':'s'} already here with the four rounds from the booklet?\n\n${B.rounds.map(r=>`${r.label}: ${r.startTime} to ${r.endTime}`).join('\n')}\n\nPress Cancel to keep the rounds you have.`);
   const needKeynote=!$('#k-name').value.trim(), needAgenda=!readAgenda().length;
-  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&!r.querySelector('[data-w=warning]').value.trim())).length;
+  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>{const v=r.querySelector('[data-w=warning]').value.trim();return r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&(!v||(OLD_BOOKLET_WARNINGS.includes(v)&&v!==w.warning))})).length;
   if(!toAdd.length&&!needRounds&&!needKeynote&&!needAgenda&&!missingWarnings){message('Everything from the workshop booklet is already here.');return}
   if(!confirm(`Fill in from the workshop booklet?\n\n${[needKeynote?'The keynote (Graham Allcott)':'',needAgenda?'The structure of the day':'',needRounds?`${B.rounds.length} workshop rounds`:'',toAdd.length?`${toAdd.length} workshops with speaker photos`:'',missingWarnings?`${missingWarnings} allergy warning${missingWarnings===1?'':'s'}`:''].filter(Boolean).join('\n')}\n\nPlease check the details, add rooms, then press Save sessions.`)) return;
   if(needKeynote) renderKeynote(B.keynote);
@@ -633,7 +635,7 @@ $('#load-booklet').addEventListener('click',()=>{
   for(const w of B.workshops.filter(x=>x.warning)){
     const row=$$('.workshop-row',workshopBuilder).find(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase());
     const box=row?.querySelector('[data-w=warning]');
-    if(box&&!box.value.trim()){box.value=w.warning;warned++}
+    if(box&&(!box.value.trim()||OLD_BOOKLET_WARNINGS.includes(box.value.trim()))&&box.value.trim()!==w.warning){box.value=w.warning;warned++}
   }
   markProgrammeDirty();
   message('Details added from the workshop booklet. They are not saved yet. Please check them, add rooms, then press Save sessions.','notice warn');
