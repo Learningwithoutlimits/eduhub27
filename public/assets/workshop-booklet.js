@@ -5,7 +5,8 @@
 // staff were placed with secondaries as a starting point. The structure of
 // the day follows the same document. The admin dashboard offers this as a starting point only.
 // Nothing is saved until an administrator reviews it and presses Save.
-// "Charles" (row 12) is left out because the booklet has no details yet.
+// "The Without Limits Lab" (Charles Dall’Omo and Rachel Hunnybun) was added
+// later from details supplied by email. It has no photo yet.
 export const WORKSHOP_BOOKLET_2027 = {
  "rounds": [
   {
@@ -176,6 +177,15 @@ export const WORKSHOP_BOOKLET_2027 = {
    "description": "The Hollie Gazzard Trust was founded by an ordinary dad who faced the unimaginable. After losing his beloved daughter Hollie as a consequence of an abusive relationship, Nick Gazzard OBE made a promise that her death would not be in vain. At the most unimaginable time of grief, he chose to speak out, educate others and campaign tirelessly to protect women and girls. A powerful lived-experience account exploring Hollie situation and how he turned this nightmare into something positive through awareness, education and prevention.",
    "recommended": "all",
    "adminNotes": "The booklet gives no workshop title. \"Hollie's Story\" was added as a placeholder. Please check with Nick."
+  },
+  {
+   "id": "without-limits-lab",
+   "title": "The Without Limits Lab: design your year ahead",
+   "speakerName": "Charles Dall’Omo and Rachel Hunnybun",
+   "speakerRole": "Train Together",
+   "photoPath": "",
+   "description": "This isn’t a talk. It’s a hands-on lab for every role in the trust. In our professional development coffee-shop, you’ll talk with colleagues about what has really helped you learn, find what makes it stick for you, and coach each other through a simple plan for the year ahead.\nYou’ll leave with one clear focus, a first step for this week and a postcard that will find you again at Easter. No preparation needed, just bring yourself.",
+   "recommended": "all"
   }
  ],
  "agenda": [

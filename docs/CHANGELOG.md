@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.9.1: the Without Limits Lab
+
+### New
+- **The Without Limits Lab: design your year ahead**, with Charles Dall’Omo and Rachel Hunnybun of Train Together, is now in the workshop booklet, open to all. If the live site already has its workshops saved, **Fill in from the workshop booklet** adds only this one and leaves everything else as it is. Its photo is uploaded in admin.
+
 ## Version 5.9: design pass on the EduHub page
 
 ### Changed
