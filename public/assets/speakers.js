@@ -1,3 +1,4 @@
+import './logo-trim.js';
 import { foodOptionsHtml } from './food-options.js';
 
 const $ = s => document.querySelector(s);

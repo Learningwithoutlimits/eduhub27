@@ -558,3 +558,17 @@ table.compact{min-width:0}
 .food-group{text-transform:none;letter-spacing:0;font-size:.95rem}
 .food-option input,.check-label input,.role-option input{width:20px;height:20px;accent-color:var(--teal)}
 th{text-transform:none;letter-spacing:0;font-size:.85rem}
+
+/* ---------- v5.10: a larger EduHub logo ---------- */
+.eduhub-full-hero-grid{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center}
+.eduhub-full-hero h1{font-size:clamp(2.6rem,5vw,4.6rem)}
+.eduhub-logo-panel{padding:clamp(22px,3vw,40px);min-height:260px}
+.eduhub-logo-panel img{width:100%;max-height:300px;height:auto}
+.feature-media img{max-height:180px;width:auto;max-width:92%}
+@media(max-width:900px){
+  .eduhub-full-hero-grid{grid-template-columns:1fr}
+  .eduhub-full-hero-grid > .eduhub-logo-panel{order:-1;max-width:none;min-height:0}
+  .eduhub-logo-panel img{max-height:180px}
+}
+.brand img.is-trimmed{height:46px}
+@media(max-width:520px){.brand img.is-trimmed{height:38px}}
