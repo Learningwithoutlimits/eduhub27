@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EduHub 2027 | Learning Without Limits Learning Hub</title>
-<meta name="description" content="EduHub 2027: Better Together. The annual conference for Learning Without Limits Academy Trust staff.">
+<meta name="description" content="EduHub 2027: Better Together. The annual conference for Learning Without Limits Academy Trust staff, governors and trustees.">
 <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body class="eduhub-page">
@@ -27,21 +27,25 @@
 <section class="eduhub-full-hero">
   <div class="container eduhub-full-hero-grid">
     <div>
-      <div class="eyebrow">Learning Without Limits Academy Trust</div>
-      <span class="tag internal">LwLAT staff only</span>
+      <p class="hero-kicker">Learning Without Limits Academy Trust</p>
       <h1 id="edu-title">EduHub 2027: Better Together</h1>
       <p id="edu-description">Our annual Trust-wide event for Learning Without Limits Academy Trust staff.</p>
-      <ul class="hero-chips" aria-label="Key details">
-        <li id="chip-date">Tuesday 5 January 2027</li>
-        <li id="chip-venue">Babington Academy</li>
-      </ul>
       <div class="hero-actions">
-        <a class="button dark" href="#booking" id="hero-cta">Bookings Open Soon</a>
+        <a class="button hero-button" href="#booking" id="hero-cta">Bookings Open Soon</a>
+        <a class="hero-link" href="#day">See the day</a>
       </div>
     </div>
     <div class="eduhub-logo-panel">
       <img src="/assets/eduhub-logo.png" alt="EduHub 2027 logo">
     </div>
+  </div>
+  <div class="container">
+    <dl class="hero-facts" aria-label="Key details">
+      <div><dt>Date</dt><dd id="edu-date">Tuesday 5 January 2027</dd></div>
+      <div><dt>Time</dt><dd id="edu-time">To be confirmed</dd></div>
+      <div><dt>Venue</dt><dd id="edu-venue">Babington Academy</dd></div>
+      <div class="hero-facts-status"><dt>Status</dt><dd id="status-heading">Bookings open soon</dd><dd id="status-deadline" class="hidden"></dd></div>
+    </dl>
   </div>
 </section>
 
@@ -49,7 +53,6 @@
   <div class="container">
     <div class="section-head">
       <div>
-        <div class="eyebrow teal">Structure of the day</div>
         <h2>How the day works</h2>
         <p class="muted day-intro">The day is a little different depending on who you are, so tell us and we will show you yours.</p>
       </div>
@@ -59,36 +62,11 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="container eduhub-information-grid">
-    <article class="panel eduhub-event-info">
-      <div class="eyebrow teal">Event information</div>
-      <h2>EduHub 2027</h2>
-      <div class="eduhub-facts">
-        <div><strong>Date</strong><span id="edu-date">Tuesday 5 January 2027</span></div>
-        <div><strong>Time</strong><span id="edu-time">To be confirmed</span></div>
-        <div><strong>Venue</strong><span id="edu-venue">Babington Academy</span></div>
-        <div><strong>Who can attend</strong><span>Learning Without Limits Academy Trust staff</span></div>
-      </div>
-      <div class="notice warn">EduHub 2027 is an internal Trust event. Members of staff will need their <strong id="staff-domains-note">@lwlat.org.uk</strong> email address to book.</div>
-    </article>
-
-    <aside class="panel">
-      <div class="eyebrow teal">Bookings</div>
-      <h2 id="status-heading">Bookings open soon</h2>
-      <p id="status-text">Bookings for EduHub 2027 have not opened yet. Please check back soon.</p>
-      <p id="status-deadline" class="muted hidden"></p>
-      <p id="status-contact" class="muted hidden"></p>
-    </aside>
-  </div>
-</section>
-
 <section class="section programme-section hidden" id="programme">
   <div class="container">
     <div id="keynote-feature"></div>
     <div class="section-head">
       <div>
-        <div class="eyebrow teal">Workshops</div>
         <h2>Choose from <span id="workshop-count">our</span> workshops</h2>
       </div>
       <p class="muted">Select a workshop to read more about it.</p>
@@ -101,8 +79,9 @@
   <div class="container">
     <div class="section-head">
       <div>
-        <div class="eyebrow teal">Staff registration</div>
         <h2>Book your place</h2>
+        <p class="booking-lede"><span id="status-text">Bookings for EduHub 2027 have not opened yet. Please check back soon.</span> Staff will need their <strong id="staff-domains-note">@lwlat.org.uk</strong> email address. Governors and trustees can use any email address.</p>
+        <p id="status-contact" class="muted hidden"></p>
       </div>
       <p class="muted" id="booking-intro">Fields marked optional can be left blank.</p>
     </div>
@@ -201,7 +180,6 @@
 
       <aside class="eduhub-booking-sidebar">
         <div class="panel">
-          <div class="eyebrow teal">Your booking</div>
           <h3 id="side-title">EduHub 2027</h3>
           <div class="meta preview-meta-stack">
             <span id="side-date">Tuesday 5 January 2027</span>
@@ -209,10 +187,10 @@
             <span id="side-venue">Babington Academy</span>
             <span id="side-places" class="hidden"></span>
           </div>
-          <span class="tag internal">Trust staff only</span>
+          <span class="tag internal">Staff, governors and trustees</span>
         </div>
         <div class="panel your-day hidden" id="your-day">
-          <div class="eyebrow teal">Your day</div>
+          <h3 class="side-subhead">Your day</h3>
           <ol class="timeline compact" id="your-day-timeline"></ol>
         </div>
       </aside>

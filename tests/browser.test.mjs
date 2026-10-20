@@ -129,7 +129,7 @@ await step("admin preview shows the menu with allergens and never submits", asyn
 await step("admin fills in the workshop booklet, adds schools, and saves", async () => {
   await page.click("[data-view=programme]");
   await page.click("#load-booklet");
-  assert.equal(await page.locator(".workshop-row").count(), 12);
+  assert.equal(await page.locator(".workshop-row").count(), 13);
   assert.equal(await page.locator(".round-row").count(), 4);
   assert.equal(await page.inputValue("#k-name"), "Graham Allcott");
   assert.equal(await page.locator(".round-row").first().locator("[data-r=startTime]").inputValue(), "10:30");
@@ -152,7 +152,7 @@ await step("admin fills in the workshop booklet, adds schools, and saves", async
   await page.locator(".school-row:not(.round-row)").last().locator("[data-school-phase]").selectOption("central");
   await page.click("#programme-form button[type=submit]");
   await page.waitForFunction(() => document.querySelector("#admin-message").textContent.includes("Sessions saved"));
-  assert.equal(await page.locator(".workshop-row").count(), 12);
+  assert.equal(await page.locator(".workshop-row").count(), 13);
   assert.equal(await page.locator("#school-builder .school-row").count(), 4);
   assert.match(await page.textContent("#session-summary"), /Round 2, 11:20 to 12:05 \(Primary\)/);
   await snap("02b-admin-sessions");
@@ -177,7 +177,7 @@ await step("homepage now links straight to booking", async () => {
 
 await step("EduHub page shows the day, workshop tiles and a lightbox with details", async () => {
   await staffPage.waitForSelector(".workshop-tile");
-  assert.equal(await staffPage.locator(".workshop-tile").count(), 12);
+  assert.equal(await staffPage.locator(".workshop-tile").count(), 13);
   // Tiles show only photo, title, speaker and recommended audience.
   const tile = staffPage.locator(".workshop-tile").first();
   assert.doesNotMatch(await tile.textContent(), /Kindness matters/);

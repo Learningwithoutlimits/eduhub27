@@ -283,7 +283,7 @@ function renderProgramme(){
   $('#keynote-feature').innerHTML = k.name ? `<article class="keynote-feature">
       ${photoSrc(k) ? `<img src="${esc(photoSrc(k))}" alt="Photo of ${esc(k.name)}">` : ''}
       <div>
-        <div class="eyebrow">Keynote speaker${times(k) ? ` · ${esc(times(k))}` : ''}</div>
+        <div class="eyebrow">Keynote speaker${times(k) ? `, ${esc(times(k))}` : ''}</div>
         <h2>${esc(k.title || k.name)}</h2>
         ${k.title ? `<p class="keynote-name">${esc(k.name)}</p>` : ''}
         ${k.role ? `<p class="keynote-role">${esc(k.role)}</p>` : ''}
@@ -364,8 +364,7 @@ function render(){
   $('#edu-title').textContent = e.title || 'EduHub 2027: Better Together';
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
-  $('#edu-date').textContent = $('#side-date').textContent = $('#chip-date').textContent = fmtDate(e.date || '2027-01-05');
-  $('#chip-venue').textContent = e.venue || 'Babington Academy';
+  $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');
   $('#edu-time').textContent = e.time || 'To be confirmed';
   $('#side-time').textContent = e.time || 'Time to be confirmed';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';

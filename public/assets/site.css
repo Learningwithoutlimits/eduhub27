@@ -473,3 +473,88 @@ table.compact{min-width:0}
 .kind-awards .link-button{color:#8a5a00}
 .kind-awards .timeline-dot{background:#c98a1a;box-shadow:0 0 0 2px #c98a1a}
 .kind-awards .timeline-kind{color:#8a5a00}
+
+/* ---------- v5.9: design pass ----------
+   Labels in sentence case rather than tracked capitals, key facts in the
+   hero, and the structure of the day as the page's main feature. */
+.eyebrow{text-transform:none;letter-spacing:0;font-size:.95rem;font-weight:700}
+
+/* Hero */
+.eduhub-full-hero{padding:64px 0 0}
+.eduhub-full-hero-grid{grid-template-columns:1.25fr .75fr;align-items:end;padding-bottom:44px}
+.hero-kicker{margin:0 0 6px;font-weight:700;opacity:.88}
+.eduhub-full-hero h1{margin:0 0 .3em;text-wrap:balance}
+.eduhub-full-hero #edu-description{font-size:1.15rem;max-width:34em;margin:0;opacity:.95}
+.hero-actions{align-items:center;gap:20px}
+.hero-button{background:var(--yellow);color:#2a2100;font-size:1.05rem;padding:14px 26px}
+.hero-button:hover{background:#ffcb3d}
+.hero-link{color:#fff;font-weight:700;text-underline-offset:4px}
+.eduhub-logo-panel{min-height:0;padding:30px;border-radius:24px;background:#fff}
+.eduhub-logo-panel img{max-height:190px}
+.hero-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;background:#fff;color:var(--ink);border-radius:22px 22px 0 0;overflow:hidden}
+.hero-facts > div{padding:20px 24px;border-right:1px solid #e3ecec}
+.hero-facts > div:last-child{border-right:0}
+.hero-facts dt{font-size:.88rem;color:#617579;font-weight:600}
+.hero-facts dd{margin:2px 0 0;font-weight:800;font-size:1.08rem}
+.hero-facts-status{background:#eef7f6}
+.hero-facts-status dd:first-of-type{color:var(--teal)}
+#status-deadline{font-weight:600;font-size:.9rem;color:#455a5d}
+
+/* Structure of the day: a sticky introduction beside a tall timeline */
+.day-section{padding-top:56px;background:#fff}
+.day-section > .container{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:56px;align-items:start}
+.day-section .section-head{position:sticky;top:104px;flex-direction:column;align-items:flex-start;margin:0;gap:18px}
+.day-section .section-head h2{line-height:1.1}
+.day-who{display:block}
+.who-chip{flex-direction:column;align-items:flex-start;border-radius:18px;padding:14px 16px;gap:4px;box-shadow:none;background:#eef7f6;border:0}
+.who-chip strong{font-size:1.15rem;margin-bottom:6px}
+.timeline{background:transparent;box-shadow:none;padding:0;border-radius:0}
+.timeline-item{grid-template-columns:96px 4px 1fr;gap:20px;padding:18px 0;border-top:1px solid #e3ecec}
+.timeline-item:first-child{border-top:0;padding-top:4px}
+.timeline-item:not(:last-child)::after{display:none}
+.timeline-time{font-size:1.45rem;line-height:1.1;letter-spacing:-.01em}
+.timeline-time span{margin-top:4px;font-size:.85rem;letter-spacing:0}
+.timeline-dot{width:4px;height:auto;align-self:stretch;margin:0;border-radius:4px;border:0;box-shadow:none;background:#d5e2e1}
+.timeline-body strong{font-size:1.12rem;line-height:1.3}
+.timeline-kind{text-transform:none;letter-spacing:0;font-size:.85rem;font-weight:700}
+.kind-keynote .timeline-dot{background:var(--teal);box-shadow:none}
+.kind-keynote .timeline-kind{color:var(--teal)}
+.kind-workshop .timeline-dot{background:var(--purple);box-shadow:none}
+.kind-break .timeline-dot,.kind-lunch .timeline-dot{background:var(--yellow);box-shadow:none}
+.kind-break .timeline-kind,.kind-lunch .timeline-kind{color:#8a6100}
+.kind-arrival .timeline-dot{background:var(--lime);box-shadow:none}
+.kind-arrival .timeline-kind{color:#5d6a00}
+.kind-awards .timeline-dot{background:#c98a1a;box-shadow:none}
+.kind-awards .timeline-kind{color:#8a5a00}
+/* Workshop rounds are the part people act on, so they stand out */
+.day-section .kind-workshop{background:#f6eff9;border-radius:16px;border-top-color:transparent;padding:18px 18px 18px 0;margin:4px 0}
+.day-section .kind-workshop + .timeline-item{border-top-color:transparent}
+.day-section .kind-workshop .timeline-time{padding-left:18px}
+.day-section .kind-workshop{grid-template-columns:114px 4px 1fr}
+.timeline.compact .timeline-item{grid-template-columns:52px 4px 1fr;gap:12px;padding:10px 0;border-top:0}
+.timeline.compact .timeline-time{font-size:1rem}
+.side-subhead{margin:0 0 6px;font-size:1.05rem}
+
+/* Booking */
+.booking-lede{max-width:44em;margin:10px 0 0;color:#455a5d}
+#status-contact{margin:6px 0 0}
+
+@media(max-width:900px){
+  .hero-facts{grid-template-columns:1fr 1fr}
+  .hero-facts > div:nth-child(2){border-right:0}
+  .hero-facts > div:nth-child(-n+2){border-bottom:1px solid #e3ecec}
+  .day-section > .container{grid-template-columns:1fr;gap:24px}
+  .day-section .section-head{position:static}
+  .eduhub-logo-panel{max-width:360px}
+}
+@media(max-width:650px){
+  .eduhub-full-hero{padding-top:40px}
+  .timeline-item{grid-template-columns:62px 4px 1fr;gap:12px}
+  .day-section .kind-workshop{grid-template-columns:74px 4px 1fr;padding-right:12px}
+  .day-section .kind-workshop .timeline-time{padding-left:12px}
+  .timeline-time{font-size:1.15rem}
+  .hero-facts > div{padding:14px 16px}
+}
+.food-group{text-transform:none;letter-spacing:0;font-size:.95rem}
+.food-option input,.check-label input,.role-option input{width:20px;height:20px;accent-color:var(--teal)}
+th{text-transform:none;letter-spacing:0;font-size:.85rem}

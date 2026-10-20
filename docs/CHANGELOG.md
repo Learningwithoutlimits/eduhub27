@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 5.9.1: the Without Limits Lab
+
+### New
+- **The Without Limits Lab: design your year ahead**, with Charles Dall’Omo and Rachel Hunnybun of Train Together, is now in the workshop booklet, open to all. If the live site already has its workshops saved, **Fill in from the workshop booklet** adds only this one and leaves everything else as it is. Its photo is uploaded in admin.
+
+## Version 5.9: design pass on the EduHub page
+
+### Changed
+- **Page banner.** The date, time, venue and booking status now sit in a white bar along the bottom of the banner, replacing the separate "Event information" and "Bookings" panels lower down. The **Book your place** button is Trust yellow, with a "See the day" link beside it. The logo panel is smaller.
+- **Structure of the day** is the main feature of the page. The heading and "Showing the day for" sit on the left and stay in view while the timeline scrolls. Times are set larger, and each line has a coloured bar for its type (keynote teal, workshops purple, breaks and lunch yellow, awards gold). Workshop rounds have a light purple background, because they are the part people need to act on.
+- Small labels across the site are now in sentence case rather than spaced capitals.
+- The email address rules for staff, governors and trustees now sit under **Book your place**.
+- The "LwLAT staff only" tags now say the event is for staff, governors and trustees.
+- Larger tick boxes and radio buttons on the booking form.
+
 ## Version 5.8: more staff email addresses
 
 ### New
