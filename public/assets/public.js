@@ -1,3 +1,4 @@
+import './logo-trim.js';
 
 const $ = (s, el=document) => el.querySelector(s);
 const grid = $('#course-grid');

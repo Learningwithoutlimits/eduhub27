@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 5.10: larger logos and link previews
+
+### Changed
+- **Larger logos.** The EduHub and Trust logo files have wide empty margins, which made the artwork look small. The pages now trim those margins automatically when they load (`public/assets/logo-trim.js`), so any replacement logo is trimmed too. The EduHub logo panel is larger, and on phones it sits above the title.
+- **Link previews.** The EduHub page now has Open Graph tags, so a link shared in Teams, Outlook, WhatsApp or social media shows the EduHub logo, title and a one-line description.
+
 ## Version 5.9.1: the Without Limits Lab
 
 ### New
