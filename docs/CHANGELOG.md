@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.14.2: the EduHub 27 logo
+
+### Fixed
+- The site now uses the EduHub 27 "Better together" logo. It is stored as `public/assets/Eduhub-logo.png` (capital E), the name already on GitHub, and the old `eduhub-logo.png` is no longer used. The logo is included in the package from now on, so uploading a package can no longer lose it.
+
 ## Version 5.14.1: time on the home page
 
 ### Fixed
