@@ -20,7 +20,7 @@ const browser = await playwright.chromium.launch({ executablePath: fs.existsSync
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 // Most steps act as someone who has already said who they are. A separate
 // step checks the "Who are you?" lightbox from a first visit.
-await context.addInitScript(() => { try{ if(!localStorage.getItem("eduhub-who")) localStorage.setItem("eduhub-who", "primary"); }catch{} });
+await context.addInitScript(() => { try{ if(!localStorage.getItem("eduhub-who")) localStorage.setItem("eduhub-who", "primary"); sessionStorage.setItem("eduhub-school-tip", "1"); }catch{} });
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", e => errors.push(e.message));
@@ -230,6 +230,27 @@ await step("first visit asks who you are, then shows that day and sets the form"
   await fresh.close();
 });
 
+await step("the booking form first asks people to choose where they work", async () => {
+  const fresh = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await fresh.addInitScript(() => { try{ localStorage.setItem("eduhub-who", "primary"); }catch{} });
+  const fp = await fresh.newPage();
+  fp.on("pageerror", e => errors.push(e.message));
+  await fp.goto(BASE + "/eduhub/");
+  await fp.waitForSelector("#day-who .who-chip");
+  assert.equal(await fp.locator("#school-dialog[open]").count(), 0, "no lightbox before reaching the form");
+  await fp.click("#hero-cta");
+  await fp.waitForSelector("#school-dialog[open]");
+  assert.match(await fp.textContent("#school-dialog-title"), /Start with where you work/);
+  await snap("04d-where-do-you-work", fp);
+  await fp.click("#school-dialog-go");
+  assert.equal(await fp.evaluate(() => document.activeElement.id), "schoolId");
+  // Only once per visit.
+  await fp.evaluate(() => window.scrollTo(0, 0)); await fp.waitForTimeout(300);
+  await fp.click("#hero-cta"); await fp.waitForTimeout(800);
+  assert.equal(await fp.locator("#school-dialog[open]").count(), 0, "lightbox shows only once");
+  await fresh.close();
+});
+
 await step("form explains every problem before sending", async () => {
   await staffPage.waitForSelector(".food-option");
   await staffPage.fill("#email", "someone@gmail.com");
@@ -324,7 +345,7 @@ await step("a governor books with their own email and gets their school's rounds
   await staffPage.goto(BASE + "/eduhub/");
   await staffPage.waitForSelector(".food-option");
   await staffPage.check('[name=role][value=governor]');
-  assert.equal(await staffPage.textContent("#school-label"), "School you govern");
+  assert.equal(await staffPage.textContent("#school-label"), "Which school do you govern?");
   await fillStaff(staffPage, "Gwen", "Governor", "gwen@example.org", "Another Primary School");
   assert.match(await staffPage.textContent("#sessions-help"), /Governors of primary schools/);
   await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");

@@ -84,7 +84,7 @@ export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Cen
 export const ATTENDEE_ROLES = {staff:"Member of staff",governor:"Governor",trustee:"Trustee"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,staffDomains:["wykencroft.coventry.school.uk"],showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"08:00 to 15:00",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,staffDomains:["wykencroft.coventry.school.uk"],showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
@@ -235,7 +235,7 @@ export function normaliseEduhub(raw){
   return {
     title: clean(e.title, 150) || defaults.eduhub.title,
     date: isDate(e.date) ? e.date : defaults.eduhub.date,
-    time: clean(e.time, 60),
+    time: clean(e.time, 60) || "08:00 to 15:00",
     venue: clean(e.venue, 150),
     description: clean(e.description, 2000),
     capacity: Math.max(0, Math.floor(Number(e.capacity) || 0)),

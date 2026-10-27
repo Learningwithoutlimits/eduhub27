@@ -366,8 +366,8 @@ function render(){
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
   $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');
-  $('#edu-time').textContent = e.time || 'To be confirmed';
-  $('#side-time').textContent = e.time || 'Time to be confirmed';
+  $('#edu-time').textContent = e.time || '08:00 to 15:00';
+  $('#side-time').textContent = e.time || '08:00 to 15:00';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';
   if(e.placesLeft !== null && e.placesLeft !== undefined && status === 'open'){
     $('#side-places').textContent = e.placesLeft > 0 ? `${e.placesLeft} ${e.placesLeft === 1 ? 'place' : 'places'} remaining` : 'Fully booked. New bookings join the waiting list.';
@@ -557,10 +557,10 @@ function applyRole(){
   $('#email-help').textContent = role === 'staff' ? `Please use your ${domainText()} email address.` : 'Please use the email address you would like your confirmation sent to.';
   $('#staff-domains-note').textContent = domainText();
   form.email.placeholder = role === 'staff' ? 'firstname.surname@lwlat.org.uk' : '';
-  $('#school-label').textContent = role === 'governor' ? 'School you govern' : 'School or team';
+  $('#school-label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
   $('#school-field').classList.toggle('hidden', role === 'trustee' || !schools);
   $('#organisation-field').classList.toggle('hidden', role === 'trustee' || schools);
-  if(role === 'governor' && !schools) $('#organisation-field label').textContent = 'School you govern';
+  $('#organisation-field label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
   renderSessionChoices(); renderYourDay();
   if(role === 'trustee' && who?.key !== 'trustee'){ who = WHO.find(w => w.key === 'trustee'); renderDay(); }
 }
@@ -587,4 +587,37 @@ async function reloadData(full = true){
   }
   if(full) render(); else renderSessionChoices();
 }
-reloadData();
+const firstLoad = reloadData();
+
+// ---------- "Start with where you work" ----------
+// The school or team decides which rounds someone attends, so the first time
+// the booking form comes into view we explain that it should be chosen first.
+let schoolTipShown = false;
+try{ schoolTipShown = sessionStorage.getItem('eduhub-school-tip') === '1'; }catch{}
+const whereInput = () => $('#school-field').classList.contains('hidden') ? $('#organisation') : $('#schoolId');
+function maybeSchoolTip(){
+  if(schoolTipShown || document.querySelector('dialog[open]')) return;
+  if($('#booking-area').classList.contains('hidden') || currentRole() === 'trustee' || whereInput().value) return;
+  schoolTipShown = true;
+  try{ sessionStorage.setItem('eduhub-school-tip', '1'); }catch{}
+  const governor = currentRole() === 'governor';
+  $('#school-dialog-title').textContent = governor ? 'Start with the school you govern' : 'Start with where you work';
+  $('#school-dialog-text').textContent = governor
+    ? 'Please choose the school you govern first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.'
+    : 'Please choose your school or team first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.';
+  $('#school-dialog-go').textContent = governor ? 'Choose my school' : 'Choose my school or team';
+  openModal($('#school-dialog'));
+}
+$('#school-dialog-go').addEventListener('click', () => {
+  $('#school-dialog').close();
+  const field = whereInput();
+  field.scrollIntoView({ behavior:'smooth', block:'center' });
+  field.focus({ preventScroll:true });
+  try{ if(field.tagName === 'SELECT') field.showPicker(); }catch{}
+});
+if('IntersectionObserver' in window){
+  // Watch the top of the form, which is short enough to come fully into view.
+  const io = new IntersectionObserver(entries => { if(entries.some(x => x.isIntersecting)) maybeSchoolTip(); }, { threshold:0.6 });
+  // Start watching once the page has its content, so the form is in its final place.
+  firstLoad.then(() => requestAnimationFrame(() => ['#role-field', '#school-field', '#organisation-field'].forEach(s => io.observe($(s)))));
+}

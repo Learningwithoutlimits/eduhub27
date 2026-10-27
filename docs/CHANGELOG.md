@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 5.11: start with where you work
+
+### New
+- **"Start with where you work" lightbox.** The first time someone reaches the booking form on a visit, a lightbox explains that their school or team decides which workshop rounds they attend, so they should choose it first. Its button takes them straight to the question. Governors see "Start with the school you govern". Trustees, who do not choose a school, never see it.
+
+### Changed
+- **Where do you work?** now comes straight after "I am booking as", in a highlighted box, instead of after the name and email boxes.
+- **Event time** now shows "08:00 to 15:00" when no time has been entered in admin, instead of "To be confirmed". A time entered under Event details still takes priority.
+- The small timeline under **Your day** uses the same coloured bars as the main timeline.
+
 ## Version 5.10: larger logos and link previews
 
 ### Changed

@@ -49,7 +49,7 @@
   <div class="container">
     <dl class="hero-facts" aria-label="Key details">
       <div><dt>Date</dt><dd id="edu-date">Tuesday 5 January 2027</dd></div>
-      <div><dt>Time</dt><dd id="edu-time">To be confirmed</dd></div>
+      <div><dt>Time</dt><dd id="edu-time">08:00 to 15:00</dd></div>
       <div><dt>Venue</dt><dd id="edu-venue">Babington Academy</dd></div>
       <div class="hero-facts-status"><dt>Status</dt><dd id="status-heading">Bookings open soon</dd><dd id="status-deadline" class="hidden"></dd></div>
     </dl>
@@ -112,6 +112,17 @@
             </div>
           </fieldset>
 
+          <div class="field full where-field" id="organisation-field">
+            <label for="organisation">Where do you work?</label>
+            <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
+            <span class="field-help">Please start here. Your school or team decides which workshops you can choose.</span>
+          </div>
+          <div class="field full where-field hidden" id="school-field">
+            <label for="schoolId" id="school-label">Where do you work?</label>
+            <select id="schoolId" name="schoolId"></select>
+            <span class="field-help" id="school-help">Please start here. Your school or team decides which workshops you can choose.</span>
+          </div>
+
           <div class="field">
             <label for="firstName">First name</label>
             <input id="firstName" name="firstName" required autocomplete="given-name" maxlength="80">
@@ -124,14 +135,6 @@
             <label for="email" id="email-label">Trust email address</label>
             <input id="email" name="email" type="email" required autocomplete="email" maxlength="160" aria-describedby="email-help" placeholder="firstname.surname@lwlat.org.uk">
             <span class="field-help" id="email-help">Please use your @lwlat.org.uk email address.</span>
-          </div>
-          <div class="field" id="organisation-field">
-            <label for="organisation">School or team</label>
-            <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
-          </div>
-          <div class="field hidden" id="school-field">
-            <label for="schoolId" id="school-label">School or team</label>
-            <select id="schoolId" name="schoolId"></select>
           </div>
           <div class="field">
             <label for="jobTitle">Job title <span class="optional">(optional)</span></label>
@@ -190,7 +193,7 @@
           <h3 id="side-title">EduHub 2027</h3>
           <div class="meta preview-meta-stack">
             <span id="side-date">Tuesday 5 January 2027</span>
-            <span id="side-time">Time to be confirmed</span>
+            <span id="side-time">08:00 to 15:00</span>
             <span id="side-venue">Babington Academy</span>
             <span id="side-places" class="hidden"></span>
           </div>
@@ -234,6 +237,18 @@
     <div class="awards-actions">
       <a class="button awards-button" id="awards-link" href="#" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
       <button type="button" class="button secondary" data-close-dialog>Maybe later</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="lightbox school-dialog" id="school-dialog" aria-labelledby="school-dialog-title">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" type="button" data-close-dialog aria-label="Close">&times;</button>
+    <div class="school-dialog-icon" aria-hidden="true">1</div>
+    <h2 id="school-dialog-title">Start with where you work</h2>
+    <p id="school-dialog-text">Please choose your school or team first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.</p>
+    <div class="awards-actions school-dialog-actions">
+      <button type="button" class="button" id="school-dialog-go">Choose my school or team</button>
     </div>
   </div>
 </dialog>

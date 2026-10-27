@@ -572,3 +572,14 @@ th{text-transform:none;letter-spacing:0;font-size:.85rem}
 }
 .brand img.is-trimmed{height:46px}
 @media(max-width:520px){.brand img.is-trimmed{height:38px}}
+
+/* ---------- v5.11: where do you work? ---------- */
+.where-field{padding:16px 18px;border-radius:16px;background:#eef7f6;border:2px solid var(--teal)}
+.where-field label{font-size:1.08rem}
+.where-field select,.where-field input{font-size:1.02rem}
+.school-dialog{width:min(520px,calc(100% - 32px))}
+.school-dialog .lightbox-inner{text-align:center;padding:36px 32px 30px}
+.school-dialog h2{margin:.3em 0 .4em;font-size:clamp(1.5rem,4vw,1.9rem);line-height:1.2}
+.school-dialog p{margin:0 0 22px}
+.school-dialog-icon{width:64px;height:64px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:var(--teal);color:#fff;font-size:1.8rem;font-weight:800}
+.timeline.compact .timeline-dot{width:4px;height:auto;align-self:stretch;margin:0}
