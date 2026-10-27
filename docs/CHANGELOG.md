@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.14.3: school email addresses
+
+### Fixed
+- Staff can book with their school's email address, such as name@babington.lwlat.org.uk, name@lancaster.lwlat.org.uk, name@heatherbrook.lwlat.org.uk, name@woodstock.lwlat.org.uk or name@southwigston.lwlat.org.uk. Any address ending in .lwlat.org.uk is now accepted alongside @lwlat.org.uk, so schools added later work too. The same applies to any other ending listed under Staff email addresses in admin. The email box says that school addresses work.
+
 ## Version 5.14.2: the EduHub 27 logo
 
 ### Fixed
