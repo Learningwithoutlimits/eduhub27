@@ -1,3 +1,4 @@
+import './logo-trim.js';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmtDate = v => v ? new Intl.DateTimeFormat('en-GB',{dateStyle:'full'}).format(new Date(v+'T12:00:00')) : '';

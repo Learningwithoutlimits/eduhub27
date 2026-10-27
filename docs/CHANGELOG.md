@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 5.12: printable bookings
+
+### Changed
+- **Print my booking.** The confirmation screen now prints as a single A4 page: the Trust and EduHub logos at the top, the booking details (reference, name, email, date and time, workshops and food choice) and a large QR code ticket. Buttons, headings, the awards box and the rest of the page are left off the printout. The button is now called **Print my booking**.
+- **Ticket page.** The ticket link in the confirmation email prints the same way, with both logos at the top.
+- Printing works from any browser's own Print command too, and **Save as PDF** gives a tidy file to keep on a phone.
+
 ## Version 5.11: start with where you work
 
 ### New
