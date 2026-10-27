@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 5.14.1: time on the home page
+
+### Fixed
+- The EduHub card on the Learning Hub home page always shows the time. It uses the time from admin (Event details), or "08:00 to 15:00" if none has been entered. Before, the line was left out when the admin box was empty.
+- The card's description now says the event is for staff, governors and trustees.
+
 ## Version 5.14: invitation-only workshops and Rational Training
 
 ### New

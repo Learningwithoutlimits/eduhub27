@@ -55,6 +55,7 @@ async function step(name, fn) {
 await step("homepage shows EduHub as Bookings Open Soon with a popup", async () => {
   await page.goto(BASE + "/");
   await page.waitForSelector("#eduhub-summary span");
+  assert.match(await page.textContent("#eduhub-summary"), /Time: 08:00 to 15:00/);
   assert.equal((await page.textContent("#eduhub-book")).trim(), "Bookings Open Soon");
   await page.click("#eduhub-book");
   assert.ok(await page.isVisible("#eduhub-modal.open"));

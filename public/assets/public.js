@@ -125,7 +125,7 @@ function renderEduhub(){
   const status = e.effectiveStatus || 'coming-soon';
   $('#eduhub-summary').innerHTML = `
     <span><strong>Date:</strong> ${fmtDate(e.date || '2027-01-05')}</span>
-    ${e.time ? `<span><strong>Time:</strong> ${escapeHtml(e.time)}</span>` : ''}
+    <span><strong>Time:</strong> ${escapeHtml(e.time || '08:00 to 15:00')}</span>
     <span><strong>Venue:</strong> ${escapeHtml(e.venue || 'Babington Academy')}</span>`;
   const button = $('#eduhub-book');
   button.textContent = (EDUHUB_LABELS[status] || EDUHUB_LABELS['coming-soon']).button;
