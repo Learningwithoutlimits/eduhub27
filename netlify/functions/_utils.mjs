@@ -100,7 +100,7 @@ function uniqueIds(items){
 const cleanId = (v, fallback) => (String(v||"").toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,50)) || fallback;
 const photoFields = x => ({
   photoId: /^[a-f0-9-]{36}$/.test(String(x.photoId||"")) ? x.photoId : "",
-  photoPath: /^\/assets\/speakers\/[a-z0-9-]+\.(jpg|png)$/.test(String(x.photoPath||"")) ? x.photoPath : ""
+  photoPath: /^\/assets\/speakers\/[a-z0-9-]+\.(jpg|png|svg)$/.test(String(x.photoPath||"")) ? x.photoPath : ""
 });
 export function normaliseSchool(s, i=0){
   if(!s || typeof s!=="object") return null;
@@ -130,7 +130,11 @@ export function normaliseWorkshop(w, i=0){
     room: clean(w.room,100),
     capacity: Math.max(0, Math.floor(Number(w.capacity) || 0)),
     rounds: Array.isArray(w.rounds) ? w.rounds.map(x=>cleanId(x,"")).filter(Boolean) : [],
-    adminNotes: clean(w.adminNotes,1000)
+    adminNotes: clean(w.adminNotes,1000),
+    // Invitation-only workshops are hidden from the public page and can only
+    // be booked through their private link, which carries this code.
+    inviteOnly: w.inviteOnly === true,
+    inviteCode: /^[A-Za-z0-9]{12,40}$/.test(String(w.inviteCode||"")) ? w.inviteCode : ""
   };
 }
 // Safety warnings from the workshop booklet (such as allergens in the food
@@ -304,6 +308,12 @@ export function placesTaken(bookings, itemId){
 export function bookingStatusOf(b){
   if(!activeBooking(b)) return "cancelled";
   return b.waitingList ? "waiting" : "booked";
+}
+// True when someone may see and book an invitation-only workshop.
+export function hasInvite(w, code){
+  if(!w?.inviteOnly) return true;
+  if(!w.inviteCode || typeof code !== "string" || code.length !== w.inviteCode.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(code), Buffer.from(w.inviteCode));
 }
 export const newSpeakerCode = () => crypto.randomBytes(15).toString("base64url").replace(/[^A-Za-z0-9]/g,"").slice(0,20).padEnd(16,"x");
 export function speakerAccess(e, code){

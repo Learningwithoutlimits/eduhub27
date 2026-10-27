@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 5.14: invitation-only workshops and Rational Training
+
+### New
+- **Invitation-only workshops.** A workshop can be marked **Invitation only** on the EduHub sessions screen. It is then hidden from the booking page, and only people who open its private link can see and book it. The link appears on the workshop after saving, with a **Copy link** button, and stays the same each time the sessions are saved. Ticking **Make a new link when I save** replaces it, and the old link stops working. The server refuses a booking for the workshop without the link.
+- People who open a private link see a note saying which workshop they have been invited to book. The workshop shows on the page with a "By invitation" tag, and appears among the choices for its round.
+- **Rational Training** (oven training) is in the workshop booklet as invitation only, for selected members of the catering team. It runs in Round 3 (12:10, primary staff) and Round 4 (12:55, secondary and central staff), with an oven icon as its picture (`public/assets/speakers/rational-oven.svg`).
+
 ## Version 5.13: printable caterer's order
 
 ### New

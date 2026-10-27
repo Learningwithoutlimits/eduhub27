@@ -13,6 +13,8 @@ const domainText = () => { const d = staffDomains(); return d.length > 1 ? `${d.
 const NO_FOOD = 'no-food';
 // ?preview=1 shows the finished form whatever the booking status, but never sends anything.
 const preview = new URLSearchParams(location.search).get('preview') === '1';
+// A private link (?invite=...) shows invitation-only workshops, such as training for the catering team.
+const invite = (new URLSearchParams(location.search).get('invite') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
 const form = $('#eduhub-form');
 let eduhub = {};
 
@@ -44,7 +46,7 @@ function textHtml(text){
   }
   return out.map(x => Array.isArray(x) ? `<ul>${x.map(li => `<li>${esc(li)}</li>`).join('')}</ul>` : `<p>${esc(x)}</p>`).join('');
 }
-const audienceTag = x => x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
+const audienceTag = x => x.inviteOnly ? '<span class="tag invite-tag">By invitation</span>' : x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
 
 const STATUS_COPY = {
   'coming-soon': { cta:'Bookings Open Soon', heading:'Bookings open soon', text:'Bookings for EduHub 2027 have not opened yet. Please check back soon.' },
@@ -374,6 +376,14 @@ function render(){
     $('#side-places').classList.remove('hidden');
   }
 
+  const invited = (e.workshops || []).filter(w => w.inviteOnly);
+  if(invited.length){
+    $('#invite-note').innerHTML = `<strong>You have been invited to book ${invited.map(w => esc(w.title)).join(' and ')}.</strong> Choose your school or team, and it will appear among the workshops for its round.`;
+    $('#invite-note').classList.remove('hidden');
+  }else if(invite){
+    $('#invite-note').textContent = 'This invitation link is not valid any more. You can still book a place and choose from the other workshops. Please ask the event organiser for a new link.';
+    $('#invite-note').classList.remove('hidden');
+  }
   $('#hero-cta').textContent = preview ? 'Preview the booking form' : copy.cta;
   $('#status-heading').textContent = copy.heading;
   $('#status-text').textContent = copy.text;
@@ -529,6 +539,7 @@ form.addEventListener('submit', async ev => {
   button.disabled = true;
   button.textContent = 'Sending your booking';
   const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+  if(invite) body.invite = invite;
   body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
   if((eduhub.schools || []).length && currentRole() !== 'trustee') body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
   body.itemType = 'eduhub';
@@ -578,7 +589,7 @@ form.schoolId.addEventListener('change', () => {
 
 async function reloadData(full = true){
   try{
-    const res = await fetch('/api/public-data', {cache:'no-store'});
+    const res = await fetch(`/api/public-data${invite ? `?invite=${encodeURIComponent(invite)}` : ''}`, {cache:'no-store'});
     if(!res.ok) throw new Error();
     eduhub = (await res.json()).eduhub || {};
   }catch{

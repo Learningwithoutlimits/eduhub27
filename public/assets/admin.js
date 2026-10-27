@@ -644,11 +644,16 @@ function addWorkshopRow(w={}){
         <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-w="room" value="${escapeHtml(w.room||'')}" maxlength="100"></div>
         <div class="field"><label for="${uid}-c">Places per round <span class="optional">(0 = no limit)</span></label><input id="${uid}-c" type="number" min="0" data-w="capacity" value="${escapeHtml(w.capacity||0)}"></div>
         <div class="field full"><span class="label-text">Runs in</span><div class="suitable-row" data-round-ticks data-init="${escapeHtml(JSON.stringify(w.rounds||[]))}"></div></div>
+        <div class="field full invite-box"><label class="check-label"><input type="checkbox" data-w-invite ${w.inviteOnly?'checked':''}> Invitation only. Hide it from the booking page, so only people with its private link can see and book it.</label>
+          ${w.inviteOnly&&w.inviteCode?`<div class="invite-link"><span class="field-help">Private link to send to the people invited:</span><div class="invite-link-row"><input readonly value="${escapeHtml(`${location.origin}/eduhub/?invite=${w.inviteCode}`)}" data-invite-url aria-label="Private link for this workshop"><button type="button" class="ghost" data-copy-invite>Copy link</button></div>
+            <label class="check-label small"><input type="checkbox" data-w-newinvite> Make a new link when I save. The old link will stop working.</label></div>`:''}
+          <span class="field-help" data-invite-hint ${w.inviteOnly&&w.inviteCode?'hidden':''}>The private link appears here after you press Save sessions.</span></div>
         <div class="field full"><label for="${uid}-x">Admin notes <span class="optional">(only visible to administrators)</span></label><textarea id="${uid}-x" data-w="adminNotes" rows="2" maxlength="1000">${escapeHtml(w.adminNotes||'')}</textarea></div>
       </div></div>
     <div class="food-row-footer"><span></span><div class="actions">
       <button type="button" class="ghost" data-move="-1">Move up</button><button type="button" class="ghost" data-move="1">Move down</button>
       <button type="button" class="danger" data-remove-workshop>Remove workshop</button></div></div>`;
+  row.querySelector('[data-copy-invite]')?.addEventListener('click',async e=>{const input=row.querySelector('[data-invite-url]');try{await navigator.clipboard.writeText(input.value);e.target.textContent='Copied'}catch{input.select()}});
   photoPicker(row.querySelector('[data-photo-holder]'),w);
   row.querySelector('[data-w=title]').addEventListener('input',e=>row.querySelector('legend').textContent=e.target.value||'New workshop');
   row.querySelector('[data-remove-workshop]').onclick=()=>{
@@ -669,6 +674,7 @@ function readWorkshops(){
     const ticked=$$('[data-round]:checked',r).map(i=>i.dataset.round);
     return {id:r.dataset.id,title:v('title'),speakerName:v('speakerName'),speakerRole:v('speakerRole'),description:v('description'),warning:v('warning'),speakerBio:v('speakerBio'),
       recommended:v('recommended'),room:v('room'),capacity:Number(v('capacity'))||0,adminNotes:v('adminNotes'),
+      inviteOnly:r.querySelector('[data-w-invite]').checked,newInviteCode:Boolean(r.querySelector('[data-w-newinvite]')?.checked),
       rounds:ticked.length===roundCount?[]:ticked,...readPhoto(r.querySelector('[data-photo-holder]'))};
   });
 }

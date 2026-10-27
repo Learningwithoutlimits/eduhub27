@@ -126,10 +126,11 @@ await step("admin preview shows the menu with allergens and never submits", asyn
   await preview.close();
 });
 
+let inviteLink = "";
 await step("admin fills in the workshop booklet, adds schools, and saves", async () => {
   await page.click("[data-view=programme]");
   await page.click("#load-booklet");
-  assert.equal(await page.locator(".workshop-row").count(), 13);
+  assert.equal(await page.locator(".workshop-row").count(), 14);
   assert.equal(await page.locator(".round-row").count(), 4);
   assert.equal(await page.inputValue("#k-name"), "Graham Allcott");
   assert.equal(await page.locator(".round-row").first().locator("[data-r=startTime]").inputValue(), "10:30");
@@ -152,9 +153,12 @@ await step("admin fills in the workshop booklet, adds schools, and saves", async
   await page.locator(".school-row:not(.round-row)").last().locator("[data-school-phase]").selectOption("central");
   await page.click("#programme-form button[type=submit]");
   await page.waitForFunction(() => document.querySelector("#admin-message").textContent.includes("Sessions saved"));
-  assert.equal(await page.locator(".workshop-row").count(), 13);
+  assert.equal(await page.locator(".workshop-row").count(), 14);
   assert.equal(await page.locator("#school-builder .school-row").count(), 4);
   assert.match(await page.textContent("#session-summary"), /Round 2, 11:20 to 12:05 \(Primary\)/);
+  // Rational Training is invitation only, so its private link now shows.
+  inviteLink = await page.locator(".workshop-row", { hasText: "Rational Training" }).locator("[data-invite-url]").inputValue();
+  assert.match(inviteLink, /\/eduhub\/\?invite=[A-Za-z0-9]{16,}$/);
   await snap("02b-admin-sessions");
   await page.click("[data-view=eduhub]");
 });
@@ -205,6 +209,27 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   await food.click();
   assert.match(await staffPage.textContent("#workshop-dialog .warning-notice"), /variety of allergens, including nuts/);
   await staffPage.click("#dialog-close");
+});
+
+await step("the catering team's private link shows Rational Training in their rounds", async () => {
+  const ip = await context.newPage();
+  ip.on("pageerror", e => errors.push(e.message));
+  await ip.goto(inviteLink);
+  await ip.waitForSelector(".workshop-tile");
+  assert.equal(await ip.locator(".workshop-tile").count(), 14);
+  assert.match(await ip.locator(".workshop-tile", { hasText: "Rational Training" }).textContent(), /By invitation/);
+  assert.match(await ip.textContent("#invite-note"), /invited to book Rational Training/);
+  await snap("04e-invited-tiles", ip);
+  await ip.selectOption("#schoolId", { label: "Example Primary School" });
+  await ip.waitForSelector(".round-step.is-active");
+  // Primary staff: round 2 first, then round 3 at 12:10 includes the oven training.
+  await ip.locator(".round-step.is-active .choice-tile:not(.is-blocked)").first().click({ position: { x: 20, y: 20 } });
+  await ip.waitForTimeout(150);
+  assert.match(await ip.textContent(".round-step.is-active"), /12:10[\s\S]*Rational Training/);
+  await ip.selectOption("#schoolId", { label: "Example Secondary Academy" });
+  await ip.waitForTimeout(200);
+  assert.doesNotMatch(await ip.textContent(".round-step.is-active"), /Rational Training/);
+  await ip.close();
 });
 
 await step("first visit asks who you are, then shows that day and sets the form", async () => {

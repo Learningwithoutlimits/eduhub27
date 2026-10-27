@@ -7,6 +7,8 @@
 // Nothing is saved until an administrator reviews it and presses Save.
 // "The Without Limits Lab" (Charles Dall’Omo and Rachel Hunnybun) was added
 // later from details supplied by email. It has no photo yet.
+// "Rational Training" (oven training) is invitation only, for selected members
+// of the catering team: primary staff at 12:10 (round 3), secondary at 12:55 (round 4).
 export const WORKSHOP_BOOKLET_2027 = {
  "rounds": [
   {
@@ -186,6 +188,20 @@ export const WORKSHOP_BOOKLET_2027 = {
    "photoPath": "",
    "description": "This isn’t a talk. It’s a hands-on lab for every role in the trust. In our professional development coffee-shop, you’ll talk with colleagues about what has really helped you learn, find what makes it stick for you, and coach each other through a simple plan for the year ahead.\nYou’ll leave with one clear focus, a first step for this week and a postcard that will find you again at Easter. No preparation needed, just bring yourself.",
    "recommended": "all"
+  },
+  {
+   "id": "rational-training",
+   "title": "Rational Training",
+   "speakerName": "",
+   "speakerRole": "",
+   "photoPath": "/assets/speakers/rational-oven.svg",
+   "description": "Hands-on training on the Rational combination ovens, for invited members of our catering team.",
+   "recommended": "all",
+   "rounds": [
+    "round-3",
+    "round-4"
+   ],
+   "inviteOnly": true
   }
  ],
  "agenda": [
