@@ -612,3 +612,27 @@ th{text-transform:none;letter-spacing:0;font-size:.85rem}
 }
 .print-only{display:none}
 @media print{.print-only{display:block}.screen-only{display:none!important}.confirmation:focus,.confirmation{outline:0!important}}
+
+/* ---------- v5.13: printable caterer's order ---------- */
+.print-sheet{display:none}
+@media print{
+  body.printing-order > *:not(#order-sheet){display:none!important}
+  body.printing-order{background:#fff!important}
+  body.printing-order #order-sheet{display:block}
+  .print-sheet{color:#111;font-size:10.5pt;line-height:1.4}
+  .print-sheet h1{font-size:22pt;margin:0 0 2mm;color:var(--ink)}
+  .print-sheet h2{font-size:14pt;margin:8mm 0 3mm;color:var(--teal)}
+  .order-event{margin:0 0 5mm}
+  .print-sheet table{min-width:0;width:100%;border-collapse:collapse}
+  .print-sheet th,.print-sheet td{padding:2mm 2.5mm;border:1px solid #c9d8d7;text-align:left;vertical-align:top;font-size:10pt;text-transform:none;letter-spacing:0;color:#111}
+  .print-sheet thead th{background:#e4f2f1}
+  .order-facts td:first-child{width:45%;color:#455a5d}
+  .order-table .num{text-align:right;width:20mm}
+  .order-table .group-row th{background:#f3f8f8}
+  .order-table tfoot th{background:#e4f2f1;font-size:11pt}
+  .order-table tr{break-inside:avoid}
+  .order-note{font-size:9.5pt;color:#455a5d;margin:0 0 3mm}
+  .order-collection{break-before:page}
+  .tick{width:10mm;text-align:center}
+  .tick-box{display:inline-block;width:4.5mm;height:4.5mm;border:1px solid #111}
+}

@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 5.13: printable caterer's order
+
+### New
+- **Print caterer's order** in admin, under EduHub 2027, then Catering summary. It prints a branded A4 document for the caterer, counting confirmed places only:
+  - **Food order:** the number of each food choice, grouped into hot meals and grab bags, with the allergens in each and a total.
+  - **Dietary requirements and allergies:** everyone who told us about one, with their school or team, food choice and details, marked confidential.
+  - **Collection list** (on a new page): everyone by food choice and then surname, with a tick box, and a note beside anyone on the dietary list.
+- The printout shows when it was printed, so it is clear which bookings it includes.
+
 ## Version 5.12: printable bookings
 
 ### Changed

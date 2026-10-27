@@ -99,7 +99,7 @@
 
 <div class="panel">
   <div class="section-head"><div><h2>Catering summary</h2><p class="muted">Confirmed EduHub places only. Waiting-list and cancelled bookings are not counted.</p></div>
-  <a class="button" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div>
+  <div class="admin-form-actions"><button type="button" class="button" id="print-order">Print caterer's order</button><a class="button secondary" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div></div>
   <div id="catering-summary"></div>
 </div>
 </section>
@@ -225,4 +225,8 @@
 <div class="field full"><p class="muted">The email address cannot be changed. If it is wrong, cancel this booking and ask the person to book again.</p><button type="submit">Save changes</button></div>
 </form></div></div>
 
+<div class="print-sheet" id="order-sheet" aria-hidden="true">
+  <div class="print-header"><img data-trim src="/assets/lwlat-logo.png" alt=""><img data-trim src="/assets/eduhub-logo.png" alt=""></div>
+  <div id="order-sheet-body"></div>
+</div>
 <script src="/assets/admin.js" type="module"></script></body></html>

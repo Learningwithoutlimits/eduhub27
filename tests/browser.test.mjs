@@ -399,6 +399,20 @@ await step("admin sees food, allergens and catering totals", async () => {
   assert.match(summary, /including 1 speakers/);
   assert.match(summary, /Mild lactose intolerance/);
   await snap("06-admin-catering");
+  // The caterer's order prints on its own, without the admin screens.
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click("#print-order");
+  const sheet = (await page.textContent("#order-sheet")).replace(/\s+/g, " ");
+  assert.match(sheet, /Caterer's order/);
+  assert.match(sheet, /Meals to prepare ?3 \(including 1 for speakers\)/, sheet.slice(0, 400));
+  assert.match(sheet, /Mild lactose intolerance/);
+  assert.match(sheet, /Collection list/);
+  await page.emulateMedia({ media: "print" });
+  assert.ok(await page.isVisible("#order-sheet"));
+  assert.ok(await page.isHidden("#admin-view"));
+  if (shots) await page.pdf({ path: `${shots}/06b-caterers-order.pdf`, format: "A4", printBackground: true });
+  await page.emulateMedia({ media: "screen" });
+  await page.evaluate(() => document.body.classList.remove("printing-order"));
   await page.click("[data-view=bookings]");
   const table = await page.textContent("#bookings-table");
   assert.match(table, /Tuna Mayo Sandwich/);
