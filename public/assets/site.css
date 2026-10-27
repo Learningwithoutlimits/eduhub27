@@ -572,3 +572,75 @@ th{text-transform:none;letter-spacing:0;font-size:.85rem}
 }
 .brand img.is-trimmed{height:46px}
 @media(max-width:520px){.brand img.is-trimmed{height:38px}}
+
+/* ---------- v5.11: where do you work? ---------- */
+.where-field{padding:16px 18px;border-radius:16px;background:#eef7f6;border:2px solid var(--teal)}
+.where-field label{font-size:1.08rem}
+.where-field select,.where-field input{font-size:1.02rem}
+.school-dialog{width:min(520px,calc(100% - 32px))}
+.school-dialog .lightbox-inner{text-align:center;padding:36px 32px 30px}
+.school-dialog h2{margin:.3em 0 .4em;font-size:clamp(1.5rem,4vw,1.9rem);line-height:1.2}
+.school-dialog p{margin:0 0 22px}
+.school-dialog-icon{width:64px;height:64px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:var(--teal);color:#fff;font-size:1.8rem;font-weight:800}
+.timeline.compact .timeline-dot{width:4px;height:auto;align-self:stretch;margin:0}
+
+/* ---------- v5.12: printable bookings ----------
+   The confirmation screen and the ticket page each print as one clean A4
+   page, with the Trust and EduHub logos at the top. */
+.print-header{display:none}
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{background:#fff!important}
+  body{font-size:11pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  dialog,.site-header,.footer,.preview-banner{display:none!important}
+  .print-header{display:flex!important;align-items:center;justify-content:space-between;gap:24px;padding:0 0 10mm;margin:0 0 8mm;border-bottom:2px solid var(--teal)}
+  .print-header img{height:22mm;width:auto;max-width:45%;object-fit:contain}
+  .container{width:100%}
+  .section{padding:0!important}
+  .form-shell{box-shadow:none!important;border:0!important;padding:0!important;border-radius:0}
+  /* Confirmation */
+  #booking .section-head,#booking-closed,.eduhub-booking-sidebar,.recognition-box,.confirmation .hero-actions,.confirmation .notice,.ticket-inline a,#back-to-form{display:none!important}
+  .eduhub-booking-layout{display:block}
+  .confirmation h2{font-size:20pt;margin:0 0 4mm}
+  .confirmation-list{border:1px solid #d5e7e4;break-inside:avoid}
+  .ticket-inline{border:2px solid var(--teal);break-inside:avoid;margin-top:6mm}
+  .ticket-inline .ticket-qr,.ticket-card .ticket-qr{width:60mm;height:60mm}
+  /* Ticket page */
+  .ticket-wrap{max-width:none}
+  .ticket-card{text-align:center}
+  .ticket-card dl,.ticket-card .confirmation-list{text-align:left}
+}
+.print-only{display:none}
+@media print{.print-only{display:block}.screen-only{display:none!important}.confirmation:focus,.confirmation{outline:0!important}}
+
+/* ---------- v5.13: printable caterer's order ---------- */
+.print-sheet{display:none}
+@media print{
+  body.printing-order > *:not(#order-sheet){display:none!important}
+  body.printing-order{background:#fff!important}
+  body.printing-order #order-sheet{display:block}
+  .print-sheet{color:#111;font-size:10.5pt;line-height:1.4}
+  .print-sheet h1{font-size:22pt;margin:0 0 2mm;color:var(--ink)}
+  .print-sheet h2{font-size:14pt;margin:8mm 0 3mm;color:var(--teal)}
+  .order-event{margin:0 0 5mm}
+  .print-sheet table{min-width:0;width:100%;border-collapse:collapse}
+  .print-sheet th,.print-sheet td{padding:2mm 2.5mm;border:1px solid #c9d8d7;text-align:left;vertical-align:top;font-size:10pt;text-transform:none;letter-spacing:0;color:#111}
+  .print-sheet thead th{background:#e4f2f1}
+  .order-facts td:first-child{width:45%;color:#455a5d}
+  .order-table .num{text-align:right;width:20mm}
+  .order-table .group-row th{background:#f3f8f8}
+  .order-table tfoot th{background:#e4f2f1;font-size:11pt}
+  .order-table tr{break-inside:avoid}
+  .order-note{font-size:9.5pt;color:#455a5d;margin:0 0 3mm}
+  .order-collection{break-before:page}
+  .tick{width:10mm;text-align:center}
+  .tick-box{display:inline-block;width:4.5mm;height:4.5mm;border:1px solid #111}
+}
+
+/* ---------- v5.14: invitation-only workshops ---------- */
+.invite-box{padding:12px 14px;border-radius:12px;background:#fff8e6;border:1px solid #f1d58a}
+.invite-link{display:grid;gap:6px;margin-top:6px}
+.invite-link-row{display:flex;gap:8px}
+.invite-link-row input{font-size:.88rem;background:#fff}
+.invite-tag{background:#fff1cc;color:#6b4c00}
+.invite-note{margin-bottom:16px}

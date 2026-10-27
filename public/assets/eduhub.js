@@ -13,6 +13,8 @@ const domainText = () => { const d = staffDomains(); return d.length > 1 ? `${d.
 const NO_FOOD = 'no-food';
 // ?preview=1 shows the finished form whatever the booking status, but never sends anything.
 const preview = new URLSearchParams(location.search).get('preview') === '1';
+// A private link (?invite=...) shows invitation-only workshops, such as training for the catering team.
+const invite = (new URLSearchParams(location.search).get('invite') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
 const form = $('#eduhub-form');
 let eduhub = {};
 
@@ -44,7 +46,7 @@ function textHtml(text){
   }
   return out.map(x => Array.isArray(x) ? `<ul>${x.map(li => `<li>${esc(li)}</li>`).join('')}</ul>` : `<p>${esc(x)}</p>`).join('');
 }
-const audienceTag = x => x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
+const audienceTag = x => x.inviteOnly ? '<span class="tag invite-tag">By invitation</span>' : x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
 
 const STATUS_COPY = {
   'coming-soon': { cta:'Bookings Open Soon', heading:'Bookings open soon', text:'Bookings for EduHub 2027 have not opened yet. Please check back soon.' },
@@ -366,14 +368,22 @@ function render(){
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
   $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');
-  $('#edu-time').textContent = e.time || 'To be confirmed';
-  $('#side-time').textContent = e.time || 'Time to be confirmed';
+  $('#edu-time').textContent = e.time || '08:00 to 15:00';
+  $('#side-time').textContent = e.time || '08:00 to 15:00';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';
   if(e.placesLeft !== null && e.placesLeft !== undefined && status === 'open'){
     $('#side-places').textContent = e.placesLeft > 0 ? `${e.placesLeft} ${e.placesLeft === 1 ? 'place' : 'places'} remaining` : 'Fully booked. New bookings join the waiting list.';
     $('#side-places').classList.remove('hidden');
   }
 
+  const invited = (e.workshops || []).filter(w => w.inviteOnly);
+  if(invited.length){
+    $('#invite-note').innerHTML = `<strong>You have been invited to book ${invited.map(w => esc(w.title)).join(' and ')}.</strong> Choose your school or team, and it will appear among the workshops for its round.`;
+    $('#invite-note').classList.remove('hidden');
+  }else if(invite){
+    $('#invite-note').textContent = 'This invitation link is not valid any more. You can still book a place and choose from the other workshops. Please ask the event organiser for a new link.';
+    $('#invite-note').classList.remove('hidden');
+  }
   $('#hero-cta').textContent = preview ? 'Preview the booking form' : copy.cta;
   $('#status-heading').textContent = copy.heading;
   $('#status-text').textContent = copy.text;
@@ -490,7 +500,8 @@ function showConfirmation(data, body){
     </dl>
     ${data.ticketUrl ? `<div class="ticket-inline"><h3>Your ticket</h3>
       <img class="ticket-qr" src="/api/qr?${esc(data.ticketUrl.split('?')[1] || '')}" width="220" height="220" alt="QR code for your booking">
-      <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
+      <p class="screen-only">${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please print your booking or keep the link below.'} Bring it with you on the day.</p>
+      <p class="print-only">Please bring this page with you. We will scan the code when you arrive.</p>
       <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
     ${eduhub.recognitionUrl ? `<div class="recognition-box">
       <h3>LwLAT Better Together Recognition Awards 2027</h3>
@@ -501,7 +512,7 @@ function showConfirmation(data, body){
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
       ${cal && !data.waitingList ? `<a class="button" href="${cal}" download="EduHub-2027.ics">Add to my calendar</a>` : ''}
-      <button class="button secondary" type="button" id="print-confirmation">Print this page</button>
+      <button class="button secondary" type="button" id="print-confirmation">Print my booking</button>
     </div>
   </div>`;
   $('#print-confirmation').addEventListener('click', () => window.print());
@@ -528,6 +539,7 @@ form.addEventListener('submit', async ev => {
   button.disabled = true;
   button.textContent = 'Sending your booking';
   const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+  if(invite) body.invite = invite;
   body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
   if((eduhub.schools || []).length && currentRole() !== 'trustee') body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
   body.itemType = 'eduhub';
@@ -557,10 +569,10 @@ function applyRole(){
   $('#email-help').textContent = role === 'staff' ? `Please use your ${domainText()} email address.` : 'Please use the email address you would like your confirmation sent to.';
   $('#staff-domains-note').textContent = domainText();
   form.email.placeholder = role === 'staff' ? 'firstname.surname@lwlat.org.uk' : '';
-  $('#school-label').textContent = role === 'governor' ? 'School you govern' : 'School or team';
+  $('#school-label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
   $('#school-field').classList.toggle('hidden', role === 'trustee' || !schools);
   $('#organisation-field').classList.toggle('hidden', role === 'trustee' || schools);
-  if(role === 'governor' && !schools) $('#organisation-field label').textContent = 'School you govern';
+  $('#organisation-field label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
   renderSessionChoices(); renderYourDay();
   if(role === 'trustee' && who?.key !== 'trustee'){ who = WHO.find(w => w.key === 'trustee'); renderDay(); }
 }
@@ -577,7 +589,7 @@ form.schoolId.addEventListener('change', () => {
 
 async function reloadData(full = true){
   try{
-    const res = await fetch('/api/public-data', {cache:'no-store'});
+    const res = await fetch(`/api/public-data${invite ? `?invite=${encodeURIComponent(invite)}` : ''}`, {cache:'no-store'});
     if(!res.ok) throw new Error();
     eduhub = (await res.json()).eduhub || {};
   }catch{
@@ -587,4 +599,37 @@ async function reloadData(full = true){
   }
   if(full) render(); else renderSessionChoices();
 }
-reloadData();
+const firstLoad = reloadData();
+
+// ---------- "Start with where you work" ----------
+// The school or team decides which rounds someone attends, so the first time
+// the booking form comes into view we explain that it should be chosen first.
+let schoolTipShown = false;
+try{ schoolTipShown = sessionStorage.getItem('eduhub-school-tip') === '1'; }catch{}
+const whereInput = () => $('#school-field').classList.contains('hidden') ? $('#organisation') : $('#schoolId');
+function maybeSchoolTip(){
+  if(schoolTipShown || document.querySelector('dialog[open]')) return;
+  if($('#booking-area').classList.contains('hidden') || currentRole() === 'trustee' || whereInput().value) return;
+  schoolTipShown = true;
+  try{ sessionStorage.setItem('eduhub-school-tip', '1'); }catch{}
+  const governor = currentRole() === 'governor';
+  $('#school-dialog-title').textContent = governor ? 'Start with the school you govern' : 'Start with where you work';
+  $('#school-dialog-text').textContent = governor
+    ? 'Please choose the school you govern first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.'
+    : 'Please choose your school or team first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.';
+  $('#school-dialog-go').textContent = governor ? 'Choose my school' : 'Choose my school or team';
+  openModal($('#school-dialog'));
+}
+$('#school-dialog-go').addEventListener('click', () => {
+  $('#school-dialog').close();
+  const field = whereInput();
+  field.scrollIntoView({ behavior:'smooth', block:'center' });
+  field.focus({ preventScroll:true });
+  try{ if(field.tagName === 'SELECT') field.showPicker(); }catch{}
+});
+if('IntersectionObserver' in window){
+  // Watch the top of the form, which is short enough to come fully into view.
+  const io = new IntersectionObserver(entries => { if(entries.some(x => x.isIntersecting)) maybeSchoolTip(); }, { threshold:0.6 });
+  // Start watching once the page has its content, so the form is in its final place.
+  firstLoad.then(() => requestAnimationFrame(() => ['#role-field', '#school-field', '#organisation-field'].forEach(s => io.observe($(s)))));
+}

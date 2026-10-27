@@ -1,7 +1,7 @@
 import { allergenSummary } from "../../public/assets/allergens.js";
 import { json, readJSON, updateJSON, clean, isEmail, STAFF_DOMAIN, normaliseEduhub, eduhubEffectiveStatus,
   courseBookingClosedReason, placesTaken, activeBooking, makeReference, EDUHUB_ID,
-  slotKey, slotLabel, sessionPlacesTaken, sessionOpenTo, PHASE_NAMES, speakerAccess, todayUK, ATTENDEE_ROLES, isStaffEmail, domainList } from "./_utils.mjs";
+  slotKey, slotLabel, sessionPlacesTaken, sessionOpenTo, PHASE_NAMES, speakerAccess, todayUK, ATTENDEE_ROLES, isStaffEmail, domainList, hasInvite } from "./_utils.mjs";
 import { sendConfirmation, ticketUrl, siteOrigin } from "./_tickets.mjs";
 
 const NO_FOOD = "no-food";
@@ -100,12 +100,14 @@ export default async request => {
    for(const id of wanted){
      const session=eligible.find(x=>x.id===id);
      if(!session) return json({error:"One of the workshops you chose is not in one of your rounds. Please check your choices."},400);
+     const workshop=eduhub.workshops.find(w=>w.id===session.workshopId);
+     if(!hasInvite(workshop,raw.invite)) return json({error:`"${session.title}" is by invitation only. Please use the link you were sent.`},403);
      if(chosen.some(x=>slotKey(x)===slotKey(session))) return json({error:`Please choose only one workshop for ${slotLabel(session)}.`},400);
      if(session.workshopId && chosen.some(x=>x.workshopId===session.workshopId)) return json({error:`You have chosen "${session.title}" more than once. Please choose a different workshop for one of the rounds.`},400);
      chosen.push(session);
    }
    if(eduhub.requireSessionChoice){
-     const slots=[...new Set(eligible.map(slotKey))];
+     const slots=[...new Set(eligible.filter(x=>hasInvite(eduhub.workshops.find(w=>w.id===x.workshopId),raw.invite)).map(slotKey))];
      const missing=slots.filter(k=>!chosen.some(x=>slotKey(x)===k));
      if(missing.length){
        const first=eligible.find(x=>slotKey(x)===missing[0]);

@@ -20,7 +20,7 @@ const browser = await playwright.chromium.launch({ executablePath: fs.existsSync
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 // Most steps act as someone who has already said who they are. A separate
 // step checks the "Who are you?" lightbox from a first visit.
-await context.addInitScript(() => { try{ if(!localStorage.getItem("eduhub-who")) localStorage.setItem("eduhub-who", "primary"); }catch{} });
+await context.addInitScript(() => { try{ if(!localStorage.getItem("eduhub-who")) localStorage.setItem("eduhub-who", "primary"); sessionStorage.setItem("eduhub-school-tip", "1"); }catch{} });
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", e => errors.push(e.message));
@@ -55,6 +55,7 @@ async function step(name, fn) {
 await step("homepage shows EduHub as Bookings Open Soon with a popup", async () => {
   await page.goto(BASE + "/");
   await page.waitForSelector("#eduhub-summary span");
+  assert.match(await page.textContent("#eduhub-summary"), /Time: 08:00 to 15:00/);
   assert.equal((await page.textContent("#eduhub-book")).trim(), "Bookings Open Soon");
   await page.click("#eduhub-book");
   assert.ok(await page.isVisible("#eduhub-modal.open"));
@@ -126,10 +127,11 @@ await step("admin preview shows the menu with allergens and never submits", asyn
   await preview.close();
 });
 
+let inviteLink = "";
 await step("admin fills in the workshop booklet, adds schools, and saves", async () => {
   await page.click("[data-view=programme]");
   await page.click("#load-booklet");
-  assert.equal(await page.locator(".workshop-row").count(), 13);
+  assert.equal(await page.locator(".workshop-row").count(), 14);
   assert.equal(await page.locator(".round-row").count(), 4);
   assert.equal(await page.inputValue("#k-name"), "Graham Allcott");
   assert.equal(await page.locator(".round-row").first().locator("[data-r=startTime]").inputValue(), "10:30");
@@ -152,9 +154,12 @@ await step("admin fills in the workshop booklet, adds schools, and saves", async
   await page.locator(".school-row:not(.round-row)").last().locator("[data-school-phase]").selectOption("central");
   await page.click("#programme-form button[type=submit]");
   await page.waitForFunction(() => document.querySelector("#admin-message").textContent.includes("Sessions saved"));
-  assert.equal(await page.locator(".workshop-row").count(), 13);
+  assert.equal(await page.locator(".workshop-row").count(), 14);
   assert.equal(await page.locator("#school-builder .school-row").count(), 4);
   assert.match(await page.textContent("#session-summary"), /Round 2, 11:20 to 12:05 \(Primary\)/);
+  // Rational Training is invitation only, so its private link now shows.
+  inviteLink = await page.locator(".workshop-row", { hasText: "Rational Training" }).locator("[data-invite-url]").inputValue();
+  assert.match(inviteLink, /\/eduhub\/\?invite=[A-Za-z0-9]{16,}$/);
   await snap("02b-admin-sessions");
   await page.click("[data-view=eduhub]");
 });
@@ -207,6 +212,27 @@ await step("EduHub page shows the day, workshop tiles and a lightbox with detail
   await staffPage.click("#dialog-close");
 });
 
+await step("the catering team's private link shows Rational Training in their rounds", async () => {
+  const ip = await context.newPage();
+  ip.on("pageerror", e => errors.push(e.message));
+  await ip.goto(inviteLink);
+  await ip.waitForSelector(".workshop-tile");
+  assert.equal(await ip.locator(".workshop-tile").count(), 14);
+  assert.match(await ip.locator(".workshop-tile", { hasText: "Rational Training" }).textContent(), /By invitation/);
+  assert.match(await ip.textContent("#invite-note"), /invited to book Rational Training/);
+  await snap("04e-invited-tiles", ip);
+  await ip.selectOption("#schoolId", { label: "Example Primary School" });
+  await ip.waitForSelector(".round-step.is-active");
+  // Primary staff: round 2 first, then round 3 at 12:10 includes the oven training.
+  await ip.locator(".round-step.is-active .choice-tile:not(.is-blocked)").first().click({ position: { x: 20, y: 20 } });
+  await ip.waitForTimeout(150);
+  assert.match(await ip.textContent(".round-step.is-active"), /12:10[\s\S]*Rational Training/);
+  await ip.selectOption("#schoolId", { label: "Example Secondary Academy" });
+  await ip.waitForTimeout(200);
+  assert.doesNotMatch(await ip.textContent(".round-step.is-active"), /Rational Training/);
+  await ip.close();
+});
+
 await step("first visit asks who you are, then shows that day and sets the form", async () => {
   const fresh = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const fp = await fresh.newPage();
@@ -227,6 +253,27 @@ await step("first visit asks who you are, then shows that day and sets the form"
   await fp.click("#day-timeline [data-open-awards]");
   await fp.waitForSelector("#awards-dialog[open]");
   await fp.keyboard.press("Escape");
+  await fresh.close();
+});
+
+await step("the booking form first asks people to choose where they work", async () => {
+  const fresh = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await fresh.addInitScript(() => { try{ localStorage.setItem("eduhub-who", "primary"); }catch{} });
+  const fp = await fresh.newPage();
+  fp.on("pageerror", e => errors.push(e.message));
+  await fp.goto(BASE + "/eduhub/");
+  await fp.waitForSelector("#day-who .who-chip");
+  assert.equal(await fp.locator("#school-dialog[open]").count(), 0, "no lightbox before reaching the form");
+  await fp.click("#hero-cta");
+  await fp.waitForSelector("#school-dialog[open]");
+  assert.match(await fp.textContent("#school-dialog-title"), /Start with where you work/);
+  await snap("04d-where-do-you-work", fp);
+  await fp.click("#school-dialog-go");
+  assert.equal(await fp.evaluate(() => document.activeElement.id), "schoolId");
+  // Only once per visit.
+  await fp.evaluate(() => window.scrollTo(0, 0)); await fp.waitForTimeout(300);
+  await fp.click("#hero-cta"); await fp.waitForTimeout(800);
+  assert.equal(await fp.locator("#school-dialog[open]").count(), 0, "lightbox shows only once");
   await fresh.close();
 });
 
@@ -324,7 +371,7 @@ await step("a governor books with their own email and gets their school's rounds
   await staffPage.goto(BASE + "/eduhub/");
   await staffPage.waitForSelector(".food-option");
   await staffPage.check('[name=role][value=governor]');
-  assert.equal(await staffPage.textContent("#school-label"), "School you govern");
+  assert.equal(await staffPage.textContent("#school-label"), "Which school do you govern?");
   await fillStaff(staffPage, "Gwen", "Governor", "gwen@example.org", "Another Primary School");
   assert.match(await staffPage.textContent("#sessions-help"), /Governors of primary schools/);
   await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
@@ -378,6 +425,20 @@ await step("admin sees food, allergens and catering totals", async () => {
   assert.match(summary, /including 1 speakers/);
   assert.match(summary, /Mild lactose intolerance/);
   await snap("06-admin-catering");
+  // The caterer's order prints on its own, without the admin screens.
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click("#print-order");
+  const sheet = (await page.textContent("#order-sheet")).replace(/\s+/g, " ");
+  assert.match(sheet, /Caterer's order/);
+  assert.match(sheet, /Meals to prepare ?3 \(including 1 for speakers\)/, sheet.slice(0, 400));
+  assert.match(sheet, /Mild lactose intolerance/);
+  assert.match(sheet, /Collection list/);
+  await page.emulateMedia({ media: "print" });
+  assert.ok(await page.isVisible("#order-sheet"));
+  assert.ok(await page.isHidden("#admin-view"));
+  if (shots) await page.pdf({ path: `${shots}/06b-caterers-order.pdf`, format: "A4", printBackground: true });
+  await page.emulateMedia({ media: "screen" });
+  await page.evaluate(() => document.body.classList.remove("printing-order"));
   await page.click("[data-view=bookings]");
   const table = await page.textContent("#bookings-table");
   assert.match(table, /Tuna Mayo Sandwich/);

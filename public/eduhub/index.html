@@ -9,7 +9,7 @@
 <meta property="og:site_name" content="Learning Without Limits Learning Hub">
 <meta property="og:title" content="EduHub 2027: Better Together">
 <meta property="og:description" content="Book your place at EduHub 2027, the Learning Without Limits Academy Trust conference for staff, governors and trustees.">
-<meta property="og:image" content="https://eduhub27.netlify.app/assets/eduhub-logo.png">
+<meta property="og:image" content="https://eduhub27.netlify.app/assets/Eduhub-logo.png">
 <meta property="og:image:alt" content="EduHub 2027 logo">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/site.css">
@@ -30,6 +30,10 @@
   </div>
 </header>
 
+<div class="print-header" aria-hidden="true">
+  <img data-trim src="/assets/lwlat-logo.png" alt="">
+  <img data-trim src="/assets/Eduhub-logo.png" alt="">
+</div>
 <main>
 <section class="eduhub-full-hero">
   <div class="container eduhub-full-hero-grid">
@@ -43,13 +47,13 @@
       </div>
     </div>
     <div class="eduhub-logo-panel">
-      <img data-trim src="/assets/eduhub-logo.png" alt="EduHub 2027 logo">
+      <img data-trim src="/assets/Eduhub-logo.png" alt="EduHub 2027 logo">
     </div>
   </div>
   <div class="container">
     <dl class="hero-facts" aria-label="Key details">
       <div><dt>Date</dt><dd id="edu-date">Tuesday 5 January 2027</dd></div>
-      <div><dt>Time</dt><dd id="edu-time">To be confirmed</dd></div>
+      <div><dt>Time</dt><dd id="edu-time">08:00 to 15:00</dd></div>
       <div><dt>Venue</dt><dd id="edu-venue">Babington Academy</dd></div>
       <div class="hero-facts-status"><dt>Status</dt><dd id="status-heading">Bookings open soon</dd><dd id="status-deadline" class="hidden"></dd></div>
     </dl>
@@ -99,6 +103,7 @@
 
     <div class="eduhub-booking-layout" id="booking-area">
       <div>
+        <div id="invite-note" class="notice invite-note hidden" role="note"></div>
         <div id="form-message" aria-live="polite"></div>
         <form id="eduhub-form" class="form-shell form-grid" novalidate>
           <div class="hp-field" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
@@ -112,6 +117,17 @@
             </div>
           </fieldset>
 
+          <div class="field full where-field" id="organisation-field">
+            <label for="organisation">Where do you work?</label>
+            <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
+            <span class="field-help">Please start here. Your school or team decides which workshops you can choose.</span>
+          </div>
+          <div class="field full where-field hidden" id="school-field">
+            <label for="schoolId" id="school-label">Where do you work?</label>
+            <select id="schoolId" name="schoolId"></select>
+            <span class="field-help" id="school-help">Please start here. Your school or team decides which workshops you can choose.</span>
+          </div>
+
           <div class="field">
             <label for="firstName">First name</label>
             <input id="firstName" name="firstName" required autocomplete="given-name" maxlength="80">
@@ -124,14 +140,6 @@
             <label for="email" id="email-label">Trust email address</label>
             <input id="email" name="email" type="email" required autocomplete="email" maxlength="160" aria-describedby="email-help" placeholder="firstname.surname@lwlat.org.uk">
             <span class="field-help" id="email-help">Please use your @lwlat.org.uk email address.</span>
-          </div>
-          <div class="field" id="organisation-field">
-            <label for="organisation">School or team</label>
-            <input id="organisation" name="organisation" required autocomplete="organization" maxlength="150">
-          </div>
-          <div class="field hidden" id="school-field">
-            <label for="schoolId" id="school-label">School or team</label>
-            <select id="schoolId" name="schoolId"></select>
           </div>
           <div class="field">
             <label for="jobTitle">Job title <span class="optional">(optional)</span></label>
@@ -190,7 +198,7 @@
           <h3 id="side-title">EduHub 2027</h3>
           <div class="meta preview-meta-stack">
             <span id="side-date">Tuesday 5 January 2027</span>
-            <span id="side-time">Time to be confirmed</span>
+            <span id="side-time">08:00 to 15:00</span>
             <span id="side-venue">Babington Academy</span>
             <span id="side-places" class="hidden"></span>
           </div>
@@ -234,6 +242,18 @@
     <div class="awards-actions">
       <a class="button awards-button" id="awards-link" href="#" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
       <button type="button" class="button secondary" data-close-dialog>Maybe later</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="lightbox school-dialog" id="school-dialog" aria-labelledby="school-dialog-title">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" type="button" data-close-dialog aria-label="Close">&times;</button>
+    <div class="school-dialog-icon" aria-hidden="true">1</div>
+    <h2 id="school-dialog-title">Start with where you work</h2>
+    <p id="school-dialog-text">Please choose your school or team first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.</p>
+    <div class="awards-actions school-dialog-actions">
+      <button type="button" class="button" id="school-dialog-go">Choose my school or team</button>
     </div>
   </div>
 </dialog>

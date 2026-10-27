@@ -358,6 +358,30 @@ await test("a workshop must be chosen in each of their rounds", async () => {
   const r = await sBook(403, { schoolId: school("Example Primary"), sessionIds: [sid("Botheredness", "round-2")] });
   assert.equal(r.status, 400); assert.match(r.data.error, /Round 3, 12:10 to 12:50/);
 });
+await test("invitation-only workshops are hidden and need their private link", async () => {
+  const withInvite = { section: "programme", ...prog, workshops: [...prog.workshops, { title: "Rational Training", inviteOnly: true, rounds: ["round-3"] }] };
+  const saved = (await call("eduhub", { method: "POST", auth: true, body: withInvite })).data.eduhub;
+  const code = saved.workshops.find(x => x.title === "Rational Training").inviteCode;
+  assert.match(code, /^[A-Za-z0-9]{16,}$/);
+  const pub = (await call("public-data")).data.eduhub;
+  assert.ok(!pub.workshops.some(x => x.title === "Rational Training"));
+  assert.ok(!pub.sessions.some(x => x.title === "Rational Training"));
+  const inv = (await call("public-data?invite=" + code)).data.eduhub;
+  assert.ok(inv.workshops.some(x => x.title === "Rational Training" && x.inviteOnly));
+  assert.ok(!JSON.stringify(inv).includes(code), "the code never appears in public data");
+  assert.ok(!(await call("public-data?invite=wrongwrongwrong1")).data.eduhub.workshops.some(x => x.inviteOnly));
+  const rid = saved.sessions.find(x => x.title === "Rational Training").id;
+  const refused = await sBook(409, { schoolId: school("Example Primary"), sessionIds: [sid("Botheredness", "round-2"), rid] });
+  assert.equal(refused.status, 403); assert.match(refused.data.error, /by invitation only/);
+  // Saving again (the browser never sends the code) keeps the same link.
+  const again = (await call("eduhub", { method: "POST", auth: true, body: { ...withInvite, workshops: saved.workshops.map(({ inviteCode, ...x }) => x) } })).data.eduhub;
+  assert.equal(again.workshops.find(x => x.title === "Rational Training").inviteCode, code);
+  const ok = await sBook(409, { schoolId: school("Example Primary"), sessionIds: [sid("Botheredness", "round-2"), rid], invite: code });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  const id = new URL("http://x" + ok.data.ticketUrl.replace(/^https?:\/\/[^/]+/, "")).searchParams.get("b");
+  assert.equal((await call("booking", { method: "POST", auth: true, body: { id, action: "cancel" } })).status, 200);
+  await call("eduhub", { method: "POST", auth: true, body: { section: "programme", ...prog } });
+});
 await test("valid primary booking saves school, phase and workshops", async () => {
   const r = await sBook(404, { schoolId: school("Example Primary"), sessionIds: [sid("Botheredness", "round-2"), sid("Curious Schools", "round-3")] });
   assert.equal(r.status, 200, JSON.stringify(r.data));

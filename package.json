@@ -1,6 +1,6 @@
 {
   "name": "lwlat-learning-hub",
-  "version": "5.14.1",
+  "version": "5.14.3",
   "private": true,
   "type": "module",
   "dependencies": {

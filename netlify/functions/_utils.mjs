@@ -84,7 +84,7 @@ export const PHASE_NAMES = {primary:"Primary",secondary:"Secondary",central:"Cen
 export const ATTENDEE_ROLES = {staff:"Member of staff",governor:"Governor",trustee:"Trustee"};
 const isTime = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||""));
 export const defaults = {
-  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,staffDomains:["wykencroft.coventry.school.uk"],showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
+  eduhub:{title:"EduHub 2027: Better Together",date:"2027-01-05",time:"08:00 to 15:00",venue:"Babington Academy",description:"Our annual Trust-wide event for Learning Without Limits Academy Trust staff.",capacity:0,bookingStatus:"coming-soon",bookingDeadline:"",foodChoices:[],askDietary:true,askAccessibility:true,allowNoFood:false,privacyNoticeUrl:"",contactEmail:"",recognitionUrl:"https://forms.cloud.microsoft/e/PsKimNCMdT",speakerBookingOpen:false,speakerCode:"",allowGovernors:true,staffDomains:["wykencroft.coventry.school.uk"],showAgenda:true,schools:[],rounds:[],workshops:[],keynote:{},agenda:[],requireSessionChoice:true}
 };
 // Fields edited on the admin "EduHub sessions" screen. Each admin screen saves
 // only its own fields, so the two screens cannot overwrite each other.
@@ -100,7 +100,7 @@ function uniqueIds(items){
 const cleanId = (v, fallback) => (String(v||"").toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,50)) || fallback;
 const photoFields = x => ({
   photoId: /^[a-f0-9-]{36}$/.test(String(x.photoId||"")) ? x.photoId : "",
-  photoPath: /^\/assets\/speakers\/[a-z0-9-]+\.(jpg|png)$/.test(String(x.photoPath||"")) ? x.photoPath : ""
+  photoPath: /^\/assets\/speakers\/[a-z0-9-]+\.(jpg|png|svg)$/.test(String(x.photoPath||"")) ? x.photoPath : ""
 });
 export function normaliseSchool(s, i=0){
   if(!s || typeof s!=="object") return null;
@@ -130,7 +130,11 @@ export function normaliseWorkshop(w, i=0){
     room: clean(w.room,100),
     capacity: Math.max(0, Math.floor(Number(w.capacity) || 0)),
     rounds: Array.isArray(w.rounds) ? w.rounds.map(x=>cleanId(x,"")).filter(Boolean) : [],
-    adminNotes: clean(w.adminNotes,1000)
+    adminNotes: clean(w.adminNotes,1000),
+    // Invitation-only workshops are hidden from the public page and can only
+    // be booked through their private link, which carries this code.
+    inviteOnly: w.inviteOnly === true,
+    inviteCode: /^[A-Za-z0-9]{12,40}$/.test(String(w.inviteCode||"")) ? w.inviteCode : ""
   };
 }
 // Safety warnings from the workshop booklet (such as allergens in the food
@@ -235,7 +239,7 @@ export function normaliseEduhub(raw){
   return {
     title: clean(e.title, 150) || defaults.eduhub.title,
     date: isDate(e.date) ? e.date : defaults.eduhub.date,
-    time: clean(e.time, 60),
+    time: clean(e.time, 60) || "08:00 to 15:00",
     venue: clean(e.venue, 150),
     description: clean(e.description, 2000),
     capacity: Math.max(0, Math.floor(Number(e.capacity) || 0)),
@@ -304,6 +308,12 @@ export function placesTaken(bookings, itemId){
 export function bookingStatusOf(b){
   if(!activeBooking(b)) return "cancelled";
   return b.waitingList ? "waiting" : "booked";
+}
+// True when someone may see and book an invitation-only workshop.
+export function hasInvite(w, code){
+  if(!w?.inviteOnly) return true;
+  if(!w.inviteCode || typeof code !== "string" || code.length !== w.inviteCode.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(code), Buffer.from(w.inviteCode));
 }
 export const newSpeakerCode = () => crypto.randomBytes(15).toString("base64url").replace(/[^A-Za-z0-9]/g,"").slice(0,20).padEnd(16,"x");
 export function speakerAccess(e, code){

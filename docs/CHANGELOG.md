@@ -1,5 +1,49 @@
 # Changelog
 
+## Version 5.14.2: the EduHub 27 logo
+
+### Fixed
+- The site now uses the EduHub 27 "Better together" logo. It is stored as `public/assets/Eduhub-logo.png` (capital E), the name already on GitHub, and the old `eduhub-logo.png` is no longer used. The logo is included in the package from now on, so uploading a package can no longer lose it.
+
+## Version 5.14.1: time on the home page
+
+### Fixed
+- The EduHub card on the Learning Hub home page always shows the time. It uses the time from admin (Event details), or "08:00 to 15:00" if none has been entered. Before, the line was left out when the admin box was empty.
+- The card's description now says the event is for staff, governors and trustees.
+
+## Version 5.14: invitation-only workshops and Rational Training
+
+### New
+- **Invitation-only workshops.** A workshop can be marked **Invitation only** on the EduHub sessions screen. It is then hidden from the booking page, and only people who open its private link can see and book it. The link appears on the workshop after saving, with a **Copy link** button, and stays the same each time the sessions are saved. Ticking **Make a new link when I save** replaces it, and the old link stops working. The server refuses a booking for the workshop without the link.
+- People who open a private link see a note saying which workshop they have been invited to book. The workshop shows on the page with a "By invitation" tag, and appears among the choices for its round.
+- **Rational Training** (oven training) is in the workshop booklet as invitation only, for selected members of the catering team. It runs in Round 3 (12:10, primary staff) and Round 4 (12:55, secondary and central staff), with an oven icon as its picture (`public/assets/speakers/rational-oven.svg`).
+
+## Version 5.13: printable caterer's order
+
+### New
+- **Print caterer's order** in admin, under EduHub 2027, then Catering summary. It prints a branded A4 document for the caterer, counting confirmed places only:
+  - **Food order:** the number of each food choice, grouped into hot meals and grab bags, with the allergens in each and a total.
+  - **Dietary requirements and allergies:** everyone who told us about one, with their school or team, food choice and details, marked confidential.
+  - **Collection list** (on a new page): everyone by food choice and then surname, with a tick box, and a note beside anyone on the dietary list.
+- The printout shows when it was printed, so it is clear which bookings it includes.
+
+## Version 5.12: printable bookings
+
+### Changed
+- **Print my booking.** The confirmation screen now prints as a single A4 page: the Trust and EduHub logos at the top, the booking details (reference, name, email, date and time, workshops and food choice) and a large QR code ticket. Buttons, headings, the awards box and the rest of the page are left off the printout. The button is now called **Print my booking**.
+- **Ticket page.** The ticket link in the confirmation email prints the same way, with both logos at the top.
+- Printing works from any browser's own Print command too, and **Save as PDF** gives a tidy file to keep on a phone.
+
+## Version 5.11: start with where you work
+
+### New
+- **"Start with where you work" lightbox.** The first time someone reaches the booking form on a visit, a lightbox explains that their school or team decides which workshop rounds they attend, so they should choose it first. Its button takes them straight to the question. Governors see "Start with the school you govern". Trustees, who do not choose a school, never see it.
+
+### Changed
+- **Where do you work?** now comes straight after "I am booking as", in a highlighted box, instead of after the name and email boxes.
+- **Event time** now shows "08:00 to 15:00" when no time has been entered in admin, instead of "To be confirmed". A time entered under Event details still takes priority.
+- The small timeline under **Your day** uses the same coloured bars as the main timeline.
+
 ## Version 5.10: larger logos and link previews
 
 ### Changed

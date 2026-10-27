@@ -54,7 +54,7 @@
   <div class="field full"><label for="eh-domains">Staff email addresses</label><textarea id="eh-domains" name="staffDomains" rows="2" placeholder="lwlat.org.uk"></textarea><span class="field-help">The part after the @, one per line. Members of staff must book with an address ending in one of these. lwlat.org.uk is always included.</span></div>
   <div class="field full"><label for="eh-title">Event title</label><input id="eh-title" name="title" required maxlength="150"></div>
   <div class="field"><label for="eh-date">Date</label><input id="eh-date" name="date" type="date"></div>
-  <div class="field"><label for="eh-time">Time</label><input id="eh-time" name="time" placeholder="e.g. 08:30 to 15:30" maxlength="60"></div>
+  <div class="field"><label for="eh-time">Time</label><input id="eh-time" name="time" placeholder="e.g. 08:00 to 15:00" maxlength="60"></div>
   <div class="field full"><label for="eh-venue">Venue</label><input id="eh-venue" name="venue" maxlength="150"></div>
   <div class="field full"><label for="eh-description">Description</label><textarea id="eh-description" name="description" maxlength="2000"></textarea></div>
   <div class="field"><label for="eh-capacity">Capacity</label><input id="eh-capacity" name="capacity" type="number" min="0"><span class="field-help">0 means no limit. Once full, new bookings join the waiting list.</span></div>
@@ -99,7 +99,7 @@
 
 <div class="panel">
   <div class="section-head"><div><h2>Catering summary</h2><p class="muted">Confirmed EduHub places only. Waiting-list and cancelled bookings are not counted.</p></div>
-  <a class="button" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div>
+  <div class="admin-form-actions"><button type="button" class="button" id="print-order">Print caterer's order</button><a class="button secondary" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div></div>
   <div id="catering-summary"></div>
 </div>
 </section>
@@ -225,4 +225,8 @@
 <div class="field full"><p class="muted">The email address cannot be changed. If it is wrong, cancel this booking and ask the person to book again.</p><button type="submit">Save changes</button></div>
 </form></div></div>
 
+<div class="print-sheet" id="order-sheet" aria-hidden="true">
+  <div class="print-header"><img data-trim src="/assets/lwlat-logo.png" alt=""><img data-trim src="/assets/Eduhub-logo.png" alt=""></div>
+  <div id="order-sheet-body"></div>
+</div>
 <script src="/assets/admin.js" type="module"></script></body></html>

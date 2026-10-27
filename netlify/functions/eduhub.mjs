@@ -29,6 +29,16 @@ export default async request => {
      const incoming=Object.fromEntries(Object.entries(body).filter(([k])=>k!=="speakerCode"&&(section==="programme"?PROGRAMME_FIELDS.includes(k):!PROGRAMME_FIELDS.includes(k))));
      // The private speaker link code is made here, never sent in by the browser.
      if(section==="details" && (body.newSpeakerCode===true || !current.speakerCode)) incoming.speakerCode=newSpeakerCode();
+     // Invitation codes are made here too, and kept when a workshop is saved again.
+     if(section==="programme" && Array.isArray(incoming.workshops)){
+       incoming.workshops=incoming.workshops.map(w=>{
+         if(!w || typeof w!=="object") return w;
+         const before=current.workshops.find(x=>x.id===w.id);
+         const code=w.inviteOnly===true ? (w.newInviteCode===true ? newSpeakerCode() : before?.inviteCode || newSpeakerCode()) : "";
+         const {newInviteCode,...rest}=w;
+         return {...rest,inviteCode:code};
+       });
+     }
      const next=normaliseEduhub({...current,...incoming,updatedAt:new Date().toISOString()});
      if(section==="details" && next.bookingStatus==="open" && current.bookingStatus!=="open" && !next.foodChoices.length && body.confirmNoFood!==true){
        return {result:{error:"There are no food choices yet. Add the menu before opening bookings."}};
