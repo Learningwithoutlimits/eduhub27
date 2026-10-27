@@ -54,14 +54,15 @@ export default async request => {
        // their phase or over capacity, but still only one per time slot.
        if(b.itemId===EDUHUB_ID && Array.isArray(f.sessionIds)){
          const chosen=[];
-         for(const sid of new Set(f.sessionIds.map(x=>clean(x,60)).filter(Boolean))){
+         for(const sid of new Set(f.sessionIds.map(x=>clean(x,140)).filter(Boolean))){
            const s=eduhub.sessions.find(x=>x.id===sid);
-           if(!s) return {result:{error:"One of those sessions no longer exists.",status:400}};
-           if(chosen.some(x=>slotKey(x)===slotKey(s))) return {result:{error:`Only one session can be chosen for ${slotLabel(s)}.`,status:400}};
+           if(!s) return {result:{error:"One of those workshops no longer exists.",status:400}};
+           if(chosen.some(x=>slotKey(x)===slotKey(s))) return {result:{error:`Only one workshop can be chosen for ${slotLabel(s)}.`,status:400}};
+           if(s.workshopId && chosen.some(x=>x.workshopId===s.workshopId)) return {result:{error:`"${s.title}" has been chosen in more than one round.`,status:400}};
            chosen.push(s);
          }
          b.sessionIds=chosen.map(x=>x.id);
-         b.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room}));
+         b.sessions=chosen.map(x=>({id:x.id,title:x.title,time:slotLabel(x),room:x.room,speaker:x.speakerName||""}));
        }
        break;
      }

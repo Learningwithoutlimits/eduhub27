@@ -1,4 +1,4 @@
-import { json, updateJSON, requireAdmin, normaliseEduhub, BOOKING_STATUSES, PROGRAMME_FIELDS } from "./_utils.mjs";
+import { json, updateJSON, requireAdmin, normaliseEduhub, BOOKING_STATUSES, PROGRAMME_FIELDS, newSpeakerCode } from "./_utils.mjs";
 
 // Two admin screens save to the EduHub record: "EduHub 2027" (event details
 // and food) and "EduHub sessions" (schools and sessions). Each sends
@@ -15,21 +15,37 @@ export default async request => {
    if(!BOOKING_STATUSES.includes(body.bookingStatus)) return json({error:"Please choose a booking status."},400);
    if(body.privacyNoticeUrl && !/^https:\/\//i.test(body.privacyNoticeUrl)) return json({error:"The privacy notice link must start with https://"},400);
    if(body.recognitionUrl && !/^https:\/\//i.test(body.recognitionUrl)) return json({error:"The recognition award link must start with https://"},400);
+   const badDomain=(Array.isArray(body.staffDomains)?body.staffDomains:[]).map(d=>String(d).trim().replace(/^@+/,"")).find(d=>d&&!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(d));
+   if(badDomain) return json({error:`"${badDomain}" does not look like an email ending. Use the part after the @, for example lwlat.org.uk.`},400);
  }else{
-   const sessions=Array.isArray(body.sessions)?body.sessions:[];
-   const badTime=sessions.find(s=>String(s?.title||"").trim() && s.startTime && s.endTime && s.endTime<=s.startTime);
-   if(badTime) return json({error:`"${badTime.title}" finishes before it starts. Please check its times.`},400);
+   const rounds=Array.isArray(body.rounds)?body.rounds:[];
+   const badTime=rounds.find(r=>r?.startTime && r?.endTime && r.endTime<=r.startTime);
+   if(badTime) return json({error:`${badTime.label||"A round"} finishes before it starts. Please check its times.`},400);
  }
 
  try{
    const result=await updateJSON("eduhub",null,raw=>{
      const current=normaliseEduhub(raw);
-     const incoming=Object.fromEntries(Object.entries(body).filter(([k])=>section==="programme"?PROGRAMME_FIELDS.includes(k):!PROGRAMME_FIELDS.includes(k)));
+     const incoming=Object.fromEntries(Object.entries(body).filter(([k])=>k!=="speakerCode"&&(section==="programme"?PROGRAMME_FIELDS.includes(k):!PROGRAMME_FIELDS.includes(k))));
+     // The private speaker link code is made here, never sent in by the browser.
+     if(section==="details" && (body.newSpeakerCode===true || !current.speakerCode)) incoming.speakerCode=newSpeakerCode();
+     // Invitation codes are made here too, and kept when a workshop is saved again.
+     if(section==="programme" && Array.isArray(incoming.workshops)){
+       incoming.workshops=incoming.workshops.map(w=>{
+         if(!w || typeof w!=="object") return w;
+         const before=current.workshops.find(x=>x.id===w.id);
+         const code=w.inviteOnly===true ? (w.newInviteCode===true ? newSpeakerCode() : before?.inviteCode || newSpeakerCode()) : "";
+         const {newInviteCode,...rest}=w;
+         return {...rest,inviteCode:code};
+       });
+     }
      const next=normaliseEduhub({...current,...incoming,updatedAt:new Date().toISOString()});
      if(section==="details" && next.bookingStatus==="open" && current.bookingStatus!=="open" && !next.foodChoices.length && body.confirmNoFood!==true){
        return {result:{error:"There are no food choices yet. Add the menu before opening bookings."}};
      }
-     return {value:next,result:{eduhub:next}};
+     // Bookable sessions are worked out from rounds and workshops, so they are not stored.
+     const {sessions,...stored}=next;
+     return {value:stored,result:{eduhub:next}};
    });
    if(result.error) return json({error:result.error},400);
    return json({ok:true,eduhub:result.eduhub});

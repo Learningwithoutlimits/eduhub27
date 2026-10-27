@@ -9,7 +9,7 @@ The booking form collects the following:
 | Information | Required? | Who sees it |
 | --- | --- | --- |
 | First name, surname, @lwlat.org.uk email, school or team | Yes | Event administrators |
-| Session choices | Yes, when sessions exist | Administrators, and session leads through the register |
+| Workshop choices | Yes, when workshops exist | Administrators, and workshop leaders through the register |
 | Job title, telephone | Optional | Event administrators |
 | Food choice | Yes, when food choices exist | Administrators and caterer |
 | Dietary requirements or allergies | Optional (admin can switch the question off) | Administrators and caterer |
@@ -21,6 +21,7 @@ How it is handled:
 - Bookings are stored in Netlify Blobs, in the Learning Hub's Netlify account. Netlify's storage location should be confirmed with the DPO.
 - A confirmation email is sent to the person booking from a Trust Microsoft 365 mailbox. It contains their name, booking details, sessions and food choice, but not their dietary or accessibility details. Emails are not kept in the mailbox's Sent Items.
 - Each ticket's QR code holds a web link with a random booking number and a signature, but no personal details. Anyone who opens the link sees the person's first name, booking reference and sessions. Signed-in administrators also see school, food, dietary and accessibility details, so door staff can help people on arrival.
+- Governors, trustees and speakers can book with a personal or non-Trust email address. Their details are handled in the same way as staff bookings, and speakers' lunch choices and dietary needs go to the caterer.
 - Only someone with the admin password can see bookings. There are no individual admin accounts, so everyone who signs in shares one password.
 - The **caterer's list** download contains names, school, food choice and dietary details. It leaves out email addresses and telephone numbers.
 - Administrators can cancel, edit or permanently delete a booking.
@@ -58,12 +59,19 @@ Points in the matrix to raise with the caterer:
 
 When the menu is confirmed, ask for an updated PDF if anything changes, and replace `public/documents/EduHub-2027-Allergen-Matrix.pdf` with it.
 
-## 3. Schools and sessions
+## 3. Schools, rounds and workshops
 
-- [ ] Every school and central team is in the list with the right phase (an all-through school may need two entries, one for each phase)
-- [ ] Every session has a time, room, description and the right phases ticked
-- [ ] Speakers have agreed to their photo being shown on the public EduHub page
-- [ ] Places set for rooms with a limited capacity
+- [ ] Every school and central team is in the list with the right phase. The phase decides which two rounds each person is offered.
+- [ ] Each round has the right groups ticked. The starting point is primaries in rounds 2 and 3, and secondaries and central staff in rounds 1 and 4. **Please confirm where central staff should go.**
+- [ ] Every workshop has a room and, where the room is small, a number of places per round. "Sleep Better, Feel Calmer" is set to 25, as the booklet says.
+- [ ] Check the two placeholder titles: "Inclusive Leadership" (Mandy Coalter) and "Hollie's Story" (Nick Gazzard). The booklet gives no titles for these.
+- [ ] Check the structure of the day. It follows the "Structure of the day" document. Registration is shown in the Sports Block for everyone, although the old table gave primaries a different location ("Main School and then to the theatre").
+- [ ] Check the allergy warning on "10 Things I Love About Food" with Lex, and whether any other workshop needs a warning.
+- [ ] Confirm which rounds trustees attend. They currently follow the central Trust staff (rounds 1 and 4).
+- [ ] Send the speaker lunch link (admin → EduHub 2027 → Speaker lunch bookings) to speakers only, and tick "Speaker lunch bookings are open".
+- [ ] Add Charles's workshop (row 12 of the booklet) when the details arrive.
+- [ ] Speakers have agreed to their photo and biography being shown on the public EduHub page.
+- [ ] Workshop registers now include dietary needs, so the food tasting workshop can plan. The DPO should be aware that workshop leaders may see this.
 
 ## 4. Event details
 

@@ -1,5 +1,118 @@
 # Changelog
 
+## Version 5.14.1: time on the home page
+
+### Fixed
+- The EduHub card on the Learning Hub home page always shows the time. It uses the time from admin (Event details), or "08:00 to 15:00" if none has been entered. Before, the line was left out when the admin box was empty.
+- The card's description now says the event is for staff, governors and trustees.
+
+## Version 5.14: invitation-only workshops and Rational Training
+
+### New
+- **Invitation-only workshops.** A workshop can be marked **Invitation only** on the EduHub sessions screen. It is then hidden from the booking page, and only people who open its private link can see and book it. The link appears on the workshop after saving, with a **Copy link** button, and stays the same each time the sessions are saved. Ticking **Make a new link when I save** replaces it, and the old link stops working. The server refuses a booking for the workshop without the link.
+- People who open a private link see a note saying which workshop they have been invited to book. The workshop shows on the page with a "By invitation" tag, and appears among the choices for its round.
+- **Rational Training** (oven training) is in the workshop booklet as invitation only, for selected members of the catering team. It runs in Round 3 (12:10, primary staff) and Round 4 (12:55, secondary and central staff), with an oven icon as its picture (`public/assets/speakers/rational-oven.svg`).
+
+## Version 5.13: printable caterer's order
+
+### New
+- **Print caterer's order** in admin, under EduHub 2027, then Catering summary. It prints a branded A4 document for the caterer, counting confirmed places only:
+  - **Food order:** the number of each food choice, grouped into hot meals and grab bags, with the allergens in each and a total.
+  - **Dietary requirements and allergies:** everyone who told us about one, with their school or team, food choice and details, marked confidential.
+  - **Collection list** (on a new page): everyone by food choice and then surname, with a tick box, and a note beside anyone on the dietary list.
+- The printout shows when it was printed, so it is clear which bookings it includes.
+
+## Version 5.12: printable bookings
+
+### Changed
+- **Print my booking.** The confirmation screen now prints as a single A4 page: the Trust and EduHub logos at the top, the booking details (reference, name, email, date and time, workshops and food choice) and a large QR code ticket. Buttons, headings, the awards box and the rest of the page are left off the printout. The button is now called **Print my booking**.
+- **Ticket page.** The ticket link in the confirmation email prints the same way, with both logos at the top.
+- Printing works from any browser's own Print command too, and **Save as PDF** gives a tidy file to keep on a phone.
+
+## Version 5.11: start with where you work
+
+### New
+- **"Start with where you work" lightbox.** The first time someone reaches the booking form on a visit, a lightbox explains that their school or team decides which workshop rounds they attend, so they should choose it first. Its button takes them straight to the question. Governors see "Start with the school you govern". Trustees, who do not choose a school, never see it.
+
+### Changed
+- **Where do you work?** now comes straight after "I am booking as", in a highlighted box, instead of after the name and email boxes.
+- **Event time** now shows "08:00 to 15:00" when no time has been entered in admin, instead of "To be confirmed". A time entered under Event details still takes priority.
+- The small timeline under **Your day** uses the same coloured bars as the main timeline.
+
+## Version 5.10: larger logos and link previews
+
+### Changed
+- **Larger logos.** The EduHub and Trust logo files have wide empty margins, which made the artwork look small. The pages now trim those margins automatically when they load (`public/assets/logo-trim.js`), so any replacement logo is trimmed too. The EduHub logo panel is larger, and on phones it sits above the title.
+- **Link previews.** The EduHub page now has Open Graph tags, so a link shared in Teams, Outlook, WhatsApp or social media shows the EduHub logo, title and a one-line description.
+
+## Version 5.9.1: the Without Limits Lab
+
+### New
+- **The Without Limits Lab: design your year ahead**, with Charles Dall’Omo and Rachel Hunnybun of Train Together, is now in the workshop booklet, open to all. If the live site already has its workshops saved, **Fill in from the workshop booklet** adds only this one and leaves everything else as it is. Its photo is uploaded in admin.
+
+## Version 5.9: design pass on the EduHub page
+
+### Changed
+- **Page banner.** The date, time, venue and booking status now sit in a white bar along the bottom of the banner, replacing the separate "Event information" and "Bookings" panels lower down. The **Book your place** button is Trust yellow, with a "See the day" link beside it. The logo panel is smaller.
+- **Structure of the day** is the main feature of the page. The heading and "Showing the day for" sit on the left and stay in view while the timeline scrolls. Times are set larger, and each line has a coloured bar for its type (keynote teal, workshops purple, breaks and lunch yellow, awards gold). Workshop rounds have a light purple background, because they are the part people need to act on.
+- Small labels across the site are now in sentence case rather than spaced capitals.
+- The email address rules for staff, governors and trustees now sit under **Book your place**.
+- The "LwLAT staff only" tags now say the event is for staff, governors and trustees.
+- Larger tick boxes and radio buttons on the booking form.
+
+## Version 5.8: more staff email addresses
+
+### New
+- **Staff email addresses** under EduHub 2027 → Event details. Members of staff can book with any listed email ending. @lwlat.org.uk is always accepted, and @wykencroft.coventry.school.uk is included from the start. The form's guidance and error messages list the accepted endings.
+
+## Version 5.7: "Who are you?" and the Recognition Awards lightbox
+
+### New
+- **Who are you?** On a first visit, a lightbox asks people to choose: primary school staff, secondary school staff, central Trust staff, governor of a primary school, governor of a secondary school, or trustee. The structure of the day then shows their version, under "Showing the day for…" with a **Change** button. The choice also sets "I am booking as" on the form, and the browser remembers it.
+- **LwLAT Better Together Recognition Awards 2027** lightbox in gold, with confetti and sparklers. It opens after booking (and in preview), and from a "Nominate a colleague" button on the awards line of the timeline. People who ask their device to reduce motion see it without animation.
+- The awards lightbox uses `public/assets/awards-backdrop.jpg` as its backdrop when that file is uploaded, and a matching gold background until then.
+- The awards are called "LwLAT Better Together Recognition Awards 2027" on the confirmation screen, in the email and in the structure of the day. The nomination box on the confirmation screen and in the email uses the same dark bronze and gold as the awards lightbox.
+
+## Version 5.6: workshops chosen one round at a time
+
+### Changed
+- Workshop choice is now a step-by-step picker. Only the first round is shown, as a grid of compact tiles. Choosing a workshop collapses that round into a summary with a **Change** button and opens the next round. Workshops already chosen are greyed out, and later rounds wait their turn, so nobody can pick two in one round by mistake.
+- The structure of the day appears straight after the page banner, so people see how the day works before booking. Until an administrator saves their own, the structure from the "Structure of the day" document is shown automatically. Admin has a tick box to hide it.
+- Workshop lines in the timeline link to the round that starts at the same time, so each person's "Your day" shows their chosen workshop and room.
+- In preview mode, completing the form shows the real confirmation screen, including the recognition award reminder, marked as a preview. Nothing is saved, and "Back to the form" returns to the form.
+
+## Version 5.5: speaker lunches, governors and trustees
+
+### New
+- **Speaker lunch form** at `/eduhub/speakers/`, opened through a private link from admin (EduHub 2027 → Speaker lunch bookings). Speakers can use any email address and choose the session they are leading, their lunch, dietary and accessibility needs. They get a confirmation, a QR ticket and an email. Speaker bookings do not use up staff places, are marked as speakers in admin, and appear in the catering summary and the caterer's list. The form has its own open or closed switch, and the link can be replaced at any time.
+- **Governors and trustees** can book EduHub. The form asks "I am booking as" (member of staff, governor or trustee). Governors and trustees can use any email address. Governors choose the school they govern, which decides their workshop rounds. Trustees choose no school and follow the central Trust rounds. A switch in admin turns this on or off.
+- Bookings, exports and workshop registers show whether each person is staff, a governor, a trustee or a speaker.
+
+## Version 5.4: a more visual EduHub page
+
+### New
+- **Structure of the day** timeline on the EduHub page, with tabs for primary, secondary and central Trust staff. Editable in admin under EduHub sessions, and filled in from the structure-of-the-day document by the booklet button.
+- **Your day** beside the booking form. It switches to the person's group when they choose their school, and fills in each workshop and room as they choose them.
+- Workshop **tiles** showing only the speaker photo, title, speaker name and recommended audience. Selecting a tile opens a **lightbox** with the description, speaker biography, room and round times.
+- The booking form uses the same compact tiles, with a "More about this workshop" link to the lightbox.
+- Keynote banner with an "About Graham" lightbox.
+- A **warning** field for each workshop (warnings from the workshop booklet always apply, including on workshops saved before warnings existed), shown in strong Trust red: a band across the tile photo with the full wording beneath, a red box in the lightbox, and a red strip on the booking form. "10 Things I Love About Food" carries a warning that the tasting food may contain a variety of allergens, including nuts.
+
+## Version 5.3: workshop rounds, keynote and the workshop booklet
+
+### Changed
+- EduHub sessions are now **workshops** that run in **rounds**. Each workshop is entered once and runs in every round, or only the rounds ticked. Places are per round.
+- Each round lists which groups attend (primary, secondary, central Trust). The phase of the school someone chooses decides their rounds. Staff choose one workshop in each of their rounds and cannot choose the same workshop twice.
+- The recommended audience (open to all, all educators, anyone who leads a team) is shown as a guide. It does not limit booking.
+- Sessions saved in version 5.1 or 5.2 are converted into rounds and workshops automatically.
+
+### New
+- A keynote section, shown on the EduHub page with photo, timing and biography. Not bookable.
+- **Fill in from the workshop booklet**: loads the keynote, the four rounds with their times (10:30, 11:20, 12:10 and 12:55) and twelve workshops with speaker photos from the supplied booklet. Nothing is saved until an administrator presses Save.
+- Workshops have an "About the speaker" section and private admin notes. Descriptions support bullet points.
+- The EduHub page shows the full programme: keynote, rounds and every workshop.
+- Workshop registers now include dietary needs, for workshops such as the food tasting.
+
 ## Version 5.2: confirmation emails and QR check-in
 
 ### New

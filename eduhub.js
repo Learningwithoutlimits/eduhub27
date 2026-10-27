@@ -1,4 +1,6 @@
-import { allergenSummary, SUITABLE_FOR } from './allergens.js';
+import './logo-trim.js';
+import { foodOptionsHtml } from './food-options.js';
+import { celebrate } from './celebrate.js';
 
 const $ = s => document.querySelector(s);
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -6,29 +8,45 @@ const fmtDate = value => value
   ? new Intl.DateTimeFormat('en-GB',{dateStyle:'full'}).format(new Date(value+'T12:00:00'))
   : 'Date to be confirmed';
 
-const STAFF_DOMAIN = '@lwlat.org.uk';
+const staffDomains = () => (eduhub.staffDomains && eduhub.staffDomains.length ? eduhub.staffDomains : ['lwlat.org.uk']).map(d => '@' + d);
+const domainText = () => { const d = staffDomains(); return d.length > 1 ? `${d.slice(0,-1).join(', ')} or ${d.at(-1)}` : d[0]; };
 const NO_FOOD = 'no-food';
 // ?preview=1 shows the finished form whatever the booking status, but never sends anything.
 const preview = new URLSearchParams(location.search).get('preview') === '1';
+// A private link (?invite=...) shows invitation-only workshops, such as training for the catering team.
+const invite = (new URLSearchParams(location.search).get('invite') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
 const form = $('#eduhub-form');
 let eduhub = {};
 
 const PHASE_NAMES = { primary:'Primary', secondary:'Secondary', central:'Central Trust' };
-const slotLabel = x => x.startTime ? `${x.startTime}${x.endTime ? ` to ${x.endTime}` : ''}` : 'Time to be confirmed';
+const AUDIENCES = { all:'Open to all', educators:'All educators', leaders:'Anyone who leads a team' };
+const times = x => x.startTime ? `${x.startTime}${x.endTime ? ` to ${x.endTime}` : ''}` : '';
+const slotLabel = x => x.roundLabel ? (times(x) ? `${x.roundLabel}, ${times(x)}` : x.roundLabel) : (times(x) || 'Time to be confirmed');
 function slotsOf(sessions){
   const slots = [];
   for(const x of sessions){
-    const key = `${x.startTime}-${x.endTime}`;
+    const key = x.roundId || `${x.startTime}-${x.endTime}`;
     let slot = slots.find(s => s.key === key);
     if(!slot) slots.push(slot = { key, label: slotLabel(x), items: [] });
     slot.items.push(x);
   }
   return slots;
 }
-const photoHtml = x => x.photoId
-  ? `<img class="speaker-img" src="/api/photo?id=${esc(x.photoId)}" alt="${esc(x.speakerName ? `Photo of ${x.speakerName}` : '')}" loading="lazy">`
+const photoSrc = x => x.photoId ? `/api/photo?id=${encodeURIComponent(x.photoId)}` : (x.photoPath || '');
+const photoHtml = (x, name = x.speakerName) => photoSrc(x)
+  ? `<img class="speaker-img" src="${esc(photoSrc(x))}" alt="${esc(name ? `Photo of ${name}` : '')}" loading="lazy">`
   : '';
 const sessionMeta = x => [x.speakerName ? `<span><strong>${esc(x.speakerName)}</strong>${x.speakerRole ? `, ${esc(x.speakerRole)}` : ''}</span>` : '', x.room ? `<span>Room: ${esc(x.room)}</span>` : ''].filter(Boolean).join('');
+// Turns plain text into paragraphs, with lines starting "- " as bullet points.
+function textHtml(text){
+  const out = []; let list = null;
+  for(const line of String(text || '').split('\n').map(l => l.trim()).filter(Boolean)){
+    if(line.startsWith('- ')){ if(!list){ list = []; out.push(list); } list.push(line.slice(2)); }
+    else { list = null; out.push(line); }
+  }
+  return out.map(x => Array.isArray(x) ? `<ul>${x.map(li => `<li>${esc(li)}</li>`).join('')}</ul>` : `<p>${esc(x)}</p>`).join('');
+}
+const audienceTag = x => x.inviteOnly ? '<span class="tag invite-tag">By invitation</span>' : x.recommended ? `<span class="tag">Recommended for: ${esc((AUDIENCES[x.recommended] || '').toLowerCase())}</span>` : '';
 
 const STATUS_COPY = {
   'coming-soon': { cta:'Bookings Open Soon', heading:'Bookings open soon', text:'Bookings for EduHub 2027 have not opened yet. Please check back soon.' },
@@ -36,109 +54,310 @@ const STATUS_COPY = {
   'closed': { cta:'Bookings closed', heading:'Bookings are closed', text:'Bookings for EduHub 2027 are now closed. If you need to make a late change, please contact the event organiser.' }
 };
 
-function foodOptionHtml(choice){
-  const summary = allergenSummary(choice);
-  const allergens = summary
-    ? `<span class="food-allergens"><strong>Contains:</strong> ${esc(summary)}</span>`
-    : choice.allergensConfirmed
-      ? '<span class="food-allergens">Contains none of the 14 main allergens</span>'
-      : '<span class="food-allergens">Please check the allergen matrix for this option</span>';
-  const tags = (choice.suitableFor || []).map(code => SUITABLE_FOR.find(s => s.code === code)?.name).filter(Boolean);
-  return `<label class="food-option">
-    <input type="radio" name="foodChoiceId" value="${esc(choice.id)}" required>
-    <span class="food-option-body">
-      <span class="food-name">${esc(choice.name)}</span>
-      ${tags.length ? `<span class="food-tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}
-      ${choice.description ? `<span class="food-description">${esc(choice.description)}</span>` : ''}
-      ${allergens}
-    </span>
-  </label>`;
-}
-
 function renderFood(){
-  const choices = Array.isArray(eduhub.foodChoices) ? eduhub.foodChoices : [];
-  $('#food-field').classList.toggle('hidden', !choices.length);
-  if(!choices.length){ $('#food-options').innerHTML = ''; return; }
-  const groups = [];
-  for(const c of choices){
-    const name = c.group || '';
-    let g = groups.find(x => x.name === name);
-    if(!g) groups.push(g = { name, items: [] });
-    g.items.push(c);
-  }
-  let html = groups.map(g => `
-    ${g.name ? `<p class="food-group">${esc(g.name)}</p>` : ''}
-    ${g.items.map(foodOptionHtml).join('')}`).join('');
-  if(eduhub.allowNoFood){
-    html += `<label class="food-option"><input type="radio" name="foodChoiceId" value="${NO_FOOD}" required>
-      <span class="food-option-body"><span class="food-name">I do not need food</span></span></label>`;
-  }
+  const html = foodOptionsHtml(eduhub);
+  $('#food-field').classList.toggle('hidden', !html);
   $('#food-options').innerHTML = html;
 }
 
+const currentRole = () => form.querySelector('[name=role]:checked')?.value || 'staff';
 function currentPhase(){
+  if(currentRole() === 'trustee') return 'central';
   const schools = eduhub.schools || [];
   if(!schools.length) return '';
   return schools.find(x => x.id === form.schoolId.value)?.phase || null;
 }
+const openTo = (x, phase) => !phase || !(x.roundPhases || []).length || x.roundPhases.includes(phase);
 
-function renderSessionChoices(){
+// ---------- Workshop choices, one round at a time ----------
+// choices: round id -> chosen session id ('' means "no workshop" when optional).
+const choices = {};
+let editingRound = null;
+let lastSlots = [];
+
+function choiceTile(x, takenIn){
+  const full = x.placesLeft === 0;
+  const blocked = full || Boolean(takenIn);
+  return `<label class="choice-tile${blocked ? ' is-blocked' : ''}${x.warning ? ' has-warning' : ''}">
+    <input type="radio" name="round-choice" value="${esc(x.id)}" data-round="${esc(x.roundId || '')}" ${blocked ? 'disabled' : ''} ${choices[x.roundId] === x.id ? 'checked' : ''}>
+    <span class="choice-tile-photo">${photoHtml(x)}</span>
+    <span class="choice-tile-body">
+      <span class="choice-tile-title">${esc(x.title)}</span>
+      ${x.speakerName ? `<span class="choice-tile-speaker">${esc(x.speakerName)}</span>` : ''}
+      ${audienceTag(x)}
+      ${x.warning ? `<span class="choice-warning"><span aria-hidden="true">&#9888;</span> ${esc(x.warning)}</span>` : ''}
+      ${full ? '<span class="status-pill waiting">Full in this round</span>' : takenIn ? `<span class="taken-note">Already chosen for ${esc(takenIn)}</span>` : x.placesLeft ? `<span class="places-left">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
+      ${x.workshopId ? `<a href="#" class="info-link" data-open-workshop="${esc(x.workshopId)}">More about this workshop</a>` : ''}
+    </span>
+  </label>`;
+}
+
+function renderSessionChoices(focusStep){
   const sessions = eduhub.sessions || [];
   const field = $('#sessions-field');
   field.classList.toggle('hidden', !sessions.length);
   if(!sessions.length) return;
-  const picked = new Set([...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value));
   const phase = currentPhase();
   if(phase === null){
+    lastSlots = [];
     $('#sessions-help').textContent = '';
-    $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see the sessions available to you.</p>';
+    $('#session-options').innerHTML = '<p class="notice">Choose your school or team above to see your workshop times and choices.</p>';
     return;
   }
-  const eligible = sessions.filter(x => !phase || x.audiences.includes(phase));
-  $('#sessions-help').textContent = eduhub.requireSessionChoice
-    ? `Choose one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`
-    : `You can choose up to one session in each time slot.${phase ? ` These are the sessions for ${PHASE_NAMES[phase].toLowerCase()} staff.` : ''}`;
-  if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no sessions to choose from for your school yet.</p>'; return; }
-  $('#session-options').innerHTML = slotsOf(eligible).map((slot, i) => `
-    <div class="session-slot" role="radiogroup" aria-labelledby="slot-${i}">
-      <p class="food-group" id="slot-${i}">${esc(slot.label)}</p>
-      <div class="food-options">
-      ${slot.items.map(x => {
-        const full = x.placesLeft === 0;
-        return `<label class="food-option session-option ${full ? 'is-full' : ''}">
-          <input type="radio" name="session-slot-${i}" value="${esc(x.id)}" ${full ? 'disabled' : ''} ${picked.has(x.id) && !full ? 'checked' : ''}>
-          ${photoHtml(x)}
-          <span class="food-option-body">
-            <span class="food-name">${esc(x.title)}</span>
-            <span class="session-meta">${sessionMeta(x)}</span>
-            ${x.description ? `<span class="food-description">${esc(x.description)}</span>` : ''}
-            ${full ? '<span class="status-pill waiting">Full</span>' : x.placesLeft ? `<span class="food-allergens">${x.placesLeft} ${x.placesLeft === 1 ? 'place' : 'places'} left</span>` : ''}
-          </span>
-        </label>`;}).join('')}
-      ${eduhub.requireSessionChoice ? '' : `<label class="food-option"><input type="radio" name="session-slot-${i}" value="" ${slot.items.some(x => picked.has(x.id)) ? '' : 'checked'}><span class="food-option-body"><span class="food-name">No session in this slot</span></span></label>`}
+  const eligible = sessions.filter(x => openTo(x, phase));
+  const slots = slotsOf(eligible);
+  lastSlots = slots;
+  // Forget choices that no longer apply, for example after changing school.
+  for(const key of Object.keys(choices)){
+    const slot = slots.find(sl => sl.key === key);
+    if(!slot || (choices[key] && !slot.items.some(x => x.id === choices[key]))) delete choices[key];
+  }
+  const who = currentRole() === 'trustee' ? 'Trustees join the central Trust staff, who attend' : currentRole() === 'governor' ? `Governors of ${PHASE_NAMES[phase]?.toLowerCase()} schools join ${PHASE_NAMES[phase]?.toLowerCase()} staff, who attend` : `${PHASE_NAMES[phase]} staff attend`;
+  $('#sessions-help').textContent = `${phase ? `${who} ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}Choose your workshop for each round in turn. You cannot choose the same workshop twice.`;
+  if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no workshops to choose from for your school yet.</p>'; return; }
+  const active = editingRound && slots.some(sl => sl.key === editingRound) ? editingRound : slots.find(sl => !(sl.key in choices))?.key;
+  const titleOf = id => (eduhub.sessions || []).find(x => x.id === id);
+  const labelOfRound = key => slots.find(sl => sl.key === key)?.items[0]?.roundLabel || 'another round';
+  $('#session-options').innerHTML = `<ol class="round-steps">${slots.map((slot, i) => {
+    const step = `Step ${i + 1} of ${slots.length}`;
+    if(slot.key === active){
+      const takenBy = {};
+      for(const [key, id] of Object.entries(choices)) if(key !== slot.key && id) takenBy[titleOf(id)?.workshopId] = labelOfRound(key);
+      return `<li class="round-step is-active"><fieldset>
+        <legend id="step-${i}" tabindex="-1"><span class="step-count">${step}</span> Choose your workshop for <strong>${esc(slot.label)}</strong></legend>
+        <div class="choice-grid">
+          ${slot.items.map(x => choiceTile(x, takenBy[x.workshopId])).join('')}
+          ${eduhub.requireSessionChoice ? '' : `<label class="choice-tile choice-none"><input type="radio" name="round-choice" value="" data-round="${esc(slot.key)}" ${choices[slot.key] === '' ? 'checked' : ''}><span class="choice-tile-body"><span class="choice-tile-title">No workshop in this round</span></span></label>`}
+        </div>
+      </fieldset></li>`;
+    }
+    if(slot.key in choices){
+      const chosen = titleOf(choices[slot.key]);
+      return `<li class="round-step is-done" id="step-${i}" tabindex="-1">
+        <span class="step-tick" aria-hidden="true">&#10003;</span>
+        <span class="step-summary"><span class="step-count">${esc(slot.label)}</span>
+          <strong>${chosen ? esc(chosen.title) : 'No workshop'}</strong>${chosen?.speakerName ? ` <span class="muted">with ${esc(chosen.speakerName)}</span>` : ''}</span>
+        <button type="button" class="button secondary small-button" data-change-round="${esc(slot.key)}">Change<span class="visually-hidden"> ${esc(slot.label)}</span></button>
+      </li>`;
+    }
+    return `<li class="round-step is-pending"><span class="step-count">${step}</span> ${esc(slot.label)}<span class="muted">Choose after ${esc(slots[i - 1]?.label || 'the step above')}</span></li>`;
+  }).join('')}</ol>
+  ${!active ? '<p class="notice all-chosen">All your workshops are chosen. You can change any of them above.</p>' : ''}`;
+  if(focusStep !== undefined){
+    const target = $(`#step-${focusStep}`) || $('.all-chosen');
+    target?.scrollIntoView({behavior:'smooth', block:'center'});
+    target?.focus({preventScroll:true});
+  }
+}
+$('#session-options').addEventListener('change', e => {
+  if(e.target.name !== 'round-choice') return;
+  choices[e.target.dataset.round] = e.target.value;
+  editingRound = null;
+  const next = lastSlots.findIndex(sl => !(sl.key in choices));
+  renderSessionChoices(next === -1 ? lastSlots.length : next);
+  renderYourDay();
+});
+$('#session-options').addEventListener('click', e => {
+  const tile = e.target.closest('.choice-tile');
+  if(tile && !e.target.closest('[data-open-workshop]') && editingRound){
+    const input = tile.querySelector('input');
+    if(input?.checked && choices[input.dataset.round] === input.value){
+      editingRound = null;
+      const next = lastSlots.findIndex(sl => !(sl.key in choices));
+      setTimeout(() => renderSessionChoices(next === -1 ? lastSlots.length : next));
+      return;
+    }
+  }
+  const btn = e.target.closest('[data-change-round]'); if(!btn) return;
+  editingRound = btn.dataset.changeRound;
+  renderSessionChoices(lastSlots.findIndex(sl => sl.key === editingRound));
+});
+
+// ---------- Structure of the day ----------
+const KIND_LABEL = { arrival:'Arrival', keynote:'Keynote', workshop:'Workshop', break:'Break', lunch:'Lunch', awards:'Awards', general:'' };
+let dayPhase = '';
+const agendaFor = phase => (eduhub.agenda || []).filter(a => !phase || !(a.groups || []).length || a.groups.includes(phase));
+const chosenFor = roundId => choices[roundId] ? (eduhub.sessions || []).find(x => x.id === choices[roundId]) : null;
+function timelineHtml(items, personal){
+  return items.map(a => {
+    const chosen = personal && a.roundId ? chosenFor(a.roundId) : null;
+    const round = a.roundId ? (eduhub.rounds || []).find(r => r.id === a.roundId) : null;
+    const title = chosen ? chosen.title : a.kind === 'workshop' && round ? `${a.title}: ${round.label}` : a.title;
+    const where = chosen?.room || a.location;
+    return `<li class="timeline-item kind-${esc(a.kind)}${chosen ? ' is-chosen' : ''}">
+      <span class="timeline-time">${esc(a.startTime)}${a.endTime && !personal ? `<span> to ${esc(a.endTime)}</span>` : ''}</span>
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-body">
+        ${KIND_LABEL[a.kind] && !chosen ? `<span class="timeline-kind">${KIND_LABEL[a.kind]}</span>` : ''}
+        ${chosen ? '<span class="timeline-kind">Your workshop</span>' : ''}
+        <strong>${esc(title)}</strong>
+        ${where ? `<span class="timeline-where">${esc(where)}</span>` : ''}
+        ${a.detail && !personal ? `<span class="timeline-detail">${esc(a.detail)}</span>` : ''}
+        ${personal && a.kind === 'workshop' && !chosen ? '<span class="timeline-detail">Choose your workshop below</span>' : ''}
+        ${a.kind === 'awards' && !personal && eduhub.recognitionUrl ? '<button type="button" class="link-button" data-open-awards>&#9733; Nominate a colleague</button>' : ''}
       </div>
-    </div>`).join('');
+    </li>`;
+  }).join('');
+}
+// ---------- "Who are you?" ----------
+const WHO = [
+  { key:'primary', label:'Primary school staff', phase:'primary', role:'staff' },
+  { key:'secondary', label:'Secondary school staff', phase:'secondary', role:'staff' },
+  { key:'central', label:'Central Trust staff', phase:'central', role:'staff' },
+  { key:'gov-primary', label:'Governor of a primary school', phase:'primary', role:'governor' },
+  { key:'gov-secondary', label:'Governor of a secondary school', phase:'secondary', role:'governor' },
+  { key:'trustee', label:'Trustee', phase:'central', role:'trustee' }
+];
+let who = null;
+try{ who = WHO.find(w => w.key === localStorage.getItem('eduhub-who')) || null; }catch{}
+let whoAsked = false;
+const whoOptions = () => WHO.filter(w => (w.role === 'staff' || eduhub.allowGovernors !== false) && (eduhub.agenda || []).some(a => !(a.groups || []).length || a.groups.includes(w.phase)));
+
+function openWho(){
+  $('#who-options').innerHTML = whoOptions().map(w => `<button type="button" class="who-option who-${esc(w.role)}" data-who="${esc(w.key)}" aria-pressed="${who?.key === w.key}">
+      <span class="who-icon" aria-hidden="true">${w.role === 'trustee' ? 'T' : w.role === 'governor' ? 'G' : w.phase[0].toUpperCase()}</span>
+      <span class="who-label">${esc(w.label)}</span>
+    </button>`).join('');
+  openModal($('#who-dialog'));
+  ($('#who-options [aria-pressed="true"]') || $('#who-options button'))?.focus();
+}
+function chooseWho(key){
+  who = WHO.find(w => w.key === key) || null;
+  try{ localStorage.setItem('eduhub-who', key); }catch{}
+  $('#who-dialog').close();
+  if(!who) return;
+  dayPhase = who.phase;
+  // Carry the choice into the booking form.
+  const radio = form.querySelector(`[name=role][value="${who.role}"]`);
+  if(radio && !radio.checked && !$('#role-field').classList.contains('hidden')){ radio.checked = true; applyRole(); }
+  renderDay();
+  $('#day').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+$('#who-options').addEventListener('click', e => { const b = e.target.closest('[data-who]'); if(b) chooseWho(b.dataset.who); });
+
+function renderDay(){
+  const agenda = eduhub.agenda || [];
+  $('#day').classList.toggle('hidden', !agenda.length);
+  if(!agenda.length) return;
+  const grouped = agenda.some(a => (a.groups || []).length);
+  if(!grouped){
+    $('#day-who').innerHTML = '';
+    $('#day-timeline').innerHTML = timelineHtml(agendaFor(''), false);
+    return;
+  }
+  if(who) dayPhase = who.phase;
+  $('#day-who').innerHTML = who
+    ? `<div class="who-chip"><span>Showing the day for</span><strong>${esc(who.label)}</strong><button type="button" class="button secondary small-button" data-open-who>Change</button></div>`
+    : '';
+  $('#day-timeline').innerHTML = who
+    ? timelineHtml(agendaFor(dayPhase), false)
+    : `<li class="who-prompt"><p><strong>Your day depends on who you are.</strong> Primary, secondary and central staff, governors and trustees each have a slightly different timetable.</p><button type="button" class="button" data-open-who>Show me my day</button></li>`;
+  if(!who && !whoAsked){ whoAsked = true; setTimeout(openWho, 400); }
+}
+document.addEventListener('click', e => { if(e.target.closest('[data-open-who]')) openWho(); });
+
+// ---------- Recognition awards lightbox ----------
+let stopCelebration = () => {};
+function openAwards(){
+  if(!eduhub.recognitionUrl) return;
+  const awards = (eduhub.agenda || []).find(a => a.kind === 'awards');
+  $('#awards-when').textContent = awards ? `${awards.title}${awards.startTime ? `, ${awards.startTime}${awards.endTime ? ` to ${awards.endTime}` : ''}` : ''}${awards.location ? `, ${awards.location}` : ''}` : 'LwLAT Better Together Recognition Awards 2027';
+  $('#awards-link').href = eduhub.recognitionUrl;
+  openModal($('#awards-dialog'));
+  stopCelebration();
+  requestAnimationFrame(() => { stopCelebration = celebrate($('#celebrate-canvas'), { sparklers: [{ x: 0.12, y: 0.42 }, { x: 0.88, y: 0.42 }] }); });
+}
+$('#awards-dialog').addEventListener('close', () => stopCelebration());
+document.addEventListener('click', e => { if(e.target.closest('[data-open-awards]')){ e.preventDefault(); openAwards(); } });
+
+function renderYourDay(){
+  const phase = currentPhase();
+  const agenda = eduhub.agenda || [];
+  const show = agenda.length && phase !== null;
+  $('#your-day').classList.toggle('hidden', !show);
+  if(show) $('#your-day-timeline').innerHTML = timelineHtml(agendaFor(phase), true);
 }
 
+// ---------- Keynote and workshops ----------
 function renderProgramme(){
-  const sessions = eduhub.sessions || [];
-  $('#programme').classList.toggle('hidden', !sessions.length);
-  $('#programme-list').innerHTML = slotsOf(sessions).map(slot => `
-    <div class="programme-slot">
-      <h3>${esc(slot.label)}</h3>
-      <div class="programme-cards">
-        ${slot.items.map(x => `<article class="programme-card">
-          ${photoHtml(x)}
-          <div>
-            <h4>${esc(x.title)}</h4>
-            <p class="session-meta">${sessionMeta(x)}</p>
-            ${x.description ? `<p>${esc(x.description)}</p>` : ''}
-            <div class="food-tags">${x.audiences.map(a => `<span class="tag">${esc(PHASE_NAMES[a])}</span>`).join('')}</div>
-          </div>
-        </article>`).join('')}
+  const workshops = eduhub.workshops || [];
+  const k = eduhub.keynote || {};
+  $('#programme').classList.toggle('hidden', !workshops.length && !k.name);
+  $('#keynote-feature').innerHTML = k.name ? `<article class="keynote-feature">
+      ${photoSrc(k) ? `<img src="${esc(photoSrc(k))}" alt="Photo of ${esc(k.name)}">` : ''}
+      <div>
+        <div class="eyebrow">Keynote speaker${times(k) ? `, ${esc(times(k))}` : ''}</div>
+        <h2>${esc(k.title || k.name)}</h2>
+        ${k.title ? `<p class="keynote-name">${esc(k.name)}</p>` : ''}
+        ${k.role ? `<p class="keynote-role">${esc(k.role)}</p>` : ''}
+        ${k.bio ? `<button type="button" class="button secondary on-dark" data-open-keynote>About ${esc(k.name.split(' ')[0])}</button>` : ''}
       </div>
-    </div>`).join('');
+    </article>` : '';
+  $('#workshop-count').textContent = workshops.length ? String(workshops.length) : 'our';
+  $('#workshop-grid').innerHTML = workshops.map(w => `<button type="button" class="workshop-tile${w.warning ? ' has-warning' : ''}" data-open-workshop="${esc(w.id)}" aria-haspopup="dialog">
+      <span class="workshop-tile-photo">${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="" loading="lazy">` : `<span class="workshop-tile-initials">${esc((w.speakerName || w.title).split(' ').map(x => x[0]).slice(0,2).join(''))}</span>`}${w.warning ? '<span class="tile-warning-band"><span aria-hidden="true">&#9888;</span> Allergy warning</span>' : ''}</span>
+      <span class="workshop-tile-body">
+        <span class="workshop-tile-title">${esc(w.title)}</span>
+        ${w.speakerName ? `<span class="workshop-tile-speaker">${esc(w.speakerName)}</span>` : ''}
+        ${w.warning ? `<span class="tile-warning-text">${esc(w.warning)}</span>` : ''}
+        <span class="tile-tags">${audienceTag(w)}</span>
+      </span>
+    </button>`).join('');
 }
+
+// ---------- Lightboxes ----------
+function openModal(d){ if(!d.open) d.showModal(); }
+document.addEventListener('click', e => { if(e.target.closest('[data-close-dialog]')) e.target.closest('dialog')?.close(); });
+for(const id of ['#who-dialog','#awards-dialog']) $(id).addEventListener('click', e => { if(e.target === e.currentTarget) e.currentTarget.close(); });
+const dialog = $('#workshop-dialog');
+let dialogReturn = null;
+function openDialog(html){
+  dialogReturn = document.activeElement;
+  $('#dialog-body').innerHTML = html;
+  dialog.showModal();
+  dialog.scrollTop = 0;
+  $('#dialog-close').focus();
+}
+function workshopHtml(w){
+  const runs = (eduhub.sessions || []).filter(x => x.workshopId === w.id);
+  return `<div class="lightbox-head">
+      ${photoSrc(w) ? `<img src="${esc(photoSrc(w))}" alt="Photo of ${esc(w.speakerName || '')}">` : ''}
+      <div>
+        <h2 id="dialog-title">${esc(w.title)}</h2>
+        ${w.speakerName ? `<p class="lightbox-speaker"><strong>${esc(w.speakerName)}</strong>${w.speakerRole ? `<span>${esc(w.speakerRole)}</span>` : ''}</p>` : ''}
+        ${audienceTag(w)}
+      </div>
+    </div>
+    ${w.warning ? `<p class="warning-notice" role="note"><span aria-hidden="true">&#9888;</span> ${esc(w.warning)}</p>` : ''}
+    <div class="programme-text">${textHtml(w.description)}</div>
+    ${runs.length || w.room ? `<div class="lightbox-facts">
+      ${w.room ? `<p><strong>Room:</strong> ${esc(w.room)}</p>` : ''}
+      ${runs.length ? `<p><strong>Runs in:</strong></p><ul>${runs.map(x => `<li>${esc(slotLabel(x))}${(x.roundPhases || []).length ? ` <span class="muted">(${x.roundPhases.map(p => PHASE_NAMES[p]).join(' and ')} staff)</span>` : ''}${x.placesLeft === 0 ? ' <span class="status-pill waiting">Full</span>' : ''}</li>`).join('')}</ul>` : ''}
+    </div>` : ''}
+    ${w.speakerBio ? `<h3>About ${esc(w.speakerName || 'the speaker')}</h3><div class="programme-text">${textHtml(w.speakerBio)}</div>` : ''}`;
+}
+function keynoteHtml(k){
+  return `<div class="lightbox-head">
+      ${photoSrc(k) ? `<img src="${esc(photoSrc(k))}" alt="Photo of ${esc(k.name)}">` : ''}
+      <div><h2 id="dialog-title">${esc(k.title || k.name)}</h2>
+        <p class="lightbox-speaker"><strong>${esc(k.name)}</strong>${k.role ? `<span>${esc(k.role)}</span>` : ''}</p>
+        ${times(k) ? `<span class="tag">Keynote, ${esc(times(k))}</span>` : ''}</div>
+    </div>
+    <div class="programme-text">${textHtml(k.bio)}</div>`;
+}
+document.addEventListener('click', e => {
+  const w = e.target.closest('[data-open-workshop]');
+  if(w){
+    e.preventDefault();
+    const item = (eduhub.workshops || []).find(x => x.id === w.dataset.openWorkshop);
+    if(item) openDialog(workshopHtml(item));
+    return;
+  }
+  if(e.target.closest('[data-open-keynote]')) openDialog(keynoteHtml(eduhub.keynote || {}));
+});
+$('#dialog-close').addEventListener('click', () => dialog.close());
+dialog.addEventListener('click', e => { if(e.target === dialog) dialog.close(); });
+dialog.addEventListener('close', () => dialogReturn?.focus());
 
 function render(){
   const e = eduhub;
@@ -149,14 +368,22 @@ function render(){
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
   $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');
-  $('#edu-time').textContent = e.time || 'To be confirmed';
-  $('#side-time').textContent = e.time || 'Time to be confirmed';
+  $('#edu-time').textContent = e.time || '08:00 to 15:00';
+  $('#side-time').textContent = e.time || '08:00 to 15:00';
   $('#edu-venue').textContent = $('#side-venue').textContent = e.venue || 'Babington Academy';
   if(e.placesLeft !== null && e.placesLeft !== undefined && status === 'open'){
     $('#side-places').textContent = e.placesLeft > 0 ? `${e.placesLeft} ${e.placesLeft === 1 ? 'place' : 'places'} remaining` : 'Fully booked. New bookings join the waiting list.';
     $('#side-places').classList.remove('hidden');
   }
 
+  const invited = (e.workshops || []).filter(w => w.inviteOnly);
+  if(invited.length){
+    $('#invite-note').innerHTML = `<strong>You have been invited to book ${invited.map(w => esc(w.title)).join(' and ')}.</strong> Choose your school or team, and it will appear among the workshops for its round.`;
+    $('#invite-note').classList.remove('hidden');
+  }else if(invite){
+    $('#invite-note').textContent = 'This invitation link is not valid any more. You can still book a place and choose from the other workshops. Please ask the event organiser for a new link.';
+    $('#invite-note').classList.remove('hidden');
+  }
   $('#hero-cta').textContent = preview ? 'Preview the booking form' : copy.cta;
   $('#status-heading').textContent = copy.heading;
   $('#status-text').textContent = copy.text;
@@ -178,8 +405,10 @@ function render(){
       return list.length ? `<optgroup label="${esc(n)}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>` : '';
     }).join('');
   }
+  renderDay();
   renderProgramme();
-  renderSessionChoices();
+  $('#role-field').classList.toggle('hidden', e.allowGovernors === false);
+  applyRole();
   renderFood();
   $('#dietary-field').classList.toggle('hidden', e.askDietary === false);
   $('#accessibility-field').classList.toggle('hidden', e.askAccessibility === false);
@@ -210,19 +439,19 @@ function validate(){
   for(const [name, label] of [['firstName','your first name'],['lastName','your surname']]){
     if(!form[name].value.trim()) flag(form[name], `Please enter ${label}.`);
   }
+  const role = currentRole();
   const usesSchools = (eduhub.schools || []).length > 0;
-  if(usesSchools && !form.schoolId.value) flag(form.schoolId, 'Please choose your school or team.');
-  if(!usesSchools && !form.organisation.value.trim()) flag(form.organisation, 'Please enter your school or team.');
+  if(role !== 'trustee' && usesSchools && !form.schoolId.value) flag(form.schoolId, role === 'governor' ? 'Please choose the school you govern.' : 'Please choose your school or team.');
+  if(role !== 'trustee' && !usesSchools && !form.organisation.value.trim()) flag(form.organisation, role === 'governor' ? 'Please enter the school you govern.' : 'Please enter your school or team.');
   if(eduhub.requireSessionChoice && currentPhase() !== null){
-    for(const group of form.querySelectorAll('.session-slot')){
-      const open = group.querySelector('input:not([disabled])');
-      if(open && !group.querySelector('input:checked')) flag(open, `Please choose a session for ${group.querySelector('.food-group').textContent}.`);
+    for(const slot of lastSlots){
+      if(!choices[slot.key]) flag($('#session-options'), `Please choose a workshop for ${slot.label}.`);
     }
   }
   const email = form.email.value.trim().toLowerCase();
   if(!email) flag(form.email, 'Please enter your Trust email address.');
   else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) flag(form.email, 'Please enter a valid email address.');
-  else if(!email.endsWith(STAFF_DOMAIN)) flag(form.email, `Please use your ${STAFF_DOMAIN} email address.`);
+  else if(role === 'staff' && !staffDomains().some(d => email.endsWith(d))) flag(form.email, `Please use your ${domainText()} email address. If you are a governor or trustee, please choose that at the top of the form.`);
   if(!$('#food-field').classList.contains('hidden') && !form.querySelector('[name=foodChoiceId]:checked')){
     flag(form.querySelector('[name=foodChoiceId]'), 'Please choose your food option.');
   }
@@ -255,8 +484,9 @@ function calendarLink(){
 function showConfirmation(data, body){
   const food = form.querySelector('[name=foodChoiceId]:checked')?.closest('.food-option')?.querySelector('.food-name')?.textContent;
   form.classList.add('hidden');
-  const cal = calendarLink();
-  $('#form-message').innerHTML = `<div class="form-shell confirmation" role="status" tabindex="-1">
+  const cal = data.preview ? '' : calendarLink();
+  const previewNote = data.preview ? `<p class="notice warn"><strong>Preview.</strong> This is what people will see after booking. Nothing has been sent or saved. In the live form, a QR code ticket appears here too.</p>` : '';
+  $('#form-message').innerHTML = `<div class="form-shell confirmation" role="status" tabindex="-1">${previewNote}
     <div class="eyebrow teal">${data.waitingList ? 'Waiting list' : 'Booking confirmed'}</div>
     <h2>${data.waitingList ? 'You are on the waiting list' : 'Thank you, your place is booked'}</h2>
     ${data.waitingList ? '<p>EduHub 2027 is currently full. We will contact you if a place becomes available.</p>' : `<p>We look forward to seeing you at ${esc(eduhub.venue || 'Babington Academy')}.</p>`}
@@ -265,25 +495,32 @@ function showConfirmation(data, body){
       <div><dt>Name</dt><dd>${esc(body.firstName)} ${esc(body.lastName)}</dd></div>
       <div><dt>Email</dt><dd>${esc(body.email)}</dd></div>
       <div><dt>Date</dt><dd>${fmtDate(eduhub.date)}${eduhub.time ? `, ${esc(eduhub.time)}` : ''}</dd></div>
-      ${body.sessionIds.length ? `<div><dt>Sessions</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
+      ${body.sessionIds.length ? `<div><dt>Workshops</dt><dd>${body.sessionIds.map(id => (eduhub.sessions || []).find(x => x.id === id)).filter(Boolean).map(x => `${esc(slotLabel(x))}: ${esc(x.title)}${x.room ? `, ${esc(x.room)}` : ''}`).join('<br>')}</dd></div>` : ''}
       ${food ? `<div><dt>Food choice</dt><dd>${esc(food)}</dd></div>` : ''}
     </dl>
     ${data.ticketUrl ? `<div class="ticket-inline"><h3>Your ticket</h3>
       <img class="ticket-qr" src="/api/qr?${esc(data.ticketUrl.split('?')[1] || '')}" width="220" height="220" alt="QR code for your booking">
-      <p>${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please save or print this page, or keep the link below.'} Bring it with you on the day.</p>
+      <p class="screen-only">${data.emailSent ? `We have also emailed this ticket to <strong>${esc(body.email)}</strong>.` : 'Please print your booking or keep the link below.'} Bring it with you on the day.</p>
+      <p class="print-only">Please bring this page with you. We will scan the code when you arrive.</p>
       <p><a href="${esc(data.ticketUrl)}">Open your ticket</a></p></div>` : ''}
     ${eduhub.recognitionUrl ? `<div class="recognition-box">
-      <h3>Recognising colleagues</h3>
-      <p>Do you know a colleague whose work deserves recognition? You can nominate them for a recognition award using a short form.</p>
+      <h3>LwLAT Better Together Recognition Awards 2027</h3>
+      <p>Do you know a colleague whose work deserves recognition? You can nominate them using a short form.</p>
       <a class="button" href="${esc(eduhub.recognitionUrl)}" target="_blank" rel="noopener">Nominate a colleague<span class="visually-hidden"> (opens Microsoft Forms in a new tab)</span></a>
+      <button type="button" class="link-button" data-open-awards>Find out about the awards</button>
     </div>` : ''}
     <p class="muted">Please keep a note of your booking reference. If anything changes, contact the event organiser${eduhub.contactEmail ? ` at <a href="mailto:${esc(eduhub.contactEmail)}">${esc(eduhub.contactEmail)}</a>` : ''}.</p>
     <div class="hero-actions">
       ${cal && !data.waitingList ? `<a class="button" href="${cal}" download="EduHub-2027.ics">Add to my calendar</a>` : ''}
-      <button class="button secondary" type="button" id="print-confirmation">Print this page</button>
+      <button class="button secondary" type="button" id="print-confirmation">Print my booking</button>
     </div>
   </div>`;
   $('#print-confirmation').addEventListener('click', () => window.print());
+  if(!data.waitingList) setTimeout(openAwards, 700);
+  if(data.preview){
+    $('.confirmation').insertAdjacentHTML('beforeend', '<p><button class="button secondary" type="button" id="back-to-form">Back to the form</button></p>');
+    $('#back-to-form').addEventListener('click', () => { $('#form-message').innerHTML = ''; form.classList.remove('hidden'); form.scrollIntoView({behavior:'smooth'}); });
+  }
   $('.confirmation').focus();
 }
 
@@ -292,15 +529,19 @@ form.addEventListener('submit', async ev => {
   $('#form-message').innerHTML = '';
   if(!validate()) return;
   if(preview){
-    showMessage('<p><strong>Preview only.</strong> The form is complete and would be accepted. Nothing has been sent or saved.</p>', 'warn');
+    // Show the real confirmation screen, clearly marked, without saving anything.
+    const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+    body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
+    showConfirmation({ reference: 'EH27-PREVIEW', waitingList: false, ticketUrl: '', emailSent: false, preview: true }, body);
     return;
   }
   const button = $('#submit-button');
   button.disabled = true;
   button.textContent = 'Sending your booking';
-  const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => !k.startsWith('session-slot')));
-  body.sessionIds = [...form.querySelectorAll('[name^=session-slot]:checked')].map(i => i.value).filter(Boolean);
-  if((eduhub.schools || []).length) body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
+  const body = Object.fromEntries([...new FormData(form).entries()].filter(([k]) => k !== 'round-choice'));
+  if(invite) body.invite = invite;
+  body.sessionIds = lastSlots.map(sl => choices[sl.key]).filter(Boolean);
+  if((eduhub.schools || []).length && currentRole() !== 'trustee') body.organisation = form.schoolId.selectedOptions[0]?.textContent || '';
   body.itemType = 'eduhub';
   body.itemId = 'eduhub-2027';
   body.consent = form.consent.checked;
@@ -321,11 +562,34 @@ form.addEventListener('submit', async ev => {
   }
 });
 
-form.schoolId.addEventListener('change', renderSessionChoices);
+function applyRole(){
+  const role = currentRole();
+  const schools = (eduhub.schools || []).length > 0;
+  $('#email-label').textContent = role === 'staff' ? 'Trust email address' : 'Email address';
+  $('#email-help').textContent = role === 'staff' ? `Please use your ${domainText()} email address.` : 'Please use the email address you would like your confirmation sent to.';
+  $('#staff-domains-note').textContent = domainText();
+  form.email.placeholder = role === 'staff' ? 'firstname.surname@lwlat.org.uk' : '';
+  $('#school-label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
+  $('#school-field').classList.toggle('hidden', role === 'trustee' || !schools);
+  $('#organisation-field').classList.toggle('hidden', role === 'trustee' || schools);
+  $('#organisation-field label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
+  renderSessionChoices(); renderYourDay();
+  if(role === 'trustee' && who?.key !== 'trustee'){ who = WHO.find(w => w.key === 'trustee'); renderDay(); }
+}
+form.addEventListener('change', e => { if(e.target.name === 'role') applyRole(); });
+
+form.schoolId.addEventListener('change', () => {
+  renderSessionChoices(); renderYourDay();
+  const phase = currentPhase();
+  if(phase && who && who.phase !== phase){
+    const match = WHO.find(w => w.phase === phase && w.role === currentRole());
+    if(match){ who = match; try{ localStorage.setItem('eduhub-who', match.key); }catch{} renderDay(); }
+  }
+});
 
 async function reloadData(full = true){
   try{
-    const res = await fetch('/api/public-data', {cache:'no-store'});
+    const res = await fetch(`/api/public-data${invite ? `?invite=${encodeURIComponent(invite)}` : ''}`, {cache:'no-store'});
     if(!res.ok) throw new Error();
     eduhub = (await res.json()).eduhub || {};
   }catch{
@@ -335,4 +599,37 @@ async function reloadData(full = true){
   }
   if(full) render(); else renderSessionChoices();
 }
-reloadData();
+const firstLoad = reloadData();
+
+// ---------- "Start with where you work" ----------
+// The school or team decides which rounds someone attends, so the first time
+// the booking form comes into view we explain that it should be chosen first.
+let schoolTipShown = false;
+try{ schoolTipShown = sessionStorage.getItem('eduhub-school-tip') === '1'; }catch{}
+const whereInput = () => $('#school-field').classList.contains('hidden') ? $('#organisation') : $('#schoolId');
+function maybeSchoolTip(){
+  if(schoolTipShown || document.querySelector('dialog[open]')) return;
+  if($('#booking-area').classList.contains('hidden') || currentRole() === 'trustee' || whereInput().value) return;
+  schoolTipShown = true;
+  try{ sessionStorage.setItem('eduhub-school-tip', '1'); }catch{}
+  const governor = currentRole() === 'governor';
+  $('#school-dialog-title').textContent = governor ? 'Start with the school you govern' : 'Start with where you work';
+  $('#school-dialog-text').textContent = governor
+    ? 'Please choose the school you govern first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.'
+    : 'Please choose your school or team first. It decides which workshop rounds you attend, so the workshops for your day appear once you have chosen it.';
+  $('#school-dialog-go').textContent = governor ? 'Choose my school' : 'Choose my school or team';
+  openModal($('#school-dialog'));
+}
+$('#school-dialog-go').addEventListener('click', () => {
+  $('#school-dialog').close();
+  const field = whereInput();
+  field.scrollIntoView({ behavior:'smooth', block:'center' });
+  field.focus({ preventScroll:true });
+  try{ if(field.tagName === 'SELECT') field.showPicker(); }catch{}
+});
+if('IntersectionObserver' in window){
+  // Watch the top of the form, which is short enough to come fully into view.
+  const io = new IntersectionObserver(entries => { if(entries.some(x => x.isIntersecting)) maybeSchoolTip(); }, { threshold:0.6 });
+  // Start watching once the page has its content, so the form is in its final place.
+  firstLoad.then(() => requestAnimationFrame(() => ['#role-field', '#school-field', '#organisation-field'].forEach(s => io.observe($(s)))));
+}

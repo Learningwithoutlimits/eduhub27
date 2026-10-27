@@ -50,10 +50,11 @@
 </div>
 
 <div class="panel field full form-grid">
-  <div class="field full"><h2>Event details</h2><p class="notice warn">This event is separate from Professional Learning and bookings require an @lwlat.org.uk email address.</p></div>
+  <div class="field full"><h2>Event details</h2><p class="notice warn">This event is separate from Professional Learning. Members of staff must book with one of the staff email addresses below.</p></div>
+  <div class="field full"><label for="eh-domains">Staff email addresses</label><textarea id="eh-domains" name="staffDomains" rows="2" placeholder="lwlat.org.uk"></textarea><span class="field-help">The part after the @, one per line. Members of staff must book with an address ending in one of these. lwlat.org.uk is always included.</span></div>
   <div class="field full"><label for="eh-title">Event title</label><input id="eh-title" name="title" required maxlength="150"></div>
   <div class="field"><label for="eh-date">Date</label><input id="eh-date" name="date" type="date"></div>
-  <div class="field"><label for="eh-time">Time</label><input id="eh-time" name="time" placeholder="e.g. 08:30 to 15:30" maxlength="60"></div>
+  <div class="field"><label for="eh-time">Time</label><input id="eh-time" name="time" placeholder="e.g. 08:00 to 15:00" maxlength="60"></div>
   <div class="field full"><label for="eh-venue">Venue</label><input id="eh-venue" name="venue" maxlength="150"></div>
   <div class="field full"><label for="eh-description">Description</label><textarea id="eh-description" name="description" maxlength="2000"></textarea></div>
   <div class="field"><label for="eh-capacity">Capacity</label><input id="eh-capacity" name="capacity" type="number" min="0"><span class="field-help">0 means no limit. Once full, new bookings join the waiting list.</span></div>
@@ -63,7 +64,20 @@
   <div class="field full"><label for="eh-recognition">Recognition award nomination link <span class="optional">(optional)</span></label><input id="eh-recognition" name="recognitionUrl" type="url" placeholder="https://" maxlength="300"><span class="field-help">After booking, staff are reminded to nominate a colleague, with a button to this form. The reminder also appears in the confirmation email. Leave blank to hide it.</span></div>
   <div class="field full"><label class="check-label"><input type="checkbox" name="askDietary"> Ask for dietary requirements or allergies</label>
   <label class="check-label"><input type="checkbox" name="askAccessibility"> Ask for accessibility requirements</label>
-  <label class="check-label"><input type="checkbox" name="allowNoFood"> Offer an "I do not need food" option</label></div>
+  <label class="check-label"><input type="checkbox" name="allowNoFood"> Offer an "I do not need food" option</label>
+  <label class="check-label"><input type="checkbox" name="allowGovernors"> Governors and trustees can book (they choose their role on the form and can use any email address)</label></div>
+</div>
+
+<div class="panel field full">
+  <h2>Speaker lunch bookings</h2>
+  <p class="muted">A separate, private form for keynote and workshop speakers to book lunch. Speakers can use any email address, and their bookings do not use up staff places. They appear in the catering summary and the caterer's list, marked as speakers.</p>
+  <label class="check-label"><input type="checkbox" name="speakerBookingOpen"> Speaker lunch bookings are open</label>
+  <div class="field"><label for="speaker-link">Private link to send to speakers</label>
+    <div class="speaker-link-box"><input id="speaker-link" readonly value=""><button type="button" class="button secondary small-button" id="copy-speaker-link">Copy link</button><a class="button secondary small-button" id="open-speaker-link" href="#" target="_blank" rel="noopener">Open</a></div>
+    <span class="field-help" id="speaker-link-help">Anyone with this link can book a speaker lunch while bookings are open, so only send it to speakers.</span>
+  </div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="new-speaker-link">Replace the link</button></div>
+  <p class="muted" id="speaker-count"></p>
 </div>
 
 <div class="panel field full">
@@ -85,7 +99,7 @@
 
 <div class="panel">
   <div class="section-head"><div><h2>Catering summary</h2><p class="muted">Confirmed EduHub places only. Waiting-list and cancelled bookings are not counted.</p></div>
-  <a class="button" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div>
+  <div class="admin-form-actions"><button type="button" class="button" id="print-order">Print caterer's order</button><a class="button secondary" href="/api/export-bookings?item=eduhub&amp;view=catering">Download caterer's list (CSV)</a></div></div>
   <div id="catering-summary"></div>
 </div>
 </section>
@@ -93,8 +107,52 @@
 <section id="programme-view" class="admin-section hidden">
 <form id="programme-form" class="form-grid" novalidate>
 <div class="panel field full">
+  <div class="section-head"><div><h2>Workshop booklet</h2><p class="muted">Fill in the keynote, the structure of the day, the four workshop rounds with their times, and twelve workshops from the workshop booklet, with speaker photos. Nothing is saved until you check the details and press Save.</p></div>
+  <button type="button" class="button secondary" id="load-booklet">Fill in from the workshop booklet</button></div>
+</div>
+
+<div class="panel field full">
+  <h2>Keynote</h2>
+  <p class="muted">Shown on the EduHub page. Everyone attends, so staff do not book it.</p>
+  <div class="programme-grid">
+    <div class="photo-cell" id="keynote-photo-cell"></div>
+    <div class="form-grid">
+      <div class="field"><label for="k-name">Speaker name</label><input id="k-name" data-k="name" maxlength="120"></div>
+      <div class="field"><label for="k-role">Speaker role</label><input id="k-role" data-k="role" maxlength="150"></div>
+      <div class="field full"><label for="k-title">Keynote title <span class="optional">(optional)</span></label><input id="k-title" data-k="title" maxlength="150"></div>
+      <div class="field"><label for="k-start">Starts</label><input id="k-start" type="time" data-k="startTime"></div>
+      <div class="field"><label for="k-end">Finishes</label><input id="k-end" type="time" data-k="endTime"></div>
+      <div class="field full"><label for="k-bio">About the speaker</label><textarea id="k-bio" data-k="bio" rows="5" maxlength="3000"></textarea></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel field full">
+  <h2>Structure of the day</h2>
+  <label class="check-label"><input type="checkbox" name="showAgenda"> Show the structure of the day on the EduHub page</label>
+  <p class="muted">Shown as a timeline at the top of the EduHub page and beside the booking form. Until you save your own, the structure of the day from the booklet is used. Untick groups for lines that apply to some staff only. A workshop line linked to a round shows each person the workshop they chose for it.</p>
+  <div id="agenda-builder" class="food-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-agenda">Add a line</button></div>
+</div>
+
+<div class="panel field full">
+  <h2>Workshop rounds</h2>
+  <p class="muted">Each member of staff is offered only the rounds their group attends, decided by the phase of the school they choose when booking. They choose one workshop in each of those rounds and cannot choose the same workshop twice.</p>
+  <div id="round-builder" class="school-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-round">Add round</button></div>
+  <label class="check-label"><input type="checkbox" name="requireSessionChoice"> Staff must choose a workshop in every round</label>
+</div>
+
+<div class="panel field full">
+  <h2>Workshops</h2>
+  <p class="muted">Each workshop runs in every round unless you untick some. Places are per round. The recommended audience is a guide only, and anyone can book any workshop.</p>
+  <div id="workshop-builder" class="food-builder"></div>
+  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-workshop">Add workshop</button></div>
+</div>
+
+<div class="panel field full">
   <h2>Schools and teams</h2>
-  <p class="muted">Staff choose their school or team when they book. Its phase decides which sessions they are offered. If this list is empty, staff type their school instead and see every session.</p>
+  <p class="muted">Staff choose their school or team from this list when they book. Its phase decides which workshop rounds they are offered. If the list is empty, staff type their school in and are offered every round.</p>
   <div id="school-builder" class="school-builder"></div>
   <div class="admin-form-actions"><button type="button" class="button secondary" id="add-school">Add school or team</button></div>
   <details class="bulk-add">
@@ -107,24 +165,16 @@
   </details>
 </div>
 
-<div class="panel field full">
-  <h2>Sessions</h2>
-  <p class="muted">Sessions that share the same start and finish time form one time slot. Staff choose one session in each slot from those aimed at their phase.</p>
-  <label class="check-label"><input type="checkbox" name="requireSessionChoice"> Staff must choose a session in every time slot</label>
-  <div id="session-list-builder" class="food-builder"></div>
-  <div class="admin-form-actions"><button type="button" class="button secondary" id="add-programme-session">Add session</button></div>
-</div>
-
 <div class="panel field full admin-form-actions sticky-actions">
-  <button type="submit">Save schools and sessions</button>
+  <button type="submit">Save sessions</button>
   <button type="button" class="button secondary" id="preview-programme">Preview the staff booking page</button>
   <span class="muted" id="programme-dirty"></span>
 </div>
 </form>
 
 <div class="panel">
-  <h2>Session numbers</h2>
-  <p class="muted">Confirmed EduHub places only. Download a register to print for each room.</p>
+  <h2>Workshop numbers</h2>
+  <p class="muted">Confirmed EduHub places only. Download a register for each workshop in each round. Registers include dietary and accessibility needs for the workshop leader.</p>
   <div id="session-summary"></div>
 </div>
 </section>
@@ -167,7 +217,7 @@
 <div class="field"><label for="b-job">Job title</label><input id="b-job" name="jobTitle" maxlength="120"></div>
 <div class="field"><label for="b-tel">Telephone</label><input id="b-tel" name="telephone" maxlength="40"></div>
 <div class="field" id="b-food-field"><label for="b-food">Food choice</label><select id="b-food" name="foodChoiceId"></select></div>
-<div class="field full hidden" id="b-sessions-field"><label>Sessions</label><div id="b-sessions" class="form-grid"></div><span class="field-help">Administrators can place someone in any session, even if it is full or meant for a different phase.</span></div>
+<div class="field full hidden" id="b-sessions-field"><label>Workshops</label><div id="b-sessions" class="form-grid"></div><span class="field-help">Administrators can place someone in a workshop even if it is full.</span></div>
 <div class="field full"><label for="b-dietary">Dietary requirements or allergies</label><textarea id="b-dietary" name="dietary" maxlength="600" rows="2"></textarea></div>
 <div class="field full"><label for="b-access">Accessibility requirements</label><textarea id="b-access" name="accessibility" maxlength="600" rows="2"></textarea></div>
 <div class="field full"><label for="b-notes">Notes from the person booking</label><textarea id="b-notes" name="notes" maxlength="1000" rows="2"></textarea></div>
@@ -175,4 +225,8 @@
 <div class="field full"><p class="muted">The email address cannot be changed. If it is wrong, cancel this booking and ask the person to book again.</p><button type="submit">Save changes</button></div>
 </form></div></div>
 
+<div class="print-sheet" id="order-sheet" aria-hidden="true">
+  <div class="print-header"><img data-trim src="/assets/lwlat-logo.png" alt=""><img data-trim src="/assets/eduhub-logo.png" alt=""></div>
+  <div id="order-sheet-body"></div>
+</div>
 <script src="/assets/admin.js" type="module"></script></body></html>

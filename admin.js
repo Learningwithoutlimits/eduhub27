@@ -1,4 +1,6 @@
 import { ALLERGENS, SUITABLE_FOR, MATRIX_MENU_2027, allergenSummary } from './allergens.js';
+import { WORKSHOP_BOOKLET_2027 } from './workshop-booklet.js';
+import './logo-trim.js';
 
 const $=(s,e=document)=>e.querySelector(s), $$=(s,e=document)=>[...e.querySelectorAll(s)];
 let data={courses:[],bookings:[],eduhub:{}};
@@ -38,7 +40,7 @@ $$('.side-nav [data-view]').forEach(b=>b.addEventListener('click',()=>switchView
 function switchView(name){
   if(eduhubDirty && name!=='eduhub' && !confirm('You have unsaved EduHub changes. Leave without saving?')) return;
   if(name!=='eduhub' && eduhubDirty){eduhubDirty=false;renderEduhubForm()}
-  if(programmeDirty && name!=='programme' && !confirm('You have unsaved changes to schools or sessions. Leave without saving?')) return;
+  if(programmeDirty && name!=='programme' && !confirm('You have unsaved changes to the sessions. Leave without saving?')) return;
   if(name!=='programme' && programmeDirty){programmeDirty=false;renderProgrammeForm()}
   $$('.admin-section').forEach(s=>s.classList.add('hidden'));$('#'+name+'-view').classList.remove('hidden');
   $$('.side-nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
@@ -90,7 +92,13 @@ window.addEventListener('beforeunload',e=>{if(eduhubDirty||programmeDirty){e.pre
 function renderEduhubForm(){
   const e=data.eduhub||{};
   for(const k of ['title','date','time','venue','description','capacity','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl']) ef.elements[k].value=e[k]??'';
-  for(const k of ['askDietary','askAccessibility','allowNoFood']) ef.elements[k].checked=Boolean(e[k]);
+  ef.elements.staffDomains.value=(e.staffDomains||['lwlat.org.uk']).join('\n');
+  for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) ef.elements[k].checked=Boolean(e[k]);
+  const link=e.speakerCode?`${location.origin}/eduhub/speakers/?code=${e.speakerCode}`:'';
+  $('#speaker-link').value=link||'Save the EduHub settings once to create the link.';
+  $('#copy-speaker-link').disabled=!link;$('#open-speaker-link').classList.toggle('hidden',!link);$('#open-speaker-link').href=link||'#';
+  const speakers=data.bookings.filter(b=>b.itemId===EDUHUB_ID&&b.role==='speaker'&&statusOf(b)!=='cancelled');
+  $('#speaker-count').textContent=speakers.length?`${speakers.length} speaker lunch booking${speakers.length===1?'':'s'} so far.`:'No speaker lunch bookings yet.';
   $$('[name=bookingStatus]',ef).forEach(r=>r.checked=r.value===(e.bookingStatus||'coming-soon'));
   const live=$('#eduhub-live-status');
   live.textContent=`Live now: ${EDUHUB_STATUS_TEXT[e.effectiveStatus]||''}${e.bookingStatus==='open'&&e.effectiveStatus==='closed'?' The booking deadline or event date has passed.':''}`;
@@ -178,8 +186,10 @@ ef.addEventListener('submit',async e=>{
   e.preventDefault();
   const obj=Object.fromEntries(['title','date','time','venue','description','bookingDeadline','contactEmail','privacyNoticeUrl','recognitionUrl'].map(k=>[k,ef.elements[k].value.trim()]));
   obj.section='details';
+  obj.staffDomains=ef.elements.staffDomains.value.split(/[\s,;]+/).map(d=>d.trim().replace(/^@+/,'')).filter(Boolean);
   obj.capacity=Number(ef.elements.capacity.value)||0;
-  for(const k of ['askDietary','askAccessibility','allowNoFood']) obj[k]=ef.elements[k].checked;
+  for(const k of ['askDietary','askAccessibility','allowNoFood','speakerBookingOpen','allowGovernors']) obj[k]=ef.elements[k].checked;
+  if(replaceSpeakerLink){obj.newSpeakerCode=true;replaceSpeakerLink=false}
   obj.bookingStatus=$('[name=bookingStatus]:checked',ef)?.value||'coming-soon';
   obj.foodChoices=readFoodChoices();
   if(!obj.title){message('Please enter an event title.','notice error');return}
@@ -198,6 +208,15 @@ ef.addEventListener('submit',async e=>{
   catch(err){message(`EduHub settings were not saved: ${err.message}`,'notice error')}
   finally{btn.disabled=false}
 });
+let replaceSpeakerLink=false;
+$('#copy-speaker-link').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText($('#speaker-link').value);message('Speaker link copied. Paste it into your email to speakers.')}
+  catch{$('#speaker-link').select();message('Press Ctrl+C (or Cmd+C on a Mac) to copy the selected link.','notice warn')}
+});
+$('#new-speaker-link').addEventListener('click',()=>{
+  if(!confirm('Replace the speaker link? The old link will stop working straight away, so you will need to send the new one to any speakers who have not booked yet. Any other changes on this page will be saved too.')) return;
+  replaceSpeakerLink=true;ef.requestSubmit();
+});
 $('#preview-eduhub').addEventListener('click',()=>{
   if(eduhubDirty) alert('The preview shows the saved settings. Save your changes first to see them in the preview.');
   window.open('/eduhub/?preview=1','_blank','noopener');
@@ -213,10 +232,62 @@ function renderCatering(){
   const dietary=confirmed.filter(b=>String(b.dietary||'').trim());
   const access=confirmed.filter(b=>String(b.accessibility||'').trim()).length;
   $('#catering-summary').innerHTML=`
-    <div class="stat-grid three"><div class="stat"><span>Confirmed places</span><strong>${confirmed.length}</strong></div><div class="stat"><span>With dietary needs or allergies</span><strong>${dietary.length}</strong></div><div class="stat"><span>With accessibility needs</span><strong>${access}</strong></div></div>
+    <div class="stat-grid three"><div class="stat"><span>Confirmed places${confirmed.some(b=>b.role==='speaker')?` (including ${confirmed.filter(b=>b.role==='speaker').length} speakers)`:''}</span><strong>${confirmed.length}</strong></div><div class="stat"><span>With dietary needs or allergies</span><strong>${dietary.length}</strong></div><div class="stat"><span>With accessibility needs</span><strong>${access}</strong></div></div>
     <div class="table-wrap"><table class="compact"><thead><tr><th>Food choice</th><th>Number</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td><strong>${v}</strong></td></tr>`).join('')}</tbody></table></div>
     ${dietary.length?`<h3>Dietary requirements and allergies</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Name</th><th>School or team</th><th>Food choice</th><th>Details</th></tr></thead><tbody>${dietary.map(b=>`<tr><td>${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}</td><td>${escapeHtml(b.organisation)}</td><td>${escapeHtml(b.foodChoice||'')}</td><td>${escapeHtml(b.dietary)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
 }
+
+// ---------- Printable caterer's order ----------
+// One document for the caterer: totals for each food choice, everyone with
+// dietary needs or allergies, and a collection list to tick off on the day.
+function orderSheetHtml(){
+  const e=data.eduhub, choices=e.foodChoices||[];
+  const confirmed=data.bookings.filter(b=>b.itemId===EDUHUB_ID&&statusOf(b)==='booked');
+  const speakers=confirmed.filter(b=>b.role==='speaker').length;
+  const name=b=>`${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}${b.role==='speaker'?' <em>(speaker)</em>':''}`;
+  const where=b=>escapeHtml(b.role==='speaker'?(b.leading||'Speaker'):(b.organisation||(b.role==='trustee'?'Trustee':'')));
+  const count=n=>confirmed.filter(b=>(b.foodChoice||'')===n).length;
+  const groups=[...new Set(choices.map(c=>c.group||'Other'))];
+  const known=new Set(choices.map(c=>c.name));
+  const other=confirmed.filter(b=>!known.has(b.foodChoice||''));
+  const otherCounts=[...other.reduce((m,b)=>m.set(b.foodChoice||'No food choice recorded',(m.get(b.foodChoice||'No food choice recorded')||0)+1),new Map())];
+  const foodRows=groups.map(g=>{
+    const list=choices.filter(c=>(c.group||'Other')===g);
+    const sub=list.reduce((t,c)=>t+count(c.name),0);
+    return `<tr class="group-row"><th colspan="2">${escapeHtml(g)}</th><th class="num">${sub}</th></tr>`+
+      list.map(c=>`<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(allergenSummary(c)||'None listed')}</td><td class="num"><strong>${count(c.name)}</strong></td></tr>`).join('');
+  }).join('')+(otherCounts.length?`<tr class="group-row"><th colspan="3">Other</th></tr>`+otherCounts.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td></td><td class="num"><strong>${v}</strong></td></tr>`).join(''):'');
+  const dietary=confirmed.filter(b=>String(b.dietary||'').trim()).sort((a,b)=>a.lastName.localeCompare(b.lastName));
+  const byFood=[...confirmed].sort((a,b)=>{const ia=choices.findIndex(c=>c.name===a.foodChoice),ib=choices.findIndex(c=>c.name===b.foodChoice);return (ia<0?999:ia)-(ib<0?999:ib)||a.lastName.localeCompare(b.lastName)||a.firstName.localeCompare(b.firstName)});
+  const printed=new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/London'}).format(new Date());
+  const date=e.date?new Intl.DateTimeFormat('en-GB',{dateStyle:'full',timeZone:'Europe/London'}).format(new Date(e.date+'T12:00:00Z')).replace(',',''):'';
+  return `<h1>Caterer's order</h1>
+    <p class="order-event"><strong>${escapeHtml(e.title||'EduHub 2027')}</strong><br>${escapeHtml(date)}${e.time?`, ${escapeHtml(e.time)}`:''}${e.venue?`<br>${escapeHtml(e.venue)}`:''}</p>
+    <table class="order-facts"><tr><td>Meals to prepare</td><td><strong>${confirmed.length}</strong>${speakers?` (including ${speakers} for speakers)`:''}</td></tr>
+      <tr><td>With dietary needs or allergies</td><td><strong>${dietary.length}</strong></td></tr>
+      <tr><td>Printed</td><td>${escapeHtml(printed)}. Bookings made after this time are not included.</td></tr>
+      ${e.contactEmail?`<tr><td>Contact</td><td>${escapeHtml(e.contactEmail)}</td></tr>`:''}</table>
+    <h2>Food order</h2>
+    <table class="order-table"><thead><tr><th>Food choice</th><th>Contains</th><th class="num">Number</th></tr></thead>
+      <tbody>${foodRows}</tbody><tfoot><tr><th colspan="2">Total</th><th class="num">${confirmed.length}</th></tr></tfoot></table>
+    <h2>Dietary requirements and allergies</h2>
+    ${dietary.length?`<p class="order-note">Confidential. Please use this list only to prepare and serve food safely, and return or destroy it after the event.</p>
+    <table class="order-table"><thead><tr><th>Name</th><th>School or team</th><th>Food choice</th><th>Details</th></tr></thead>
+      <tbody>${dietary.map(b=>`<tr><td>${name(b)}</td><td>${where(b)}</td><td>${escapeHtml(b.foodChoice||'')}</td><td>${escapeHtml(b.dietary)}</td></tr>`).join('')}</tbody></table>`:'<p>No one has told us about dietary requirements or allergies.</p>'}
+    <section class="order-collection">
+    <h2>Collection list</h2>
+    <p class="order-note">Everyone with a confirmed place, by food choice and then surname. Tick each name when the meal is collected.</p>
+    <table class="order-table"><thead><tr><th class="tick">&#10003;</th><th>Name</th><th>School or team</th><th>Food choice</th></tr></thead>
+      <tbody>${byFood.map(b=>`<tr><td class="tick"><span class="tick-box"></span></td><td>${name(b)}</td><td>${where(b)}</td><td>${escapeHtml(b.foodChoice||'No food choice recorded')}${String(b.dietary||'').trim()?' <strong>(see dietary list)</strong>':''}</td></tr>`).join('')}</tbody></table>
+    </section>`;
+}
+$('#print-order').addEventListener('click',()=>{
+  if(!data.bookings.some(b=>b.itemId===EDUHUB_ID&&statusOf(b)==='booked')){alert('There are no confirmed EduHub bookings to print yet.');return}
+  $('#order-sheet-body').innerHTML=orderSheetHtml();
+  document.body.classList.add('printing-order');
+  window.print();
+});
+window.addEventListener('afterprint',()=>document.body.classList.remove('printing-order'));
 
 // ---------- Bookings ----------
 function renderBookingFilters(){
@@ -248,8 +319,8 @@ function renderBookings(){
     const needs=[(b.sessions||[]).length?`<strong>Sessions:</strong> ${b.sessions.map(x=>`${escapeHtml(x.time)} ${escapeHtml(x.title)}`).join('<br>')}`:'',b.foodChoice?`<strong>Food:</strong> ${escapeHtml(b.foodChoice)}`:'',b.foodAllergens?`<span class="muted">Contains: ${escapeHtml(b.foodAllergens)}</span>`:'',b.dietary?`<strong>Dietary:</strong> ${escapeHtml(b.dietary)}`:'',b.accessibility?`<strong>Access:</strong> ${escapeHtml(b.accessibility)}`:'',b.notes?`<strong>Notes:</strong> ${escapeHtml(b.notes)}`:'',b.adminNotes?`<strong>Admin:</strong> ${escapeHtml(b.adminNotes)}`:''].filter(Boolean).join('<br>');
     return `<tr class="${st==='cancelled'?'row-cancelled':''}"><td>${new Date(b.createdAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}${b.reference?`<br><span class="muted">${escapeHtml(b.reference)}</span>`:''}</td>
       <td><strong>${escapeHtml(b.firstName)} ${escapeHtml(b.lastName)}</strong><br>${escapeHtml(b.jobTitle||'')}${b.jobTitle?'<br>':''}${escapeHtml(b.organisation)}${b.phaseName?` <span class="muted">(${escapeHtml(b.phaseName)})</span>`:''}<br><a href="mailto:${escapeHtml(b.email)}">${escapeHtml(b.email)}</a>${b.telephone?`<br>${escapeHtml(b.telephone)}`:''}</td>
-      <td>${escapeHtml(b.itemTitle)}</td><td class="needs-cell">${needs||'<span class="muted">None given</span>'}</td>
-      <td><span class="status-pill ${st}">${STATUS_LABEL[st]}</span>${b.checkedInAt?`<br><span class="status-pill checkin-pill">Checked in ${new Date(b.checkedInAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
+      <td>${escapeHtml(b.itemTitle)}${b.leading?`<br><span class="muted">Leading: ${escapeHtml(b.leading)}</span>`:''}</td><td class="needs-cell">${needs||'<span class="muted">None given</span>'}</td>
+      <td>${b.role==='speaker'?'<span class="status-pill speaker">Speaker</span><br>':b.role==='governor'?'<span class="status-pill governor">Governor</span><br>':b.role==='trustee'?'<span class="status-pill governor">Trustee</span><br>':''}<span class="status-pill ${st}">${STATUS_LABEL[st]}</span>${b.checkedInAt?`<br><span class="status-pill checkin-pill">Checked in ${new Date(b.checkedInAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
         <br><span class="small ${b.emailSentAt?'email-ok':b.emailError?'email-fail':'muted'}" title="${escapeHtml(b.emailError||'')}">${b.emailSentAt?'Email sent':b.emailError?'Email failed':'No email sent'}</span></td>
       <td><div class="actions">
         <button class="ghost" data-booking-edit="${escapeHtml(b.id)}">Edit</button>
@@ -407,31 +478,205 @@ cf.addEventListener('submit',async e=>{
     message(`The opportunity was not saved: ${err.message}`,'notice error');
   }
 });
-// ---------- EduHub sessions and schools ----------
+// ---------- EduHub sessions: keynote, rounds, workshops, schools ----------
 const PHASES=[['primary','Primary'],['secondary','Secondary'],['central','Central Trust']];
-const phaseName=p=>(PHASES.find(x=>x[0]===p)||[])[1]||'';
-const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), sessionListBuilder=$('#session-list-builder');
+// Earlier booklet wording, replaced automatically by the booklet button.
+const OLD_BOOKLET_WARNINGS=['Allergy warning: this session includes tasting food and will involve the use of nuts.'];
+const AUDIENCES=[['all','Open to all'],['educators','All educators'],['leaders','Anyone who leads a team']];
+const pf=$('#programme-form'), schoolBuilder=$('#school-builder'), roundBuilder=$('#round-builder'), workshopBuilder=$('#workshop-builder'), agendaBuilder=$('#agenda-builder');
+const AGENDA_KINDS=[['general','General'],['arrival','Arrival'],['keynote','Keynote'],['workshop','Workshop'],['break','Break'],['lunch','Lunch'],['awards','Awards']];
 let programmeDirty=false;
 const markProgrammeDirty=()=>{programmeDirty=true;$('#programme-dirty').textContent='You have unsaved changes.'};
 pf.addEventListener('input',markProgrammeDirty);pf.addEventListener('change',markProgrammeDirty);
-const slotLabel=s=>s.startTime?`${s.startTime}${s.endTime?` to ${s.endTime}`:''}`:'Time to be confirmed';
+const slotLabel=s=>{const t=s.startTime?`${s.startTime}${s.endTime?` to ${s.endTime}`:''}`:'';return s.roundLabel?(t?`${s.roundLabel}, ${t}`:s.roundLabel):(t||'Time to be confirmed')};
 function slotsOf(sessions){
   const slots=[];
-  for(const x of sessions){const k=`${x.startTime}-${x.endTime}`;let sl=slots.find(y=>y.key===k);if(!sl)slots.push(sl={key:k,label:slotLabel(x),items:[]});sl.items.push(x)}
+  for(const x of sessions){const k=x.roundId||`${x.startTime}-${x.endTime}`;let sl=slots.find(y=>y.key===k);if(!sl)slots.push(sl={key:k,label:slotLabel(x),items:[]});sl.items.push(x)}
   return slots;
 }
 const schoolOptions=schools=>PHASES.map(([p,n])=>{const list=schools.filter(x=>x.phase===p);return list.length?`<optgroup label="${n}">${list.map(x=>`<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)}</option>`).join('')}</optgroup>`:''}).join('');
+const photoSrc=x=>x.photoId?`/api/photo?id=${encodeURIComponent(x.photoId)}`:(x.photoPath||'');
+
+// Shrinks a photo in the browser before upload, so pages stay quick to load.
+async function shrinkPhoto(file){
+  const img=await createImageBitmap(file);
+  const scale=Math.min(1,600/Math.max(img.width,img.height));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',0.85);
+}
+// A photo picker that remembers either an uploaded photo or a bundled one.
+function photoPicker(holder,x={}){
+  const uid=`ph${Math.random().toString(36).slice(2,8)}`;
+  holder.dataset.photoId=x.photoId||'';holder.dataset.photoPath=x.photoPath||'';
+  holder.innerHTML=`<div class="speaker-photo" data-photo-box></div>
+    <label class="button secondary small-button" for="${uid}">Choose photo</label>
+    <input type="file" id="${uid}" accept="image/jpeg,image/png,image/webp" class="visually-hidden" data-photo-file>
+    <button type="button" class="ghost small-button" data-photo-remove>Remove photo</button>
+    <span class="muted small" data-photo-status></span>`;
+  const show=()=>{const src=photoSrc({photoId:holder.dataset.photoId,photoPath:holder.dataset.photoPath});
+    holder.querySelector('[data-photo-box]').innerHTML=src?`<img src="${escapeHtml(src)}" alt="">`:'<span>No photo</span>';
+    holder.querySelector('[data-photo-remove]').classList.toggle('hidden',!src)};
+  show();
+  holder.querySelector('[data-photo-file]').addEventListener('change',async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const status=holder.querySelector('[data-photo-status]'); status.textContent='Uploading photo';
+    try{const {id}=await api('photo',{method:'POST',body:JSON.stringify({dataUrl:await shrinkPhoto(file)})});
+      holder.dataset.photoId=id;holder.dataset.photoPath='';show();status.textContent='Photo uploaded. Save to keep it.';markProgrammeDirty()}
+    catch(err){status.textContent=`Photo not uploaded: ${err.message}`}
+    e.target.value='';
+  });
+  holder.querySelector('[data-photo-remove]').onclick=()=>{holder.dataset.photoId='';holder.dataset.photoPath='';show();markProgrammeDirty()};
+}
+const readPhoto=holder=>({photoId:holder.dataset.photoId||'',photoPath:holder.dataset.photoPath||''});
 
 function renderProgrammeForm(){
   const e=data.eduhub||{};
   pf.elements.requireSessionChoice.checked=e.requireSessionChoice!==false;
-  schoolBuilder.innerHTML='';
-  (e.schools||[]).forEach(x=>addSchoolRow(x));
+  pf.elements.showAgenda.checked=e.showAgenda!==false;
+  renderKeynote(e.keynote||{});
+  roundBuilder.innerHTML='';(e.rounds||[]).forEach(r=>addRoundRow(r));
+  if(!roundBuilder.children.length) roundBuilder.innerHTML='<p class="empty small" data-empty>No rounds yet.</p>';
+  workshopBuilder.innerHTML='';(e.workshops||[]).forEach(w=>addWorkshopRow(w));
+  if(!workshopBuilder.children.length) workshopBuilder.innerHTML='<p class="empty small" data-empty>No workshops yet. Add them one by one, or fill them in from the workshop booklet.</p>';
+  agendaBuilder.innerHTML='';(e.agenda||[]).forEach(a=>addAgendaRow(a));
+  refreshAgendaRounds();
+  if(!agendaBuilder.children.length) agendaBuilder.innerHTML='<p class="empty small" data-empty>No timeline yet. Add lines one by one, or fill it in from the workshop booklet.</p>';
+  schoolBuilder.innerHTML='';(e.schools||[]).forEach(x=>addSchoolRow(x));
   if(!schoolBuilder.children.length) schoolBuilder.innerHTML='<p class="empty small" data-empty>No schools or teams added yet.</p>';
-  sessionListBuilder.innerHTML='';
-  (e.sessions||[]).forEach(x=>addProgrammeSessionRow(x));
-  if(!sessionListBuilder.children.length) sessionListBuilder.innerHTML='<p class="empty small" data-empty>No sessions added yet.</p>';
   programmeDirty=false;$('#programme-dirty').textContent='';
+}
+function renderKeynote(k){
+  $$('[data-k]',pf).forEach(el=>el.value=k[el.dataset.k]||'');
+  photoPicker($('#keynote-photo-cell'),k);
+}
+const readKeynote=()=>({...Object.fromEntries($$('[data-k]',pf).map(el=>[el.dataset.k,el.value.trim()])),...readPhoto($('#keynote-photo-cell'))});
+
+function roundOptions(selected){
+  return `<option value="">Not linked</option>`+readRounds().map(r=>`<option value="${escapeHtml(r.id)}" ${r.id===selected?'selected':''}>${escapeHtml(r.label)}</option>`).join('');
+}
+function addAgendaRow(a={}){
+  agendaBuilder.querySelector('[data-empty]')?.remove();
+  const uid=`a${Math.random().toString(36).slice(2,8)}`;
+  const row=document.createElement('div');row.className='agenda-row';row.dataset.id=a.id||'';
+  row.innerHTML=`<div class="agenda-grid">
+      <div class="field"><label for="${uid}-s">Starts</label><input id="${uid}-s" type="time" data-a="startTime" value="${escapeHtml(a.startTime||'')}"></div>
+      <div class="field"><label for="${uid}-e">Finishes</label><input id="${uid}-e" type="time" data-a="endTime" value="${escapeHtml(a.endTime||'')}"></div>
+      <div class="field agenda-title"><label for="${uid}-t">What happens</label><input id="${uid}-t" data-a="title" value="${escapeHtml(a.title||'')}" maxlength="150"></div>
+      <div class="field"><label for="${uid}-k">Type</label><select id="${uid}-k" data-a="kind">${AGENDA_KINDS.map(([v,n])=>`<option value="${v}" ${(a.kind||'general')===v?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field"><label for="${uid}-l">Where</label><input id="${uid}-l" data-a="location" value="${escapeHtml(a.location||'')}" maxlength="120"></div>
+      <div class="field" data-round-field><label for="${uid}-r">Workshop round</label><select id="${uid}-r" data-a="roundId" data-selected="${escapeHtml(a.roundId||'')}">${roundOptions(a.roundId)}</select></div>
+      <div class="field agenda-detail"><label for="${uid}-d">Extra detail <span class="optional">(optional)</span></label><input id="${uid}-d" data-a="detail" value="${escapeHtml(a.detail||'')}" maxlength="400"></div>
+    </div>
+    <div class="food-row-footer"><div class="suitable-row"><span class="muted small">For:</span> ${PHASES.map(([p,n])=>`<label class="allergen-check"><input type="checkbox" data-agenda-group="${p}" ${!(a.groups||[]).length||a.groups.includes(p)?'checked':''}> <span>${n}</span></label>`).join('')}</div>
+      <button type="button" class="danger small-button" data-remove-agenda>Remove</button></div>`;
+  const kind=row.querySelector('[data-a=kind]');
+  const toggle=()=>row.querySelector('[data-round-field]').classList.toggle('hidden',kind.value!=='workshop');
+  kind.addEventListener('change',toggle);toggle();
+  row.querySelector('[data-remove-agenda]').onclick=()=>{row.remove();markProgrammeDirty()};
+  agendaBuilder.appendChild(row);return row;
+}
+function refreshAgendaRounds(){
+  const rounds=readRounds();
+  $$('[data-a=roundId]',agendaBuilder).forEach(sel=>{
+    const row=sel.closest('.agenda-row');
+    let v=sel.value||sel.dataset.selected;
+    // Link an unlinked workshop line to the round that starts at the same time.
+    if(!rounds.some(r=>r.id===v)&&row.querySelector('[data-a=kind]').value==='workshop') v=rounds.find(r=>r.startTime&&r.startTime===row.querySelector('[data-a=startTime]').value)?.id||'';
+    sel.innerHTML=roundOptions(v);sel.value=rounds.some(r=>r.id===v)?v:'';
+  });
+}
+const readAgenda=()=>$$('.agenda-row',agendaBuilder).map(r=>{
+  const v=f=>r.querySelector(`[data-a="${f}"]`).value.trim();
+  const groups=$$('[data-agenda-group]:checked',r).map(i=>i.dataset.agendaGroup);
+  return {id:r.dataset.id,startTime:v('startTime'),endTime:v('endTime'),title:v('title'),kind:v('kind'),location:v('location'),detail:v('detail'),roundId:v('kind')==='workshop'?v('roundId'):'',groups:groups.length===PHASES.length?[]:groups};
+}).filter(a=>a.title);
+$('#add-agenda').addEventListener('click',()=>{addAgendaRow().querySelector('input').focus();markProgrammeDirty()});
+
+function addRoundRow(r={}){
+  roundBuilder.querySelector('[data-empty]')?.remove();
+  const n=roundBuilder.querySelectorAll('.round-row').length+1;
+  const uid=`r${Math.random().toString(36).slice(2,8)}`;
+  const row=document.createElement('div');row.className='school-row round-row';row.dataset.id=r.id||`round-${Date.now().toString(36)}${n}`;
+  row.innerHTML=`<div class="field"><label for="${uid}-l">Round name</label><input id="${uid}-l" data-r="label" value="${escapeHtml(r.label||`Round ${n}`)}" maxlength="60"></div>
+    <div class="field"><label for="${uid}-s">Starts</label><input id="${uid}-s" type="time" data-r="startTime" value="${escapeHtml(r.startTime||'')}"></div>
+    <div class="field"><label for="${uid}-e">Finishes</label><input id="${uid}-e" type="time" data-r="endTime" value="${escapeHtml(r.endTime||'')}"></div>
+    <button type="button" class="danger" data-remove-round>Remove</button>
+    <div class="round-groups"><span class="muted small">Who attends:</span> ${PHASES.map(([p,n])=>`<label class="allergen-check"><input type="checkbox" data-round-phase="${p}" ${!(r.phases||[]).length||r.phases.includes(p)?'checked':''}> <span>${n} staff</span></label>`).join('')}</div>`;
+  row.querySelector('[data-r=label]').addEventListener('input',refreshRoundTicks);
+  row.querySelector('[data-remove-round]').onclick=()=>{if(confirm(`Remove ${row.querySelector('[data-r=label]').value}? Bookings already made keep their record, but the round will no longer be offered.`)){row.remove();refreshRoundTicks();markProgrammeDirty()}};
+  roundBuilder.appendChild(row);refreshRoundTicks();return row;
+}
+const readRounds=()=>$$('.round-row',roundBuilder).map(r=>{
+  const phases=$$('[data-round-phase]:checked',r).map(i=>i.dataset.roundPhase);
+  return {id:r.dataset.id,label:r.querySelector('[data-r=label]').value.trim(),startTime:r.querySelector('[data-r=startTime]').value,endTime:r.querySelector('[data-r=endTime]').value,phases:phases.length===PHASES.length?[]:phases};
+});
+// Keeps each workshop's "Runs in" tick boxes in step with the rounds list.
+// A workshop saved with no rounds listed runs in every round.
+function refreshRoundTicks(){
+  const rounds=readRounds();
+  if(typeof refreshAgendaRounds==='function'&&agendaBuilder) refreshAgendaRounds();
+  $$('.workshop-row',workshopBuilder).forEach(row=>{
+    const box=row.querySelector('[data-round-ticks]');
+    let current, all=false;
+    if(box.dataset.init!==undefined){current=JSON.parse(box.dataset.init||'[]');all=!current.length;delete box.dataset.init}
+    else current=$$('[data-round]',box).filter(i=>i.checked).map(i=>i.dataset.round).concat($$('[data-round]',box).length?[]:['*']);
+    if(current.includes('*')) all=true;
+    const known=new Set($$('[data-round]',box).map(i=>i.dataset.round));
+    box.innerHTML=rounds.length?rounds.map(r=>`<label class="allergen-check"><input type="checkbox" data-round="${escapeHtml(r.id)}" ${all||current.includes(r.id)||(known.size&&!known.has(r.id))?'checked':''}> <span>${escapeHtml(r.label||'Round')}</span></label>`).join(''):'<span class="muted small">Add rounds above first.</span>';
+  });
+}
+function addWorkshopRow(w={}){
+  workshopBuilder.querySelector('[data-empty]')?.remove();
+  const uid=`w${Math.random().toString(36).slice(2,8)}`;
+  const row=document.createElement('fieldset');row.className='food-row programme-row workshop-row';row.dataset.id=w.id||'';
+  row.innerHTML=`<legend>${escapeHtml(w.title||'New workshop')}</legend>
+    <div class="programme-grid"><div class="photo-cell" data-photo-holder></div>
+      <div class="form-grid">
+        <div class="field full"><label for="${uid}-t">Workshop title</label><input id="${uid}-t" data-w="title" value="${escapeHtml(w.title||'')}" maxlength="150"></div>
+        <div class="field"><label for="${uid}-n">Speaker name</label><input id="${uid}-n" data-w="speakerName" value="${escapeHtml(w.speakerName||'')}" maxlength="120"></div>
+        <div class="field"><label for="${uid}-ro">Speaker role <span class="optional">(optional)</span></label><input id="${uid}-ro" data-w="speakerRole" value="${escapeHtml(w.speakerRole||'')}" maxlength="150"></div>
+        <div class="field full"><label for="${uid}-d">Description</label><textarea id="${uid}-d" data-w="description" rows="5" maxlength="4000">${escapeHtml(w.description||'')}</textarea><span class="field-help">Start a line with "- " to show it as a bullet point.</span></div>
+        <div class="field full"><label for="${uid}-wa">Warning <span class="optional">(optional, shown to staff)</span></label><input id="${uid}-wa" data-w="warning" value="${escapeHtml(w.warning||'')}" maxlength="300" placeholder="e.g. Allergy warning: this session may contain a variety of allergens."><span class="field-help">Warnings from the workshop booklet always show, even if this box is cleared.</span></div>
+        <div class="field full"><label for="${uid}-b">About the speaker <span class="optional">(optional)</span></label><textarea id="${uid}-b" data-w="speakerBio" rows="3" maxlength="2500">${escapeHtml(w.speakerBio||'')}</textarea></div>
+        <div class="field"><label for="${uid}-a">Recommended audience</label><select id="${uid}-a" data-w="recommended">${AUDIENCES.map(([v,n])=>`<option value="${v}" ${(w.recommended||'all')===v?'selected':''}>${n}</option>`).join('')}</select></div>
+        <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-w="room" value="${escapeHtml(w.room||'')}" maxlength="100"></div>
+        <div class="field"><label for="${uid}-c">Places per round <span class="optional">(0 = no limit)</span></label><input id="${uid}-c" type="number" min="0" data-w="capacity" value="${escapeHtml(w.capacity||0)}"></div>
+        <div class="field full"><span class="label-text">Runs in</span><div class="suitable-row" data-round-ticks data-init="${escapeHtml(JSON.stringify(w.rounds||[]))}"></div></div>
+        <div class="field full invite-box"><label class="check-label"><input type="checkbox" data-w-invite ${w.inviteOnly?'checked':''}> Invitation only. Hide it from the booking page, so only people with its private link can see and book it.</label>
+          ${w.inviteOnly&&w.inviteCode?`<div class="invite-link"><span class="field-help">Private link to send to the people invited:</span><div class="invite-link-row"><input readonly value="${escapeHtml(`${location.origin}/eduhub/?invite=${w.inviteCode}`)}" data-invite-url aria-label="Private link for this workshop"><button type="button" class="ghost" data-copy-invite>Copy link</button></div>
+            <label class="check-label small"><input type="checkbox" data-w-newinvite> Make a new link when I save. The old link will stop working.</label></div>`:''}
+          <span class="field-help" data-invite-hint ${w.inviteOnly&&w.inviteCode?'hidden':''}>The private link appears here after you press Save sessions.</span></div>
+        <div class="field full"><label for="${uid}-x">Admin notes <span class="optional">(only visible to administrators)</span></label><textarea id="${uid}-x" data-w="adminNotes" rows="2" maxlength="1000">${escapeHtml(w.adminNotes||'')}</textarea></div>
+      </div></div>
+    <div class="food-row-footer"><span></span><div class="actions">
+      <button type="button" class="ghost" data-move="-1">Move up</button><button type="button" class="ghost" data-move="1">Move down</button>
+      <button type="button" class="danger" data-remove-workshop>Remove workshop</button></div></div>`;
+  row.querySelector('[data-copy-invite]')?.addEventListener('click',async e=>{const input=row.querySelector('[data-invite-url]');try{await navigator.clipboard.writeText(input.value);e.target.textContent='Copied'}catch{input.select()}});
+  photoPicker(row.querySelector('[data-photo-holder]'),w);
+  row.querySelector('[data-w=title]').addEventListener('input',e=>row.querySelector('legend').textContent=e.target.value||'New workshop');
+  row.querySelector('[data-remove-workshop]').onclick=()=>{
+    const n=data.bookings.filter(b=>(b.sessionIds||[]).some(id=>id.startsWith(`${row.dataset.id}@`))&&statusOf(b)!=='cancelled').length;
+    if(confirm(`Remove "${row.querySelector('[data-w=title]').value||'this workshop'}"?${n?`\n\n${n} booking${n===1?' includes':'s include'} it. Their records keep the workshop name, but it will no longer count towards numbers.`:''}`)){row.remove();markProgrammeDirty()}
+  };
+  $$('[data-move]',row).forEach(b=>b.onclick=()=>{
+    if(b.dataset.move<0&&row.previousElementSibling) workshopBuilder.insertBefore(row,row.previousElementSibling);
+    if(b.dataset.move>0&&row.nextElementSibling) workshopBuilder.insertBefore(row.nextElementSibling,row);
+    markProgrammeDirty();
+  });
+  workshopBuilder.appendChild(row);refreshRoundTicks();return row;
+}
+function readWorkshops(){
+  const roundCount=readRounds().length;
+  return $$('.workshop-row',workshopBuilder).map(r=>{
+    const v=f=>r.querySelector(`[data-w="${f}"]`).value.trim();
+    const ticked=$$('[data-round]:checked',r).map(i=>i.dataset.round);
+    return {id:r.dataset.id,title:v('title'),speakerName:v('speakerName'),speakerRole:v('speakerRole'),description:v('description'),warning:v('warning'),speakerBio:v('speakerBio'),
+      recommended:v('recommended'),room:v('room'),capacity:Number(v('capacity'))||0,adminNotes:v('adminNotes'),
+      inviteOnly:r.querySelector('[data-w-invite]').checked,newInviteCode:Boolean(r.querySelector('[data-w-newinvite]')?.checked),
+      rounds:ticked.length===roundCount?[]:ticked,...readPhoto(r.querySelector('[data-photo-holder]'))};
+  });
 }
 function addSchoolRow(school={}){
   schoolBuilder.querySelector('[data-empty]')?.remove();
@@ -451,97 +696,61 @@ $('#bulk-add-schools').addEventListener('click',()=>{
   const names=$('#bulk-schools').value.split('\n').map(x=>x.trim()).filter(x=>x&&!have.has(x.toLowerCase()));
   names.forEach(n=>addSchoolRow({name:n,phase:$('#bulk-phase').value}));
   $('#bulk-schools').value='';
-  if(names.length){markProgrammeDirty();message(`${names.length} added. Press Save schools and sessions to keep them.`,'notice warn')}
+  if(names.length){markProgrammeDirty();message(`${names.length} added. Press Save sessions to keep them.`,'notice warn')}
 });
-
-// Shrinks a photo in the browser before upload, so pages stay quick to load.
-async function shrinkPhoto(file){
-  const img=await createImageBitmap(file);
-  const scale=Math.min(1,600/Math.max(img.width,img.height));
-  const canvas=document.createElement('canvas');
-  canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
-  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL('image/jpeg',0.85);
-}
-function addProgrammeSessionRow(x={}){
-  sessionListBuilder.querySelector('[data-empty]')?.remove();
-  const row=document.createElement('fieldset');
-  const uid=`p${Math.random().toString(36).slice(2,8)}`;
-  row.className='food-row programme-row';row.dataset.id=x.id||'';row.dataset.photoId=x.photoId||'';
-  const aud=x.audiences||PHASES.map(p=>p[0]);
-  row.innerHTML=`<legend>${escapeHtml(x.title||'New session')}</legend>
-    <div class="programme-grid">
-      <div class="photo-cell">
-        <div class="speaker-photo" data-photo-box>${x.photoId?`<img src="/api/photo?id=${escapeHtml(x.photoId)}" alt="">`:'<span>No photo</span>'}</div>
-        <label class="button secondary small-button" for="${uid}-file">Choose photo</label>
-        <input type="file" id="${uid}-file" accept="image/jpeg,image/png,image/webp" class="visually-hidden" data-photo-file>
-        <button type="button" class="ghost small-button ${x.photoId?'':'hidden'}" data-photo-remove>Remove photo</button>
-      </div>
-      <div class="form-grid">
-        <div class="field full"><label for="${uid}-t">Session title</label><input id="${uid}-t" data-p="title" value="${escapeHtml(x.title||'')}" maxlength="150"></div>
-        <div class="field"><label for="${uid}-st">Starts</label><input id="${uid}-st" type="time" data-p="startTime" value="${escapeHtml(x.startTime||'')}"></div>
-        <div class="field"><label for="${uid}-et">Finishes</label><input id="${uid}-et" type="time" data-p="endTime" value="${escapeHtml(x.endTime||'')}"></div>
-        <div class="field"><label for="${uid}-r">Room or area</label><input id="${uid}-r" data-p="room" value="${escapeHtml(x.room||'')}" maxlength="100" placeholder="e.g. Room S12 or Main Hall"></div>
-        <div class="field"><label for="${uid}-c">Places <span class="optional">(0 = no limit)</span></label><input id="${uid}-c" type="number" min="0" data-p="capacity" value="${escapeHtml(x.capacity||0)}"></div>
-        <div class="field"><label for="${uid}-sn">Speaker name</label><input id="${uid}-sn" data-p="speakerName" value="${escapeHtml(x.speakerName||'')}" maxlength="120"></div>
-        <div class="field"><label for="${uid}-sr">Speaker role <span class="optional">(optional)</span></label><input id="${uid}-sr" data-p="speakerRole" value="${escapeHtml(x.speakerRole||'')}" maxlength="150"></div>
-        <div class="field full"><label for="${uid}-d">Brief description</label><textarea id="${uid}-d" data-p="description" rows="3" maxlength="1200">${escapeHtml(x.description||'')}</textarea></div>
-        <div class="field full"><span class="label-text">Aimed at</span><div class="suitable-row">${PHASES.map(([p,n])=>`<label class="allergen-check"><input type="checkbox" data-aud="${p}" ${aud.includes(p)?'checked':''}> <span>${n} staff</span></label>`).join('')}</div></div>
-      </div>
-    </div>
-    <div class="food-row-footer"><span class="muted" data-p-status></span><button type="button" class="danger" data-remove-session>Remove session</button></div>`;
-  row.querySelector('[data-p="title"]').addEventListener('input',e=>row.querySelector('legend').textContent=e.target.value||'New session');
-  row.querySelector('[data-remove-session]').onclick=()=>{
-    const n=data.bookings.filter(b=>(b.sessionIds||[]).includes(row.dataset.id)&&statusOf(b)!=='cancelled').length;
-    if(confirm(`Remove "${row.querySelector('[data-p=title]').value||'this session'}"?${n?`\n\n${n} booking${n===1?' includes':'s include'} it. Their records keep the session name, but it will no longer count towards numbers.`:''}`)){row.remove();markProgrammeDirty()}
-  };
-  row.querySelector('[data-photo-file]').addEventListener('change',async e=>{
-    const file=e.target.files[0]; if(!file) return;
-    const status=row.querySelector('[data-p-status]'); status.textContent='Uploading photo';
-    try{
-      const {id}=await api('photo',{method:'POST',body:JSON.stringify({dataUrl:await shrinkPhoto(file)})});
-      row.dataset.photoId=id;
-      row.querySelector('[data-photo-box]').innerHTML=`<img src="/api/photo?id=${id}" alt="">`;
-      row.querySelector('[data-photo-remove]').classList.remove('hidden');
-      status.textContent='Photo uploaded. Save to keep it.';markProgrammeDirty();
-    }catch(err){status.textContent=`Photo not uploaded: ${err.message}`}
-    e.target.value='';
-  });
-  row.querySelector('[data-photo-remove]').onclick=e=>{row.dataset.photoId='';row.querySelector('[data-photo-box]').innerHTML='<span>No photo</span>';e.target.classList.add('hidden');markProgrammeDirty()};
-  sessionListBuilder.appendChild(row);return row;
-}
-function readProgrammeSessions(){
-  return $$('.programme-row',sessionListBuilder).map(r=>{
-    const v=f=>r.querySelector(`[data-p="${f}"]`).value.trim();
-    return {id:r.dataset.id,photoId:r.dataset.photoId,title:v('title'),startTime:v('startTime'),endTime:v('endTime'),room:v('room'),capacity:Number(v('capacity'))||0,speakerName:v('speakerName'),speakerRole:v('speakerRole'),description:v('description'),audiences:$$('[data-aud]:checked',r).map(i=>i.dataset.aud)};
-  });
-}
-$('#add-programme-session').addEventListener('click',()=>{addProgrammeSessionRow().querySelector('[data-p=title]').focus();markProgrammeDirty()});
+$('#add-round').addEventListener('click',()=>{addRoundRow().querySelector('input').focus();markProgrammeDirty()});
+$('#add-workshop').addEventListener('click',()=>{addWorkshopRow().querySelector('[data-w=title]').focus();markProgrammeDirty()});
+$('#load-booklet').addEventListener('click',()=>{
+  const B=WORKSHOP_BOOKLET_2027;
+  const have=new Set(readWorkshops().map(w=>w.title.toLowerCase()));
+  const toAdd=B.workshops.filter(w=>!have.has(w.title.toLowerCase()));
+  const current=readRounds(), sameRounds=current.length===B.rounds.length&&current.every((r,i)=>r.startTime===B.rounds[i].startTime&&r.endTime===B.rounds[i].endTime);
+  let needRounds=!current.length;
+  if(current.length&&!sameRounds) needRounds=confirm(`Replace the ${current.length} round${current.length===1?'':'s'} already here with the four rounds from the booklet?\n\n${B.rounds.map(r=>`${r.label}: ${r.startTime} to ${r.endTime}`).join('\n')}\n\nPress Cancel to keep the rounds you have.`);
+  const needKeynote=!$('#k-name').value.trim(), needAgenda=!readAgenda().length;
+  const missingWarnings=B.workshops.filter(w=>w.warning&&$$('.workshop-row',workshopBuilder).some(r=>{const v=r.querySelector('[data-w=warning]').value.trim();return r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase()&&(!v||(OLD_BOOKLET_WARNINGS.includes(v)&&v!==w.warning))})).length;
+  if(!toAdd.length&&!needRounds&&!needKeynote&&!needAgenda&&!missingWarnings){message('Everything from the workshop booklet is already here.');return}
+  if(!confirm(`Fill in from the workshop booklet?\n\n${[needKeynote?'The keynote (Graham Allcott)':'',needAgenda?'The structure of the day':'',needRounds?`${B.rounds.length} workshop rounds`:'',toAdd.length?`${toAdd.length} workshops with speaker photos`:'',missingWarnings?`${missingWarnings} allergy warning${missingWarnings===1?'':'s'}`:''].filter(Boolean).join('\n')}\n\nPlease check the details, add rooms, then press Save sessions.`)) return;
+  if(needKeynote) renderKeynote(B.keynote);
+  if(needRounds){roundBuilder.innerHTML='';B.rounds.forEach(r=>addRoundRow(r))}
+  if(needAgenda){agendaBuilder.innerHTML='';B.agenda.forEach(a=>addAgendaRow(a))}
+  toAdd.forEach(w=>addWorkshopRow(w));
+  // Copy across any booklet warning missing from a workshop already here.
+  let warned=0;
+  for(const w of B.workshops.filter(x=>x.warning)){
+    const row=$$('.workshop-row',workshopBuilder).find(r=>r.querySelector('[data-w=title]').value.trim().toLowerCase()===w.title.toLowerCase());
+    const box=row?.querySelector('[data-w=warning]');
+    if(box&&(!box.value.trim()||OLD_BOOKLET_WARNINGS.includes(box.value.trim()))&&box.value.trim()!==w.warning){box.value=w.warning;warned++}
+  }
+  markProgrammeDirty();
+  message('Details added from the workshop booklet. They are not saved yet. Please check them, add rooms, then press Save sessions.','notice warn');
+});
 $('#preview-programme').addEventListener('click',()=>{
   if(programmeDirty) alert('The preview shows the saved settings. Save your changes first to see them in the preview.');
   window.open('/eduhub/?preview=1','_blank','noopener');
 });
 pf.addEventListener('submit',async e=>{
   e.preventDefault();
-  const sessions=readProgrammeSessions();
-  const untitled=sessions.filter(x=>!x.title&&(x.description||x.speakerName||x.room));
-  if(untitled.length){message('One of the sessions has details but no title. Please add a title or remove it.','notice error');return}
-  const noAud=sessions.find(x=>x.title&&!x.audiences.length);
-  if(noAud){message(`Please tick at least one phase for "${noAud.title}".`,'notice error');return}
-  const noTime=sessions.find(x=>x.title&&!x.startTime);
-  if(noTime&&!confirm(`"${noTime.title}" has no start time. Sessions without a time are grouped together. Save anyway?`)) return;
+  const workshops=readWorkshops();
+  const untitled=workshops.find(x=>!x.title&&(x.description||x.speakerName));
+  if(untitled){message('One of the workshops has details but no title. Please add a title or remove it.','notice error');return}
+  const rounds=readRounds();
+  if(workshops.some(w=>w.title)&&!rounds.length){message('Please add at least one round, so staff can book the workshops.','notice error');return}
+  const noGroup=$$('.round-row',roundBuilder).find(r=>!$$('[data-round-phase]:checked',r).length);
+  if(noGroup){message(`Please tick at least one group for ${noGroup.querySelector('[data-r=label]').value||'each round'}.`,'notice error');return}
   const btn=pf.querySelector('button[type=submit]');btn.disabled=true;
   try{
-    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',schools:readSchools(),sessions:sessions.filter(x=>x.title),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
-    programmeDirty=false;await refresh({keepProgrammeForm:false});message('Schools and sessions saved.');
-  }catch(err){message(`Schools and sessions were not saved: ${err.message}`,'notice error')}
+    await api('eduhub',{method:'POST',body:JSON.stringify({section:'programme',keynote:readKeynote(),agenda:readAgenda(),showAgenda:pf.elements.showAgenda.checked,rounds,workshops:workshops.filter(x=>x.title),schools:readSchools(),requireSessionChoice:pf.elements.requireSessionChoice.checked})});
+    programmeDirty=false;await refresh({keepProgrammeForm:false});message('Sessions saved.');
+  }catch(err){message(`Sessions were not saved: ${err.message}`,'notice error')}
   finally{btn.disabled=false}
 });
 function renderSessionSummary(){
   const sessions=data.eduhub.sessions||[];
-  if(!sessions.length){$('#session-summary').innerHTML='<p class="muted">No sessions yet.</p>';return}
+  if(!sessions.length){$('#session-summary').innerHTML='<p class="muted">No workshops yet.</p>';return}
   const count=id=>data.bookings.filter(b=>b.itemId===EDUHUB_ID&&statusOf(b)==='booked'&&(b.sessionIds||[]).includes(id)).length;
-  $('#session-summary').innerHTML=`<div class="table-wrap"><table class="compact"><thead><tr><th>Time</th><th>Session</th><th>Room or area</th><th>Aimed at</th><th>Booked</th><th></th></tr></thead><tbody>${sessions.map(x=>{const n=count(x.id);return `<tr><td>${escapeHtml(slotLabel(x))}</td><td><strong>${escapeHtml(x.title)}</strong>${x.speakerName?`<br><span class="muted">${escapeHtml(x.speakerName)}</span>`:''}</td><td>${escapeHtml(x.room||'')}</td><td>${x.audiences.map(phaseName).join(', ')}</td><td>${n}${x.capacity?` of ${x.capacity}`:''}${x.capacity&&n>=x.capacity?' <span class="status-pill waiting">Full</span>':''}</td><td><a class="button secondary small-button" href="/api/export-bookings?view=register&amp;session=${encodeURIComponent(x.id)}">Register (CSV)</a></td></tr>`}).join('')}</tbody></table></div>`;
+  const groupsOf=x=>(x.roundPhases||[]).length?` (${x.roundPhases.map(p=>(PHASES.find(y=>y[0]===p)||[])[1]).join(', ')})`:'';
+  $('#session-summary').innerHTML=slotsOf(sessions).map(slot=>`<h3>${escapeHtml(slot.label)}${escapeHtml(groupsOf(slot.items[0]))}</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Workshop</th><th>Room or area</th><th>Booked</th><th></th></tr></thead><tbody>${slot.items.map(x=>{const n=count(x.id);return `<tr><td><strong>${escapeHtml(x.title)}</strong>${x.speakerName?`<br><span class="muted">${escapeHtml(x.speakerName)}</span>`:''}</td><td>${escapeHtml(x.room||'')}</td><td>${n}${x.capacity?` of ${x.capacity}`:''}${x.capacity&&n>=x.capacity?' <span class="status-pill waiting">Full</span>':''}</td><td><a class="button secondary small-button" href="/api/export-bookings?view=register&amp;session=${encodeURIComponent(x.id)}">Register (CSV)</a></td></tr>`}).join('')}</tbody></table></div>`).join('');
 }
 
 boot();
