@@ -37,7 +37,7 @@ export default async request => {
          if(k in f) b[k]=clean(f[k],max);
        }
        if(b.itemId===EDUHUB_ID && "foodChoiceId" in f){
-         if(f.foodChoiceId==="no-food"){ Object.assign(b,{foodChoiceId:"no-food",foodChoice:"No food required",foodAllergens:""}); }
+         if(f.foodChoiceId==="no-food"){ Object.assign(b,{foodChoiceId:"no-food",foodChoice:"Bringing own food",foodAllergens:""}); }
          else if(!f.foodChoiceId){ Object.assign(b,{foodChoiceId:"",foodChoice:"",foodAllergens:""}); }
          else{
            const c=eduhub.foodChoices.find(x=>x.id===f.foodChoiceId);

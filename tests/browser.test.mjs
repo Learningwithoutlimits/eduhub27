@@ -226,7 +226,10 @@ await step("the catering team's private link shows Rational Training in their ro
   // Primary staff: round 2 first, then round 3 at 12:10 includes the oven training.
   await ip.locator(".round-step.is-active .choice-tile:not(.is-blocked)").first().click({ position: { x: 20, y: 20 } });
   await ip.waitForTimeout(150);
-  assert.match(await ip.textContent(".round-step.is-active"), /12:10[\s\S]*Rational Training/);
+  const step2 = await ip.textContent(".round-step.is-active");
+  assert.match(step2, /Choose your workshop for Round 3[\s\S]*Rational Training/);
+  // Times differ between groups, so the step heading shows only the round name.
+  assert.doesNotMatch(await ip.textContent(".round-step.is-active legend"), /\d\d:\d\d/);
   await ip.selectOption("#schoolId", { label: "Example Secondary Academy" });
   await ip.waitForTimeout(200);
   assert.doesNotMatch(await ip.textContent(".round-step.is-active"), /Rational Training/);

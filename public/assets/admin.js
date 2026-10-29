@@ -378,7 +378,7 @@ function openBookingEdit(id){
     $('#b-food').innerHTML=`<option value="">No choice recorded</option>`+
       (!known?`<option value="${escapeHtml(b.foodChoiceId)}">${escapeHtml(b.foodChoice)} (no longer on the menu)</option>`:'')+
       choices.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')+
-      `<option value="no-food">No food required</option>`;
+      `<option value="no-food">Bringing own food</option>`;
     $('#b-food').value=b.foodChoiceId||'';
   }
   bookingModal.classList.add('open');bookingModal.setAttribute('aria-hidden','false');bf.firstName.focus();

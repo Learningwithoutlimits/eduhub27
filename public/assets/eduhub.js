@@ -27,7 +27,8 @@ function slotsOf(sessions){
   for(const x of sessions){
     const key = x.roundId || `${x.startTime}-${x.endTime}`;
     let slot = slots.find(s => s.key === key);
-    if(!slot) slots.push(slot = { key, label: slotLabel(x), items: [] });
+    // Round names only: times differ between groups, so they are left out here.
+    if(!slot) slots.push(slot = { key, label: x.roundLabel || slotLabel(x), items: [] });
     slot.items.push(x);
   }
   return slots;

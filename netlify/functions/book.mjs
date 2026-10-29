@@ -66,7 +66,7 @@ export default async request => {
    extra={role:"speaker",leading};
    if(eduhub.foodChoices.length){
      const chosen=clean(raw.foodChoiceId,80);
-     if(chosen===NO_FOOD && eduhub.allowNoFood) Object.assign(extra,{foodChoiceId:NO_FOOD,foodChoice:"No food required",foodAllergens:""});
+     if(chosen===NO_FOOD && eduhub.allowNoFood) Object.assign(extra,{foodChoiceId:NO_FOOD,foodChoice:"Bringing own food",foodAllergens:""});
      else{
        const choice=eduhub.foodChoices.find(c=>c.id===chosen);
        if(!choice) return json({error:"Please choose your food option."},400);
@@ -86,7 +86,7 @@ export default async request => {
    if(eduhub.foodChoices.length){
      const chosen=clean(raw.foodChoiceId,80);
      if(chosen===NO_FOOD && eduhub.allowNoFood){
-       extra={foodChoiceId:NO_FOOD,foodChoice:"No food required",foodAllergens:""};
+       extra={foodChoiceId:NO_FOOD,foodChoice:"Bringing own food",foodAllergens:""};
      }else{
        const choice=eduhub.foodChoices.find(c=>c.id===chosen);
        if(!choice) return json({error:"Please choose your food option."},400);

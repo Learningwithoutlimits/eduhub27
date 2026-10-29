@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 5.14.4: own food, and round names without times
+
+### Changed
+- The option for people who do not want a meal now reads **I will bring my own food**, and is recorded as "Bringing own food" in admin and the caterer's lists. It shows when **Offer an "I will bring my own food" option** is ticked under EduHub 2027 in admin.
+- The workshop picker shows only the round name, such as "Step 1 of 2: Choose your workshop for Session 1", because times differ between groups. The same applies to the summary of rounds already chosen.
+
 ## Version 5.14.3: school email addresses
 
 ### Fixed
