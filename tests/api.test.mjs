@@ -519,6 +519,9 @@ await test("Wyken Croft staff addresses are accepted from the start", async () =
   const u = await import("../netlify/functions/_utils.mjs");
   assert.deepEqual(u.normaliseEduhub({}).staffDomains, ["lwlat.org.uk", "wykencroft.coventry.school.uk"]);
   assert.equal(u.isStaffEmail("a.teacher@wykencroft.coventry.school.uk", u.normaliseEduhub({})), true);
+  for (const school of ["babington", "lancaster", "heatherbrook", "woodstock", "southwigston"]) assert.equal(u.isStaffEmail(`A.Teacher@${school}.lwlat.org.uk`, u.normaliseEduhub({})), true, school);
+  assert.equal(u.isStaffEmail("someone@notlwlat.org.uk", u.normaliseEduhub({})), false);
+  assert.equal(u.isStaffEmail("lwlat.org.uk", u.normaliseEduhub({})), false);
   assert.equal(u.isStaffEmail("a@coventry.school.uk", u.normaliseEduhub({})), false);
 });
 await test("admins can add a school's email ending for staff bookings", async () => {

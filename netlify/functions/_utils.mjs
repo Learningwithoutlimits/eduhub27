@@ -69,7 +69,9 @@ export function staffDomains(e){
   const list = (Array.isArray(e?.staffDomains) ? e.staffDomains : []).map(cleanDomain).filter(d => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d));
   return [...new Set(["lwlat.org.uk", ...list])];
 }
-export const isStaffEmail = (email, e) => staffDomains(e).some(d => String(email).toLowerCase().endsWith("@" + d));
+// School addresses such as name@babington.lwlat.org.uk count as well, so any
+// address ending in one of the domains, or a school's part of it, is accepted.
+export const isStaffEmail = (email, e) => { const x = String(email).toLowerCase().trim(); return x.includes("@") && staffDomains(e).some(d => x.endsWith("@" + d) || x.endsWith("." + d)); };
 export const domainList = e => { const d = staffDomains(e).map(x => "@" + x); return d.length > 1 ? `${d.slice(0,-1).join(", ")} or ${d.at(-1)}` : d[0]; };
 
 // Today's date in the UK, as YYYY-MM-DD, for deadline checks.

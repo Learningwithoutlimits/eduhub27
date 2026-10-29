@@ -40,7 +40,7 @@ export function foodOptionsHtml(eduhub){
     ${g.items.map(foodOptionHtml).join('')}`).join('');
   if(eduhub.allowNoFood){
     html += `<label class="food-option"><input type="radio" name="foodChoiceId" value="${NO_FOOD}" required>
-      <span class="food-option-body"><span class="food-name">I do not need food</span></span></label>`;
+      <span class="food-option-body"><span class="food-name">I will bring my own food</span></span></label>`;
   }
   return html;
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 5.14.4: own food, and round names without times
+
+### Changed
+- The option for people who do not want a meal now reads **I will bring my own food**, and is recorded as "Bringing own food" in admin and the caterer's lists. It shows when **Offer an "I will bring my own food" option** is ticked under EduHub 2027 in admin.
+- The workshop picker shows only the round name, such as "Step 1 of 2: Choose your workshop for Session 1", because times differ between groups. The same applies to the summary of rounds already chosen.
+
+## Version 5.14.3: school email addresses
+
+### Fixed
+- Staff can book with their school's email address, such as name@babington.lwlat.org.uk, name@lancaster.lwlat.org.uk, name@heatherbrook.lwlat.org.uk, name@woodstock.lwlat.org.uk or name@southwigston.lwlat.org.uk. Any address ending in .lwlat.org.uk is now accepted alongside @lwlat.org.uk, so schools added later work too. The same applies to any other ending listed under Staff email addresses in admin. The email box says that school addresses work.
+
 ## Version 5.14.2: the EduHub 27 logo
 
 ### Fixed
