@@ -375,8 +375,19 @@ await step("a governor books with their own email and gets their school's rounds
   await staffPage.waitForSelector(".food-option");
   await staffPage.check('[name=role][value=governor]');
   assert.equal(await staffPage.textContent("#school-label"), "Which school do you govern?");
-  await fillStaff(staffPage, "Gwen", "Governor", "gwen@example.org", "Another Primary School");
+  assert.ok(await staffPage.isVisible("#governor-optional"));
+  await staffPage.fill("#firstName", "Gwen"); await staffPage.fill("#lastName", "Governor"); await staffPage.fill("#email", "gwen@example.org");
+  await staffPage.selectOption("#schoolId", { label: "Another Primary School" });
+  await staffPage.waitForSelector(".round-step.is-active");
   assert.match(await staffPage.textContent("#sessions-help"), /Governors of primary schools/);
+  assert.match(await staffPage.textContent("#sessions-legend"), /optional for governors/);
+  if (shots) await staffPage.locator("#sessions-field").screenshot({ path: `${shots}/05d-governor-optional.png` });
+  // A governor can skip every round.
+  for (let i = 0; i < 6 && await staffPage.locator(".round-step.is-active").count(); i++){
+    await staffPage.locator(".round-step.is-active .choice-none").click({ position: { x: 20, y: 20 } });
+    await staffPage.waitForTimeout(150);
+  }
+  assert.equal(await staffPage.locator(".round-step.is-done").count(), 2);
   await staffPage.locator("#food-options .food-option").first().locator("input").check(); await staffPage.check("#consent");
   await staffPage.click("#submit-button");
   await staffPage.waitForSelector(".confirmation");
@@ -387,6 +398,7 @@ await step("a trustee books without choosing a school", async () => {
   await staffPage.waitForSelector(".food-option");
   await staffPage.check('[name=role][value=trustee]');
   assert.ok(await staffPage.isHidden("#school-field"));
+  assert.ok(await staffPage.isHidden("#governor-optional"));
   await staffPage.fill("#firstName", "Toby"); await staffPage.fill("#lastName", "Trustee"); await staffPage.fill("#email", "toby@example.org");
   await staffPage.waitForSelector(".round-step.is-active");
   assert.match(await staffPage.textContent("#session-options"), /Round 1/);
