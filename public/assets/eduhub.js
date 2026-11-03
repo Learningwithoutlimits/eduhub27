@@ -373,7 +373,9 @@ function render(){
   const status = e.effectiveStatus || 'coming-soon';
   const copy = STATUS_COPY[status] || STATUS_COPY['coming-soon'];
   document.title = `${e.title || 'EduHub 2027'} | Learning Without Limits Learning Hub`;
-  $('#edu-title').textContent = e.title || 'EduHub 2027: Better Together';
+  // The part after the colon sits on its own line in the brand gradient.
+  const [titleA, ...titleB] = (e.title || 'EduHub 2027: Better Together').split(':');
+  $('#edu-title').innerHTML = titleB.length ? `${esc(titleA)}<br><span>${esc(titleB.join(':').trim())}</span>` : esc(titleA);
   $('#side-title').textContent = e.title || 'EduHub 2027';
   if(e.description) $('#edu-description').textContent = e.description;
   $('#edu-date').textContent = $('#side-date').textContent = fmtDate(e.date || '2027-01-05');

@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 6.0: the immersive redesign
+
+Follows "LwLAT Pulse homepage: Concept C" and the house site-thumbnail style.
+
+### Changed
+- **Backdrop.** The home, EduHub, speaker and ticket pages sit on one fixed teal backdrop: a radial gradient from Mission teal (#098F88) through darkest teal (#00706A) to a deep shade (#00524E), with a faint 50px grid and ring arcs from the brand cover artwork.
+- **Header.** A frosted bar with the white LwLAT logo (`public/assets/lwlat-logo-white.png`), a divider and "Learning Hub".
+- **Heroes.** An eyebrow pill with a glowing light-green dot, a heavy two-line heading whose second line uses the light green to orange gradient ("Learning / Hub", "EduHub 2027 / Better Together"), and a light-green call-to-action button. On the right, a tilted white "app window" holds the EduHub 27 "Better together" logo, with window dots, a date pill, a strip of five coloured circles, and a floating badge. On phones the window sits under the heading and straightens.
+- **Content.** The structure of the day, the booking form, the sidebar and the home page tiles are white window cards with deep soft shadows. Section headings are white on the teal. The keynote banner is frosted glass. Focus outlines are light green.
+- **EduHub '27 thumbnail.** A new 960x600 thumbnail in the house style (`public/assets/lwlat-eduhub-27-thumbnail-960x600.png`), with the Better together logo in the app window. It is the EduHub tile on the home page and the image shown when the EduHub link is shared.
+- **EduHub 27 logo** also appears at the top of the "Your booking" panel beside the form.
+- **Type.** Source Sans 3 stands in for the brand typeface The Sans, with Inter for window labels, as the concept specifies.
+- **Footer.** "Learning without Limits Academy Trust" with a lower-case "w", as the brand guidelines require, and a link to lwlat.org.uk. The mission line was removed, because the guidelines allow it only as supplied artwork.
+- Admin pages are unchanged.
+
 ## Version 5.15.1: workshops optional for trustees too
 
 ### Changed

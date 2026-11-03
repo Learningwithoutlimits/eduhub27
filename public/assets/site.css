@@ -1,4 +1,4 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=Source+Sans+3:wght@400;600;700;900&family=Inter:wght@500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
 :root{--teal:#009189;--red:#CD163F;--purple:#6F2789;--yellow:#FDB913;--lime:#BFD22B;--grey:#636466;--ink:#183033;--bg:#f4f8f8;--white:#fff;--shadow:0 18px 55px rgba(16,58,61,.13)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:"Open Sans",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}a{color:inherit}.container{width:min(1160px,calc(100% - 34px));margin:auto}
@@ -644,3 +644,134 @@ th{text-transform:none;letter-spacing:0;font-size:.85rem}
 .invite-link-row input{font-size:.88rem;background:#fff}
 .invite-tag{background:#fff1cc;color:#6b4c00}
 .invite-note{margin-bottom:16px}
+
+/* =====================================================================
+   v6: immersive design (Pulse "Concept C" and the house thumbnail style)
+   Public pages carry body.immersive: a fixed teal backdrop with a faint
+   grid and ring arcs, white "app window" cards, frosted glass pills and
+   the EduHub 27 "Better together" logo in a tilted window in each hero.
+   ===================================================================== */
+:root{
+  --mission:#098F88;--teal-dark:#00706A;--teal-deep:#00524E;--teal-icon:#009189;
+  --orange:#F5BA19;--lgreen:#ACCE33;--dgreen:#73A434;--b-red:#CE153F;--b-purple:#6F2789;
+  --b-grey:#636466;--near-black:#1F1F1F;--tint:#E6F4F3;--tint2:#F2F7F7;
+  --win-shadow:0 40px 80px rgba(0,30,28,.35),0 0 0 1px rgba(255,255,255,.4);
+}
+body.immersive{font-family:"Source Sans 3","Open Sans",Arial,sans-serif;color:var(--near-black);background:var(--teal-deep);font-size:17px}
+body.immersive .backdrop{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(1400px 900px at 12% 8%,var(--mission) 0%,var(--teal-dark) 48%,var(--teal-deep) 100%)}
+body.immersive .backdrop::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:50px 50px;
+  -webkit-mask-image:radial-gradient(1000px 760px at 60% 40%,#000 20%,transparent 80%);mask-image:radial-gradient(1000px 760px at 60% 40%,#000 20%,transparent 80%)}
+body.immersive .backdrop svg{position:absolute;inset:0;width:100%;height:100%}
+body.immersive :focus-visible{outline:3px solid var(--lgreen)!important;outline-offset:3px}
+
+/* Header: frosted, with the white logo */
+body.immersive .site-header{background:rgba(0,82,78,.55);border-bottom:1px solid rgba(255,255,255,.14);color:#fff}
+body.immersive .brand img.logo-white{height:44px;width:auto}
+body.immersive .brand-lockup span{color:#fff;border-left-color:rgba(255,255,255,.3);font-weight:700}
+body.immersive .nav-links a{color:#fff}
+body.immersive .nav-links a:not(.button){padding:8px 14px;border-radius:999px;border:1px solid transparent}
+body.immersive .nav-links a:not(.button):hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+body.immersive .nav-links .button{background:#fff;color:var(--teal-dark)}
+
+/* Type and buttons */
+body.immersive h1,body.immersive h2{font-weight:900;letter-spacing:-.02em}
+body.immersive .button{background:var(--teal-dark)}
+body.immersive .button.secondary{background:#fff;color:var(--teal-dark);border-color:var(--teal-dark)}
+body.immersive .hero-button{background:var(--lgreen);color:#1F1F1F;font-size:1.05rem;padding:14px 26px}
+body.immersive .hero-button:hover{background:#bcdc4a}
+body.immersive .hero-link{color:#fff;font-weight:700;text-underline-offset:4px}
+.eyebrow-pill{display:inline-flex;align-items:center;gap:10px;margin:0 0 18px;padding:8px 16px;border-radius:999px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#d9f3f0;font-weight:700;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase}
+.eyebrow-pill .glow{width:9px;height:9px;border-radius:50%;background:var(--lgreen);box-shadow:0 0 12px var(--lgreen)}
+
+/* Heroes sit straight on the backdrop */
+body.immersive .hero,body.immersive .eduhub-full-hero{background:none;color:#fff}
+body.immersive .hero{padding:72px 0 40px}
+body.immersive .hero-grid,body.immersive .eduhub-full-hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:48px;align-items:center}
+body.immersive .hero h1,body.immersive .eduhub-full-hero h1{font-size:clamp(3rem,6.5vw,5.8rem);line-height:.98;margin:0 0 .3em}
+body.immersive .hero h1 span,body.immersive .eduhub-full-hero h1 span{background:linear-gradient(90deg,var(--lgreen),var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent}
+body.immersive .hero p:not(.eyebrow-pill),body.immersive .eduhub-full-hero #edu-description{color:#d9f3f0;font-size:1.2rem;max-width:34em}
+
+/* The window card */
+.window{position:relative;background:#fff;border-radius:28px;box-shadow:var(--win-shadow);color:var(--near-black)}
+.window-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.window-dots{display:flex;gap:8px}.window-dots i{width:13px;height:13px;border-radius:50%;background:#CE153F}
+.window-dots i:nth-child(2){background:var(--orange)}.window-dots i:nth-child(3){background:var(--lgreen)}
+.window-pill{font-family:Inter,sans-serif;font-weight:700;font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-dark);background:var(--tint);border-radius:999px;padding:7px 14px}
+.hero-window-wrap{position:relative;padding:10px 26px 46px 0}
+.hero-window{padding:24px 26px 20px;transform:perspective(1600px) rotateY(-9deg) rotateX(3deg);transition:transform .4s ease}
+.hero-window-logo{display:block;width:100%;max-height:230px;object-fit:contain;mix-blend-mode:multiply;margin:4px 0 14px}
+.hero-window-strip{display:flex;align-items:center;gap:14px;background:var(--tint2);border-radius:16px;padding:12px 16px;font-family:Inter,sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--teal-dark)}
+.hero-window-strip .circles{display:flex}
+.hero-window-strip .circles i{width:24px;height:24px;border-radius:50%;border:2px solid #fff;margin-left:-8px;background:var(--teal-icon)}
+.hero-window-strip .circles i:first-child{margin-left:0}
+.hero-window-strip .circles i:nth-child(2){background:#CE153F}.hero-window-strip .circles i:nth-child(3){background:var(--orange)}
+.hero-window-strip .circles i:nth-child(4){background:var(--lgreen)}.hero-window-strip .circles i:nth-child(5){background:var(--b-purple)}
+.hero-window-strip .tick{margin-left:auto;width:28px;height:28px;border-radius:50%;background:var(--teal-icon);flex:none;position:relative}
+.hero-window-strip .tick::after{content:"";position:absolute;left:9px;top:6px;width:7px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.float-badge{position:absolute;right:0;bottom:6px;display:flex;align-items:center;gap:12px;background:#fff;color:var(--teal-dark);border-radius:20px;padding:12px 18px 12px 12px;font-weight:700;box-shadow:0 24px 50px rgba(0,0,0,.3)}
+.float-badge .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#d6519b,var(--b-purple))}
+.hero-window-link{display:block;text-decoration:none;color:inherit;border-radius:28px}
+.hero-window-link:hover .hero-window{transform:perspective(1600px) rotateY(-4deg) rotateX(1deg)}
+@media(prefers-reduced-motion:reduce){.hero-window{transition:none}}
+
+/* EduHub hero facts bar */
+body.immersive .eduhub-full-hero{padding:56px 0 0}
+body.immersive .eduhub-full-hero-grid{padding-bottom:36px}
+body.immersive .hero-facts{border-radius:22px;box-shadow:var(--win-shadow);margin-bottom:8px}
+body.immersive .hero-facts dt{color:var(--b-grey)}
+body.immersive .hero-facts-status{background:var(--tint)}
+body.immersive .hero-facts-status dd:first-of-type{color:var(--teal-dark)}
+
+/* Sections on the backdrop: white headings, content in white cards */
+body.immersive .section{background:none}
+body.immersive .section-head h2,body.immersive #programme .section-head h2{color:#fff;font-size:clamp(1.9rem,3vw,2.4rem)}
+body.immersive .section-head > p.muted,body.immersive .section-head .muted,body.immersive .booking-lede{color:#d9f3f0}
+body.immersive .booking-lede strong{color:#fff}
+body.immersive .section-head a{color:#fff}
+body.immersive .day-section{background:none;padding-top:44px}
+body.immersive .day-section > .container{background:#fff;border-radius:28px;box-shadow:var(--win-shadow);padding:56px 40px 36px;position:relative}
+body.immersive .day-section > .container::before{content:"";position:absolute;left:28px;top:24px;width:60px;height:13px;
+  background:radial-gradient(circle at 6.5px 6.5px,#CE153F 6.5px,transparent 7px),radial-gradient(circle at 27.5px 6.5px,#F5BA19 6.5px,transparent 7px),radial-gradient(circle at 48.5px 6.5px,#ACCE33 6.5px,transparent 7px)}
+body.immersive .day-section .section-head h2{color:var(--near-black)}
+body.immersive .day-section .section-head .muted{color:var(--b-grey)}
+body.immersive .keynote-feature{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);box-shadow:none;backdrop-filter:blur(6px)}
+body.immersive .workshop-tile{border-radius:22px;box-shadow:0 24px 50px rgba(0,30,28,.28)}
+body.immersive .workshop-tile:focus-visible,body.immersive .workshop-tile:hover{outline:3px solid var(--lgreen);outline-offset:0}
+body.immersive .form-shell,body.immersive .panel{border-radius:28px;box-shadow:var(--win-shadow)}
+body.immersive #booking-closed{color:var(--near-black)}
+body.immersive .notice.invite-note,body.immersive #form-message > .notice{box-shadow:var(--win-shadow)}
+body.immersive .empty{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3);color:#d9f3f0}
+body.immersive .course-search label{color:#fff}
+body.immersive .course-search input{border:0;box-shadow:var(--win-shadow)}
+body.immersive #course-count{color:#d9f3f0}
+
+/* Home page site tiles */
+body.immersive .feature{border-radius:28px;box-shadow:var(--win-shadow);min-height:0}
+body.immersive .feature-media{height:auto;padding:0;aspect-ratio:16/10;background:linear-gradient(135deg,var(--mission),var(--teal-deep))}
+body.immersive .feature-thumb img{width:100%;height:100%;max-height:none;max-width:none;object-fit:cover}
+body.immersive .feature-teal img{width:60%;max-height:none}
+body.immersive .feature h3{font-weight:900}
+
+/* Footer */
+body.immersive .footer{background:rgba(0,40,38,.65);border-top:1px solid rgba(255,255,255,.12);margin-top:40px}
+body.immersive .footer img{height:40px;filter:none}
+body.immersive .footer-text{margin:0;color:#d9f3f0}
+body.immersive .footer-text a{color:#fff;font-weight:700;margin-left:10px}
+
+/* Narrow screens: one column, straight cards */
+@media(max-width:900px){
+  body.immersive .hero-grid,body.immersive .eduhub-full-hero-grid{grid-template-columns:1fr;gap:28px}
+  body.immersive .eduhub-full-hero-grid > .hero-window-wrap{order:0}
+  .hero-window,.hero-window-link:hover .hero-window{transform:none}
+  .hero-window-wrap{padding:0 0 40px}
+  body.immersive .day-section > .container{padding:52px 20px 24px}
+}
+@media(max-width:520px){
+  .hero-window-strip{font-size:.72rem;gap:10px}
+  .float-badge{font-size:.9rem}
+}
+@media print{body.immersive .backdrop{display:none}body.immersive{background:#fff}}
+.side-logo{display:block;width:100%;max-height:110px;object-fit:contain;mix-blend-mode:multiply;margin:0 0 12px}
