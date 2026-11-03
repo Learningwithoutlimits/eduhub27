@@ -106,7 +106,8 @@ export default async request => {
      if(session.workshopId && chosen.some(x=>x.workshopId===session.workshopId)) return json({error:`You have chosen "${session.title}" more than once. Please choose a different workshop for one of the rounds.`},400);
      chosen.push(session);
    }
-   if(eduhub.requireSessionChoice){
+   // Governors and trustees may choose as many or as few workshops as they like.
+   if(eduhub.requireSessionChoice && b.role==="staff"){
      const slots=[...new Set(eligible.filter(x=>hasInvite(eduhub.workshops.find(w=>w.id===x.workshopId),raw.invite)).map(slotKey))];
      const missing=slots.filter(k=>!chosen.some(x=>slotKey(x)===k));
      if(missing.length){

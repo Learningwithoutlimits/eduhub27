@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 5.15.1: workshops optional for trustees too
+
+### Changed
+- **Trustees** now have the same choice as governors. Both can book a place for the day and join as many or as few workshops as they like, or none. The notice reads "Workshops are optional for governors and trustees", and each round starts with **No workshop in this round**. Staff still choose a workshop in every round.
+
+## Version 5.15: workshops optional for governors
+
+### Changed
+- **Governors** no longer have to choose a workshop in every round. When "A governor" is chosen, the form shows a notice, "Workshops are optional for governors", and the heading reads "Choose your workshops (optional for governors)". Each round begins with a **No workshop in this round** option, so a governor can join as many or as few workshops as they like, or none.
+- Staff and trustees still choose a workshop in every round while **Staff must choose a workshop in every round** is ticked in admin. The server checks this too.
+
 ## Version 5.14.4: own food, and round names without times
 
 ### Changed
