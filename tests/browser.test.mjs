@@ -398,7 +398,8 @@ await step("a trustee books without choosing a school", async () => {
   await staffPage.waitForSelector(".food-option");
   await staffPage.check('[name=role][value=trustee]');
   assert.ok(await staffPage.isHidden("#school-field"));
-  assert.ok(await staffPage.isHidden("#governor-optional"));
+  assert.ok(await staffPage.isVisible("#governor-optional"));
+  assert.match(await staffPage.textContent("#sessions-legend"), /optional for governors and trustees/);
   await staffPage.fill("#firstName", "Toby"); await staffPage.fill("#lastName", "Trustee"); await staffPage.fill("#email", "toby@example.org");
   await staffPage.waitForSelector(".round-step.is-active");
   assert.match(await staffPage.textContent("#session-options"), /Round 1/);

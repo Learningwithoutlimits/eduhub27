@@ -93,8 +93,9 @@ function choiceTile(x, takenIn){
   </label>`;
 }
 
-// Workshops are optional for governors, and for everyone if admin allows it.
-const workshopsOptional = () => !eduhub.requireSessionChoice || currentRole() === 'governor';
+// Workshops are optional for governors and trustees, and for everyone if admin allows it.
+const optionalRole = () => ['governor', 'trustee'].includes(currentRole());
+const workshopsOptional = () => !eduhub.requireSessionChoice || optionalRole();
 const noneTile = slot => `<label class="choice-tile choice-none"><input type="radio" name="round-choice" value="" data-round="${esc(slot.key)}" ${choices[slot.key] === '' ? 'checked' : ''}><span class="choice-tile-body"><span class="choice-tile-title">No workshop in this round</span></span></label>`;
 function renderSessionChoices(focusStep){
   const sessions = eduhub.sessions || [];
@@ -117,8 +118,8 @@ function renderSessionChoices(focusStep){
     if(!slot || (choices[key] && !slot.items.some(x => x.id === choices[key]))) delete choices[key];
   }
   const who = currentRole() === 'trustee' ? 'Trustees join the central Trust staff, who attend' : currentRole() === 'governor' ? `Governors of ${PHASE_NAMES[phase]?.toLowerCase()} schools join ${PHASE_NAMES[phase]?.toLowerCase()} staff, who attend` : `${PHASE_NAMES[phase]} staff attend`;
-  const governor = currentRole() === 'governor';
-  $('#sessions-legend').textContent = governor ? 'Choose your workshops (optional for governors)' : 'Choose your workshops';
+  const governor = optionalRole();
+  $('#sessions-legend').textContent = governor ? 'Choose your workshops (optional for governors and trustees)' : 'Choose your workshops';
   $('#sessions-help').textContent = `${phase ? `${who} ${slots.length === 1 ? 'one workshop round' : `${slots.length} workshop rounds`}. ` : ''}${governor ? '' : 'Choose your workshop for each round in turn. '}You cannot choose the same workshop twice.`;
   $('#governor-optional').classList.toggle('hidden', !governor);
   if(!eligible.length){ $('#session-options').innerHTML = '<p class="muted">There are no workshops to choose from for your school yet.</p>'; return; }
@@ -133,9 +134,9 @@ function renderSessionChoices(focusStep){
       return `<li class="round-step is-active"><fieldset>
         <legend id="step-${i}" tabindex="-1"><span class="step-count">${step}</span> Choose your workshop for <strong>${esc(slot.label)}</strong></legend>
         <div class="choice-grid">
-          ${currentRole() === 'governor' ? noneTile(slot) : ''}
+          ${optionalRole() ? noneTile(slot) : ''}
           ${slot.items.map(x => choiceTile(x, takenBy[x.workshopId])).join('')}
-          ${currentRole() !== 'governor' && workshopsOptional() ? noneTile(slot) : ''}
+          ${!optionalRole() && workshopsOptional() ? noneTile(slot) : ''}
         </div>
       </fieldset></li>`;
     }
@@ -581,7 +582,7 @@ function applyRole(){
   $('#school-field').classList.toggle('hidden', role === 'trustee' || !schools);
   $('#organisation-field').classList.toggle('hidden', role === 'trustee' || schools);
   $('#organisation-field label').textContent = role === 'governor' ? 'Which school do you govern?' : 'Where do you work?';
-  $('#governor-optional').classList.toggle('hidden', role !== 'governor');
+  $('#governor-optional').classList.toggle('hidden', !optionalRole());
   renderSessionChoices(); renderYourDay();
   if(role === 'trustee' && who?.key !== 'trustee'){ who = WHO.find(w => w.key === 'trustee'); renderDay(); }
 }

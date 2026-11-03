@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.15.1: workshops optional for trustees too
+
+### Changed
+- **Trustees** now have the same choice as governors. Both can book a place for the day and join as many or as few workshops as they like, or none. The notice reads "Workshops are optional for governors and trustees", and each round starts with **No workshop in this round**. Staff still choose a workshop in every round.
+
 ## Version 5.15: workshops optional for governors
 
 ### Changed

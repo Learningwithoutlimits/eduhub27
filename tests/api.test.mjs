@@ -584,14 +584,16 @@ await test("governor books with any email and gets their school's rounds", async
   const b = (await call("admin-data", { auth: true })).data.bookings.find(x => x.email === "gwen@example.org");
   assert.equal(b.role, "governor"); assert.equal(b.roleName, "Governor"); assert.equal(b.organisation, "Example Primary");
 });
-await test("workshops are optional for governors but not for trustees", async () => {
+await test("workshops are optional for governors and trustees but not for staff", async () => {
   const none = await call("book", { method: "POST", body: { itemType: "eduhub", role: "governor", firstName: "Nell", lastName: "Governor", email: "nell@example.org", schoolId: school("Example Primary"), foodChoiceId: menu[0].id, consent: true, sessionIds: [] } });
   assert.equal(none.status, 200, JSON.stringify(none.data));
   const one = await call("book", { method: "POST", body: { itemType: "eduhub", role: "governor", firstName: "Olly", lastName: "Governor", email: "olly@example.org", schoolId: school("Example Primary"), foodChoiceId: menu[0].id, consent: true, sessionIds: [sid("Curious Schools", "round-3")] } });
   assert.equal(one.status, 200, JSON.stringify(one.data));
   const trustee = await call("book", { method: "POST", body: { itemType: "eduhub", role: "trustee", firstName: "Tess", lastName: "Trustee", email: "tess@example.org", foodChoiceId: menu[0].id, consent: true, sessionIds: [] } });
-  assert.equal(trustee.status, 400); assert.match(trustee.data.error, /Please choose a workshop/);
-  for (const id of [none, one].map(r => new URL("http://x" + r.data.ticketUrl.replace(/^https?:\/\/[^/]+/, "")).searchParams.get("b"))) await call("booking", { method: "POST", auth: true, body: { id, action: "cancel" } });
+  assert.equal(trustee.status, 200, JSON.stringify(trustee.data));
+  const staffNone = await sBook(420, { schoolId: school("Example Primary"), sessionIds: [] });
+  assert.equal(staffNone.status, 400); assert.match(staffNone.data.error, /Please choose a workshop/);
+  for (const id of [none, one, trustee].map(r => new URL("http://x" + r.data.ticketUrl.replace(/^https?:\/\/[^/]+/, "")).searchParams.get("b"))) await call("booking", { method: "POST", auth: true, body: { id, action: "cancel" } });
 });
 await test("trustee needs no school and follows the central rounds", async () => {
   const r = await call("book", { method: "POST", body: { itemType: "eduhub", role: "trustee", firstName: "Toby", lastName: "Trustee", email: "toby@example.org", foodChoiceId: menu[0].id, consent: true, sessionIds: [sid("Inclusive Leadership", "round-1"), sid("Curious Schools", "round-4")] } });
